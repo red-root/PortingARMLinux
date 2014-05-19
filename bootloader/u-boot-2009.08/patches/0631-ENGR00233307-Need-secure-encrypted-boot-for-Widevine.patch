@@ -1,0 +1,286 @@
+From ad21cbe117b2f275322be978f3d1a902b49412af Mon Sep 17 00:00:00 2001
+From: Dan Douglass <dan.douglass@freescale.com>
+Date: Mon, 12 Nov 2012 10:01:31 -0600
+Subject: [PATCH 631/678] ENGR00233307 Need secure/encrypted boot for Widevine
+ support.
+
+* Adding the config option CONFIG_SECURE_BOOT to the SabreSD board,
+but defaulting it to be disabled. Removed the CONFIG_SECURE_BOOT
+key from mx6q_arm2_android.h so that it is only in one file,
+include/configs/mx6q_arm2.h
+
+* Fixed up an address alignment check in authenticate_image(). The
+test would fail in the event the address is already aligned.
+Also, added some debug code which can be enabled to assist in
+testing secure images.
+
+* Added support for authenticating an image when using booti.
+
+* Adding support for secure boot to the Sabre SD board.
+
+* Added support for encrypted boot to mx6q arm2 board linker script.
+
+Signed-off-by: Dan Douglass <dan.douglass@freescale.com>
+---
+ board/freescale/mx6q_arm2/u-boot.lds        |    4 ++
+ board/freescale/mx6q_sabresd/flash_header.S |    8 ++++
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |    9 +++++
+ board/freescale/mx6q_sabresd/u-boot.lds     |   12 ++++++
+ common/cmd_bootm.c                          |   19 ++++++++++
+ cpu/arm_cortexa8/mx6/generic.c              |   49 +++++++++++++++++++++++++--
+ include/configs/mx6dl_sabresd.h             |    5 +++
+ include/configs/mx6q_arm2.h                 |    8 ++--
+ include/configs/mx6q_arm2_android.h         |    5 ---
+ 9 files changed, 107 insertions(+), 12 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/u-boot.lds b/board/freescale/mx6q_arm2/u-boot.lds
+index 8f16b26..bd58f18 100644
+--- a/board/freescale/mx6q_arm2/u-boot.lds
++++ b/board/freescale/mx6q_arm2/u-boot.lds
+@@ -73,6 +73,10 @@ SECTIONS
+ 	. = ALIGN(0x1000);
+ 	__hab_data = .;
+ 	. = . + 0x2000;
++	__data_enc_key = .;
++	/* actually, only 64bytes are needed, but this generates
++		a size multiple of 512bytes, which is optimal for SD boot */
++	. = . + 0x200;
+ 	__hab_data_end = .;
+ 	/* End of Hab Data, Place it before BSS section */
+ 
+diff --git a/board/freescale/mx6q_sabresd/flash_header.S b/board/freescale/mx6q_sabresd/flash_header.S
+index 2064159..444141a 100644
+--- a/board/freescale/mx6q_sabresd/flash_header.S
++++ b/board/freescale/mx6q_sabresd/flash_header.S
+@@ -46,11 +46,19 @@ reserv1:          .word 0x0
+ dcd_ptr:          .word dcd_hdr
+ boot_data_ptr:	  .word boot_data
+ self_ptr:         .word ivt_header
++#ifdef CONFIG_SECURE_BOOT
++app_code_csf:     .word __hab_data
++#else
+ app_code_csf:     .word 0x0
++#endif
+ reserv2:          .word 0x0
+ 
+ boot_data:        .word TEXT_BASE
++#ifdef CONFIG_SECURE_BOOT
++image_len:        .word __hab_data_end - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
++#else
+ image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
++#endif
+ plugin:           .word 0x0
+ 
+ #if defined CONFIG_MX6DL_DDR3
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 92c28ae..1bc2e35 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -24,6 +24,9 @@
+ #include <asm/io.h>
+ #include <asm/arch/mx6.h>
+ #include <asm/arch/mx6_pins.h>
++#if defined(CONFIG_SECURE_BOOT)
++#include <asm/arch/mx6_secure.h>
++#endif
+ #include <asm/arch/mx6dl_pins.h>
+ #include <asm/arch/iomux-v3.h>
+ #include <asm/arch/regs-anadig.h>
+@@ -1985,6 +1988,12 @@ int checkboard(void)
+ 		printf("UNKNOWN\n");
+ 		break;
+ 	}
++
++#ifdef CONFIG_SECURE_BOOT
++	if (check_hab_enable() == 1)
++		get_hab_status();
++#endif
++
+ 	return 0;
+ }
+ 
+diff --git a/board/freescale/mx6q_sabresd/u-boot.lds b/board/freescale/mx6q_sabresd/u-boot.lds
+index 9b678da..4c8966d 100644
+--- a/board/freescale/mx6q_sabresd/u-boot.lds
++++ b/board/freescale/mx6q_sabresd/u-boot.lds
+@@ -68,6 +68,18 @@ SECTIONS
+ 
+ 	. = ALIGN(4);
+ 	_end_of_copy = .; /* end_of ROM copy code here */
++
++	/* Extend to align to 0x1000, then put the Hab Data */
++	. = ALIGN(0x1000);
++	__hab_data = .;
++	. = . + 0x2000;
++	__data_enc_key = .;
++	/* actually, only 64bytes are needed, but this generates
++		a size multiple of 512bytes, which is optimal for SD boot */
++	. = . + 0x200;
++	__hab_data_end = .;
++	/* End of Hab Data, Place it before BSS section */
++
+ 	__bss_start = .;
+ 	.bss : { *(.bss) }
+ 	_end = .;
+diff --git a/common/cmd_bootm.c b/common/cmd_bootm.c
+index e3ef82d..1b15ebf 100644
+--- a/common/cmd_bootm.c
++++ b/common/cmd_bootm.c
+@@ -1521,6 +1521,10 @@ int do_booti(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 	char *ptn = "boot";
+ 	int mmcc = -1;
+ 	boot_img_hdr *hdr = (void *)boothdr;
++#ifdef CONFIG_SECURE_BOOT
++    u_int32_t load_addr;
++    uint32_t image_size;
++#endif
+ 
+ 	if (argc < 2)
+ 		return -1;
+@@ -1669,6 +1673,21 @@ int do_booti(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 	printf("kernel   @ %08x (%d)\n", hdr->kernel_addr, hdr->kernel_size);
+ 	printf("ramdisk  @ %08x (%d)\n", hdr->ramdisk_addr, hdr->ramdisk_size);
+ 
++#ifdef CONFIG_SECURE_BOOT
++#define IVT_SIZE 0x20
++#define CSF_PAD_SIZE 0x2000
++	extern uint32_t authenticate_image(uint32_t ddr_start,
++					   uint32_t image_size);
++
++	image_size = hdr->ramdisk_addr + hdr->ramdisk_size - hdr->kernel_addr -
++		IVT_SIZE - CSF_PAD_SIZE;
++
++	if (authenticate_image(hdr->kernel_addr, image_size))
++		printf("Authentication Successful\n");
++	else
++		printf("Authentication Failed\n");
++#endif
++
+ 	do_booti_linux(hdr);
+ 
+ 	puts ("booti: Control returned to monitor - resetting...\n");
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 191ab5e..72e7255 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -1361,6 +1361,29 @@ void hab_caam_clock_disable(void)
+ 	writel(reg, CCM_BASE_ADDR + CLKCTL_CCGR0);
+ }
+ 
++#ifdef DEBUG_AUTHENTICATE_IMAGE
++void dump_mem(uint32_t addr, int size)
++{
++	int i;
++
++	for (i = 0; i < size; i += 4) {
++		if (i != 0) {
++			if (i % 16 == 0)
++				printf("\n");
++			else
++				printf(" ");
++		}
++
++		printf("0x%08x", *(uint32_t *)addr);
++		addr += 4;
++	}
++
++	printf("\n");
++
++	return;
++}
++#endif
++
+ uint32_t authenticate_image(uint32_t ddr_start, uint32_t image_size)
+ {
+ 	uint32_t load_addr = 0;
+@@ -1376,13 +1399,33 @@ uint32_t authenticate_image(uint32_t ddr_start, uint32_t image_size)
+ 		hab_caam_clock_enable();
+ 
+ 		if (hab_rvt_entry() == HAB_SUCCESS) {
+-			/*Align to ALIGN_SIZE*/
+-			ivt_offset = image_size - image_size % ALIGN_SIZE
+-				+ ALIGN_SIZE;
++
++			/* If not already aligned, Align to ALIGN_SIZE */
++			if (image_size % ALIGN_SIZE)
++				ivt_offset = image_size - image_size %
++					ALIGN_SIZE + ALIGN_SIZE;
++			else
++				ivt_offset = image_size;
+ 
+ 			start = ddr_start;
+ 			bytes = ivt_offset + IVT_SIZE + CSF_PAD_SIZE;
+ 
++#ifdef DEBUG_AUTHENTICATE_IMAGE
++			printf("\nivt_offset = 0x%x, ivt addr = 0x%x\n",
++			       ivt_offset, ddr_start + ivt_offset);
++			printf("Dumping IVT\n");
++			dump_mem(ddr_start + ivt_offset, 0x20);
++
++			printf("Dumping CSF Header\n");
++			dump_mem(ddr_start + ivt_offset + 0x20, 0x40);
++
++			get_hab_status();
++
++			printf("\nCalling authenticate_image in ROM\n");
++			printf("\tivt_offset = 0x%x\n\tstart = 0x%08x"
++			       "\n\tbytes = 0x%x\n", ivt_offset, start, bytes);
++#endif
++
+ 			load_addr = (uint32_t)hab_rvt_authenticate_image(
+ 					HAB_CID_UBOOT,
+ 					ivt_offset, (void **)&start,
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index b59bd8b..ad6825f 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -35,6 +35,11 @@
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+ 
++/* Disable secure boot feature in default, if you want to enable this
++ * feature, please carefully read related documents, you may needs to
++ * change u-boot.lds */
++#undef CONFIG_SECURE_BOOT
++
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+ 
+ #define CONFIG_ARCH_CPU_INIT
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index baea880..d724dfa 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -33,10 +33,10 @@
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+ 
+-/*
+- * #define CONFIG_SECURE_BOOT
+- *	Enable Secure Boot. DO NOT TURN ON IT until you know what you are doing
+- */
++/* Disable secure boot feature in default, if you want to enable this
++ * feature, please carefully read related documents, you may needs to
++ * change u-boot.lds */
++#undef CONFIG_SECURE_BOOT
+ 
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+ 
+diff --git a/include/configs/mx6q_arm2_android.h b/include/configs/mx6q_arm2_android.h
+index 62bf740..c0096a8 100644
+--- a/include/configs/mx6q_arm2_android.h
++++ b/include/configs/mx6q_arm2_android.h
+@@ -24,11 +24,6 @@
+ 
+ #include "mx6q_arm2.h"
+ 
+-/* Disable secure boot feature in default, if you want to enable this
+- * feature, please carefully read related documents, you may needs to
+- * change u-boot.lds */
+-#undef CONFIG_SECURE_BOOT
+-
+ /* Disable fastboot and recovery to pass build.
+ 
+   ARM2 is not a complete android board, only support boot from
+-- 
+1.7.7.4
+

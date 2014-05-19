@@ -1,0 +1,33 @@
+From 8397d1de635e0c781805423f9a379b8b3893db0b Mon Sep 17 00:00:00 2001
+From: Adrian Alonso <aalonso@freescale.com>
+Date: Mon, 8 Oct 2012 18:31:13 -0500
+Subject: [PATCH 618/678] ENGR00230104 mx6q_sabreauto_nand: fix fec phy
+ address
+
+* Fix FEC Phy address to 1
+* Enable micrel phy support, revA compatibility
+
+Signed-off-by: Adrian Alonso <aalonso@freescale.com>
+---
+ include/configs/mx6q_sabreauto_nand.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6q_sabreauto_nand.h b/include/configs/mx6q_sabreauto_nand.h
+index 2c05a11..f36c41c 100644
+--- a/include/configs/mx6q_sabreauto_nand.h
++++ b/include/configs/mx6q_sabreauto_nand.h
+@@ -151,9 +151,10 @@
+ #define CONFIG_FEC0_MIIBASE	-1
+ #define CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
+ #define CONFIG_MXC_FEC
+-#define CONFIG_FEC0_PHY_ADDR		0
++#define CONFIG_FEC0_PHY_ADDR		1
+ #define CONFIG_ETH_PRIME
+ #define CONFIG_RMII
++#define CONFIG_PHY_MICREL_KSZ9021
+ #define CONFIG_CMD_MII
+ #define CONFIG_CMD_DHCP
+ #define CONFIG_CMD_PING
+-- 
+1.7.7.4
+

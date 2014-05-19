@@ -1,0 +1,30 @@
+From 3124e7e5d673e25d57750685bb0d75ace414c36e Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Thu, 22 Sep 2011 18:40:21 +0800
+Subject: [PATCH 356/678] ENGR00157419: Correct default environment's mmc
+ device in mx6q
+
+Default environment in mx6q uses mmc device 0.
+We should use mmc device 3.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ include/configs/mx6q_sabreauto.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index ed943a3..871633a 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -122,7 +122,7 @@
+ 		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "     \
+ 			"root=/dev/mmcblk0p1 rootwait\0"                \
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "   \
+-		"mmc dev 0; "	\
++		"mmc dev 3; "	\
+ 		"mmc read ${loadaddr} 0x800 0x1800; bootm\0"	\
+ 		"bootcmd=run bootcmd_net\0"                             \
+ 
+-- 
+1.7.7.4
+

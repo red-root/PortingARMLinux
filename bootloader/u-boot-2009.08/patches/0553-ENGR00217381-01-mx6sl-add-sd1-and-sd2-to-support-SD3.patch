@@ -1,0 +1,31 @@
+From dc7eace5eef32511c4ec77af7aa4fbc27c716c99 Mon Sep 17 00:00:00 2001
+From: Ryan QIAN <b32804@freescale.com>
+Date: Tue, 17 Jul 2012 14:01:28 +0800
+Subject: [PATCH 553/678] ENGR00217381-01: mx6sl add sd1 and sd2 to support
+ SD3.0
+
+enable SD3.0 support on SD1 and SD2 on mx6sl arm2 cpu board.
+
+Signed-off-by: Ryan QIAN <b32804@freescale.com>
+---
+ board/freescale/mx6sl_arm2/mx6sl_arm2.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6sl_arm2/mx6sl_arm2.c b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+index 5ccca45..e9a64fd 100644
+--- a/board/freescale/mx6sl_arm2/mx6sl_arm2.c
++++ b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+@@ -154,8 +154,8 @@ int board_eth_init(bd_t *bis)
+  * Last element in struct is used to indicate 1.8V support.
+  */
+ struct fsl_esdhc_cfg usdhc_cfg[3] = {
+-	{USDHC1_BASE_ADDR, 1, 1, 1, 0},
+-	{USDHC2_BASE_ADDR, 1, 1, 1, 0},
++	{USDHC1_BASE_ADDR, 1, 1, 1, 1},
++	{USDHC2_BASE_ADDR, 1, 1, 1, 1},
+ 	{USDHC3_BASE_ADDR, 1, 1, 1, 1},
+ };
+ 
+-- 
+1.7.7.4
+

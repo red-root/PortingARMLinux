@@ -1,0 +1,112 @@
+From 25f925214af7a5abe9808e273365a87bc8474fc5 Mon Sep 17 00:00:00 2001
+From: Sammy He <r62914@freescale.com>
+Date: Tue, 26 Jul 2011 00:15:45 +0800
+Subject: [PATCH 321/678] ENGR00153605 fastboot: uboot cannot be burned to
+ boot partition
+
+uboot image cannot be burned to boot partition for eMMC 4.3. This
+patch will fix it.
+
+Signed-off-by: Sammy He <r62914@freescale.com>
+---
+ common/cmd_fastboot.c       |   12 ++++++++----
+ drivers/fastboot/fastboot.c |    7 ++++++-
+ include/fastboot.h          |    2 ++
+ 3 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/common/cmd_fastboot.c b/common/cmd_fastboot.c
+index 089a225..2c819bf 100644
+--- a/common/cmd_fastboot.c
++++ b/common/cmd_fastboot.c
+@@ -1144,6 +1144,7 @@ static int rx_handler (const unsigned char *buffer, unsigned int buffer_size)
+ 				} else {
+ 					char source[32], dest[32];
+ 					char length[32], slot_no[32];
++					char part_no[32];
+ 					unsigned int temp;
+ 
+ 					/* Normal case */
+@@ -1190,8 +1191,8 @@ static int rx_handler (const unsigned char *buffer, unsigned int buffer_size)
+ 
+ mmc_ops:
+ 					printf("writing to partition '%s'\n", ptn->name);
+-					char *mmc_write[6] = {"mmc", "write",
+-							NULL, NULL, NULL, NULL};
++					char *mmc_write[7] = {"mmc", "write",
++						NULL, NULL, NULL, NULL, NULL};
+ 					char *mmc_init[2] = {"mmcinit", NULL,};
+ 
+ 					mmc_init[1] = slot_no;
+@@ -1199,11 +1200,14 @@ mmc_ops:
+ 					mmc_write[3] = source;
+ 					mmc_write[4] = dest;
+ 					mmc_write[5] = length;
++					mmc_write[6] = part_no;
+ 
+ 					sprintf(slot_no, "%d",
+ 						    fastboot_devinfo.dev_id);
+ 					sprintf(source, "0x%x", interface.transfer_buffer);
+-
++					/* partition no */
++					sprintf(part_no, "%d",
++						    ptn->partition_id);
+ 					/* block offset */
+ 					sprintf(dest, "0x%x", ptn->start);
+ 					/* block count */
+@@ -1219,7 +1223,7 @@ mmc_ops:
+ 						sprintf(response, "OKAY");
+ 
+ 					printf("Writing '%s'\n", ptn->name);
+-					if (do_mmcops(NULL, 0, 6, mmc_write)) {
++					if (do_mmcops(NULL, 0, 7, mmc_write)) {
+ 						printf("Writing '%s' FAILED!\n", ptn->name);
+ 						sprintf(response, "FAIL: Write partition");
+ 					} else {
+diff --git a/drivers/fastboot/fastboot.c b/drivers/fastboot/fastboot.c
+index 6613550..97572cc 100644
+--- a/drivers/fastboot/fastboot.c
++++ b/drivers/fastboot/fastboot.c
+@@ -283,7 +283,7 @@ int fastboot_init(struct cmd_fastboot_interface *interface)
+ #ifdef CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+ static int fastboot_init_mmc_sata_ptable(void)
+ {
+-	int i, sata_device_no;
++	int i, sata_device_no, boot_partition = 0;
+ 	struct mmc *mmc;
+ 	block_dev_desc_t *dev_desc;
+ 	disk_partition_t info;
+@@ -328,6 +328,10 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 				mmc_no);
+ 			return -1;
+ 		}
++
++		/* multiple boot paritions for eMMC 4.3 later */
++		if (mmc->boot_size_mult)
++			boot_partition = 1;
+ 	}
+ 
+ 	memset((char *)ptable, 0,
+@@ -342,6 +346,7 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 				ANDROID_BOOTLOADER_OFFSET / dev_desc->blksz;
+ 	ptable[PTN_BOOTLOADER_INDEX].length =
+ 				 ANDROID_BOOTLOADER_SIZE / dev_desc->blksz;
++	ptable[PTN_BOOTLOADER_INDEX].partition_id = boot_partition;
+ 	/* kernel */
+ 	strcpy(ptable[PTN_KERNEL_INDEX].name, "kernel");
+ 	ptable[PTN_KERNEL_INDEX].start =
+diff --git a/include/fastboot.h b/include/fastboot.h
+index ac6c432..b0bcaef 100644
+--- a/include/fastboot.h
++++ b/include/fastboot.h
+@@ -172,6 +172,8 @@ struct fastboot_ptentry {
+ 	/* Controls the details of how operations are done on the partition
+ 	   See the FASTBOOT_PTENTRY_FLAGS_*'s defined below */
+ 	unsigned int flags;
++	/* partition id: 0 - normal partition; 1 - boot partition */
++	unsigned int partition_id;
+ };
+ 
+ struct fastboot_device_info {
+-- 
+1.7.7.4
+

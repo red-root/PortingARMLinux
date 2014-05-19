@@ -1,0 +1,32 @@
+From 7d0f757e131d27b8816af06d183bdc4dc28c5f92 Mon Sep 17 00:00:00 2001
+From: Xinyu Chen <xinyu.chen@freescale.com>
+Date: Wed, 27 Jul 2011 14:05:02 +0800
+Subject: [PATCH 323/678] ENGR00153759 mx51: fix fastboot build failed without
+ boot partition macro
+
+In mx51 configuration, CONFIG_BOOT_PARTITION_ACCESS is not defined.
+This cause build error to fastboot.c
+
+Signed-off-by: Xinyu Chen <xinyu.chen@freescale.com>
+---
+ drivers/fastboot/fastboot.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/fastboot/fastboot.c b/drivers/fastboot/fastboot.c
+index 97572cc..e775fab 100644
+--- a/drivers/fastboot/fastboot.c
++++ b/drivers/fastboot/fastboot.c
+@@ -330,8 +330,10 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 		}
+ 
+ 		/* multiple boot paritions for eMMC 4.3 later */
++#ifdef CONFIG_BOOT_PARTITION_ACCESS
+ 		if (mmc->boot_size_mult)
+ 			boot_partition = 1;
++#endif
+ 	}
+ 
+ 	memset((char *)ptable, 0,
+-- 
+1.7.7.4
+

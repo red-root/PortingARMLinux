@@ -1,0 +1,42 @@
+From 5dd1086142290ea25a67b7a9a48c65cb60636da2 Mon Sep 17 00:00:00 2001
+From: Robin Gong <B38343@freescale.com>
+Date: Thu, 15 Nov 2012 10:33:41 +0800
+Subject: [PATCH 632/678] ENGR00233730 PFUZE mx6q_sabresd: remove extra
+ increase for PFUZE tolerance
+
+There is no more tolerance issue on PFUZE, it will be only 25mV, so that we no
+need increase VDDSOC_IN from 1.375V to 1.425V.
+
+Signed-off-by: Robin Gong <B38343@freescale.com>
+---
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |   14 --------------
+ 1 files changed, 0 insertions(+), 14 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 1bc2e35..3fa3976 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -777,20 +777,6 @@ static int setup_pmic_voltages(void)
+ 			return -1;
+ 		}
+ 		printf("Found PFUZE100! deviceid=%x,revid=%x\n", value, rev_id);
+-		/*VDDCORE/VDDSOC default 1.375V is not enough, considering
+-		pfuze tolerance and IR drop and ripple, need increase
+-		to 1.425V for SabreSD*/
+-		value = 0x2d;
+-		if (i2c_write(0x8, 0x20, 1, &value, 1)) {
+-			printf("VDDCORE set voltage error!\n");
+-			return -1;
+-		}
+-
+-		value = 0x2d;
+-		if (i2c_write(0x8, 0x2e, 1, &value, 1)) {
+-			printf("VDDSOC set voltage error!\n");
+-			return -1;
+-		}
+ 
+ 		#if CONFIG_MX6_INTER_LDO_BYPASS
+ 		/*VDDCORE 1.1V@800Mhz: SW1AB*/
+-- 
+1.7.7.4
+

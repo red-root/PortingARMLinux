@@ -1,0 +1,49 @@
+From a966404abb18c1a5c39474d7cd59a0ae88c77d98 Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Mon, 16 May 2011 20:19:18 +0800
+Subject: [PATCH 295/678] ENGR00143469 mx53 smd: pull down GPIO_9 to reset the
+ board
+
+In mx53 smd, to type "reset" command in u-boot console can
+not reset the system. It hangs in ROM with unknown reason.
+This patch adds one workaround to configure GPIO_9 (WDT_OUTPUT_B)
+as GPIO and pull down it to reset DA9053 PMIC.
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ cpu/arm_cortexa8/mx53/interrupts.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx53/interrupts.c b/cpu/arm_cortexa8/mx53/interrupts.c
+index 0cc24db..a39e7ff 100644
+--- a/cpu/arm_cortexa8/mx53/interrupts.c
++++ b/cpu/arm_cortexa8/mx53/interrupts.c
+@@ -36,10 +36,25 @@ int interrupt_init(void)
+ 
+ void reset_cpu(ulong addr)
+ {
++#if defined(CONFIG_MX53_SMD)
++	unsigned int reg;
++#endif
++
+ 	/* de-select SS0 of instance: eCSPI1 */
+ 	mxc_request_iomux(MX53_PIN_EIM_EB2, IOMUX_CONFIG_ALT1);
+ 	/* de-select SS1 of instance: eCSPI1 */
+ 	mxc_request_iomux(MX53_PIN_EIM_D19, IOMUX_CONFIG_ALT1);
+ 
++#if defined(CONFIG_MX53_SMD)
++	/* GPIO_1_9 */
++	reg = readl(GPIO1_BASE_ADDR + 0x4);
++	reg |= (0x1 << 9);
++	writel(reg, GPIO1_BASE_ADDR + 0x4);
++
++	reg = readl(GPIO1_BASE_ADDR);
++	reg &= ~0x200;
++	writel(reg, GPIO1_BASE_ADDR);
++#else
+ 	__REG16(WDOG1_BASE_ADDR) = 4;
++#endif
+ }
+-- 
+1.7.7.4
+

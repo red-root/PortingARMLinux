@@ -1,0 +1,47 @@
+From e590a6d2fbd9f6a3e64e96b9acfc62d8dbb6c324 Mon Sep 17 00:00:00 2001
+From: Liu Ying <Ying.Liu@freescale.com>
+Date: Tue, 31 Jul 2012 15:31:09 +0800
+Subject: [PATCH 568/678] ENGR00218915-2 MX6 SabreSD:Use new 8bit bmp boot
+ logo
+
+This patch changes to use new 8bit 600x400 bmp boot logo.
+As this boot logo has black background and white words,
+the user experience will be better.
+
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 09b8f1d..274f0c8 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -87,8 +87,8 @@ static enum boot_device boot_dev;
+ #define USB_H1_POWER IMX_GPIO_NR(1, 29)
+ 
+ #ifdef CONFIG_VIDEO_MX5
+-extern unsigned char fsl_bmp_600x400[];
+-extern int fsl_bmp_600x400_size;
++extern unsigned char fsl_bmp_reversed_600x400[];
++extern int fsl_bmp_reversed_600x400_size;
+ extern int g_ipu_hw_rev;
+ 
+ #if defined(CONFIG_BMP_8BPP)
+@@ -1432,10 +1432,10 @@ void setup_splash_image(void)
+ 
+ #if defined(CONFIG_ARCH_MMU)
+ 		addr = ioremap_nocache(iomem_to_phys(addr),
+-				fsl_bmp_600x400_size);
++				fsl_bmp_reversed_600x400_size);
+ #endif
+-		memcpy((char *)addr, (char *)fsl_bmp_600x400,
+-				fsl_bmp_600x400_size);
++		memcpy((char *)addr, (char *)fsl_bmp_reversed_600x400,
++				fsl_bmp_reversed_600x400_size);
+ 	}
+ }
+ #endif
+-- 
+1.7.7.4
+

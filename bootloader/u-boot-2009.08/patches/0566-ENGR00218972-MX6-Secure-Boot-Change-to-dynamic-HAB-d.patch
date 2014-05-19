@@ -1,0 +1,197 @@
+From 4e52490e36f11e707f867581435996d2e880924b Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Wed, 1 Aug 2012 12:57:24 +0800
+Subject: [PATCH 566/678] ENGR00218972 MX6 Secure Boot, Change to dynamic HAB
+ data authentication
+
+The original secure boot implementation make a consumption that
+u-boot.bin will not exceed 0x2F000. With this consumption, the hab data
+is hard coded in linker script file to relative address 0x2F000 without
+causing any problem.
+
+But when this consumption don't hold, the hard coded way will cause
+memory region overlap and break build. So we need to change to a dynamic
+way of allocating hab_data. The new implementation put hab data at the
+next 0x1000 alignment after u-boot data and text section, instead of
+hard coded to 0x2F000.
+
+Similar changes is made to uImage authentication implementation.
+
+Changes in U-Boot includes:
+    - in u-boot.lds file, change "__hab_data" to dynamic align to 0x1000
+    - change authenticate_image implementation, originally the uImage
+      parameters are hard coded, now they are retrived from the
+      "load_addr" and the image_hdr
+
+The new secure image layout:
+
+U-Boot
+    +-------------------+      DDR_START
+    |                   |
+    |    U-Boot Image   |
+    |                   |
+    +-------------------+      DDR_START + UBOOT_SIZE
+    |    PADDING        |
+    +-------------------+      align to 0x1000
+    |    CSF Data       | -
+    +-------------------+  +-- CSF + Pad,  Size : 0x2000
+    |    PADDING        | -
+    +-------------------+
+
+uImage
+
+    +-------------------+      DDR_START
+    |                   |
+    |     uImage        |
+    |                   |
+    +-------------------+      DDR_START + UIMAGE_SIZE
+    |     PADDING       |
+    +-------------------+      align to 0x1000
+    |     IVT           | ---- Size : 0x20
+    +-------------------+
+    |     CSF Data      | -
+    +-------------------+  +-- CSF + Pad,  Size : 0x2000
+    |     PADDING       | -
+    +-------------------+
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ board/freescale/mx6q_arm2/u-boot.lds  |    4 +-
+ board/freescale/mx6sl_arm2/u-boot.lds |    4 +-
+ common/cmd_bootm.c                    |    6 +++-
+ cpu/arm_cortexa8/mx6/generic.c        |   36 ++++++++++++++++----------------
+ 4 files changed, 26 insertions(+), 24 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/u-boot.lds b/board/freescale/mx6q_arm2/u-boot.lds
+index a6bcebb..8f16b26 100644
+--- a/board/freescale/mx6q_arm2/u-boot.lds
++++ b/board/freescale/mx6q_arm2/u-boot.lds
+@@ -69,8 +69,8 @@ SECTIONS
+ 	. = ALIGN(4);
+ 	_end_of_copy = .; /* end_of ROM copy code when HAB is not enabled */
+ 
+-	/* Original Size is 0x27..., enlarge to 0x3F000 */
+-	. = TEXT_BASE + 0x3F000;
++	/* Extend to align to 0x1000, then put the Hab Data */
++	. = ALIGN(0x1000);
+ 	__hab_data = .;
+ 	. = . + 0x2000;
+ 	__hab_data_end = .;
+diff --git a/board/freescale/mx6sl_arm2/u-boot.lds b/board/freescale/mx6sl_arm2/u-boot.lds
+index e60df09..d17b862 100644
+--- a/board/freescale/mx6sl_arm2/u-boot.lds
++++ b/board/freescale/mx6sl_arm2/u-boot.lds
+@@ -69,8 +69,8 @@ SECTIONS
+ 	. = ALIGN(4);
+ 	_end_of_copy = .; /* end_of ROM copy code when HAB is not enabled */
+ 
+-	/* Original Size is 0x27..., enlarge to 0x2F000 */
+-	. = TEXT_BASE + 0x2F000;
++	/* Extend to align to 0x1000, then put the Hab Data */
++	. = ALIGN(0x1000);
+ 	__hab_data = .;
+ 	. = . + 0x2000;
+ 	__hab_data_end = .;
+diff --git a/common/cmd_bootm.c b/common/cmd_bootm.c
+index 618579e..e3ef82d 100644
+--- a/common/cmd_bootm.c
++++ b/common/cmd_bootm.c
+@@ -596,8 +596,10 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 	}
+ 
+ #ifdef CONFIG_SECURE_BOOT
+-	extern uint32_t authenticate_image(void);
+-	if (authenticate_image() == 0) {
++	extern uint32_t authenticate_image(
++			uint32_t ddr_start, uint32_t image_size);
++	if (authenticate_image(load_addr,
++			image_get_image_size((image_header_t *)load_addr)) == 0) {
+ 		printf("Authenticate UImage Fail, Please check\n");
+ 		return 1;
+ 	}
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 55e6b78..f0a9ce2 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -1222,6 +1222,11 @@ U_BOOT_CMD(
+ #define hab_rvt_exit ((hab_rvt_exit_t *) HAB_RVT_EXIT)
+ #define hab_rvt_clock_init HAB_RVT_CLOCK_INIT
+ 
++#define OCOTP_CFG5_OFFSET	0x460
++#define IVT_SIZE		0x20
++#define ALIGN_SIZE		0x1000
++#define CSF_PAD_SIZE		0x2000
++
+ /*
+  * +------------+  0x0 (DDR_UIMAGE_START) -
+  * |   Header   |                          |
+@@ -1240,9 +1245,9 @@ U_BOOT_CMD(
+  * |            |                          |                                |
+  * | Fill Data  |                          |                                |
+  * |            |                          |                                |
+- * +------------+ 0x003F_DFE0              |                                |
++ * +------------+ Align to ALIGN_SIZE      |                                |
+  * |    IVT     |                          |                                |
+- * +------------+ 0x003F_E000             -                                 |
++ * +------------+ + IVT_SIZE              -                                 |
+  * |            |                                                           |
+  * |  CSF DATA  | <---------------------------------------------------------+
+  * |            |
+@@ -1250,19 +1255,9 @@ U_BOOT_CMD(
+  * |            |
+  * | Fill Data  |
+  * |            |
+- * +------------+ 0x0040_0000
++ * +------------+ + CSF_PAD_SIZE
+  */
+ 
+-#ifndef CONFIG_MX6SL
+-#define DDR_UIMAGE_START	0x10800000
+-#else
+-#define DDR_UIMAGE_START	0x80800000
+-#endif
+-
+-#define DDR_UIMAGE_LENGTH	0x400000
+-#define DDR_IVT_OFFSET		0x3FDFE0
+-#define OCOTP_CFG5_OFFSET	0x460
+-
+ int check_hab_enable(void)
+ {
+ 	u32 reg = 0;
+@@ -1344,23 +1339,28 @@ void hab_caam_clock_disable(void)
+ 	writel(reg, CCM_BASE_ADDR + CLKCTL_CCGR0);
+ }
+ 
+-uint32_t authenticate_image(void)
++uint32_t authenticate_image(uint32_t ddr_start, uint32_t image_size)
+ {
+ 	uint32_t load_addr = 0;
+ 	size_t bytes;
+-	ptrdiff_t ivt_offset = DDR_IVT_OFFSET;
++	ptrdiff_t ivt_offset = 0;
+ 	int result = 0;
+ 	ulong start;
+ 
+ 	if (check_hab_enable() == 1) {
+ 		printf("\nAuthenticate uImage from DDR location 0x%lx...\n",
+-			DDR_UIMAGE_START);
++			ddr_start);
+ 
+ 		hab_caam_clock_enable();
+ 
+ 		if (hab_rvt_entry() == HAB_SUCCESS) {
+-			start = DDR_UIMAGE_START;
+-			bytes = DDR_UIMAGE_LENGTH;
++			/*Align to ALIGN_SIZE*/
++			ivt_offset = image_size - image_size % ALIGN_SIZE
++				+ ALIGN_SIZE;
++
++			start = ddr_start;
++			bytes = ivt_offset + IVT_SIZE + CSF_PAD_SIZE;
++
+ 			load_addr = (uint32_t)hab_rvt_authenticate_image(
+ 					HAB_CID_UBOOT,
+ 					ivt_offset, (void **)&start,
+-- 
+1.7.7.4
+

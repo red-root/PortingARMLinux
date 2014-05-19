@@ -1,0 +1,116 @@
+From 9a8d22a4a4217d4ee5ca747885cbf9b36b379974 Mon Sep 17 00:00:00 2001
+From: Anish Trivedi <anish@freescale.com>
+Date: Thu, 8 Sep 2011 17:18:01 -0500
+Subject: [PATCH 350/678] ENGR00156304 eMMC: Need to update partition config
+ after changing boot partition
+
+After enabling boot partition on an eMMC using "mmc bootpart" command, the
+partition configuration variable that is supposed to track this value on the
+eMMC is not updated. This leads to stale and possibly inaccurate boot partition
+number being printed when "mmcinfo" command is used, thereby confusing the user.
+
+The fix is to update the part_config variable of mmc struct with the new value
+that was just written to the eMMC.
+
+Also removed condition that restricted boot_bus_width programming (for fastboot)
+to eMMC with DDR support only. Now, even non-DDR capable eMMCs can be programmed
+for fastboot (in SDR mode).
+
+Signed-off-by: Anish Trivedi <anish@freescale.com>
+---
+ drivers/mmc/mmc.c |   65 +++++++++++++++++++++++++++--------------------------
+ 1 files changed, 33 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/mmc/mmc.c b/drivers/mmc/mmc.c
+index b5d200f..e5a0ec9 100644
+--- a/drivers/mmc/mmc.c
++++ b/drivers/mmc/mmc.c
+@@ -766,10 +766,11 @@ int mmc_switch_boot_part(int dev_num, unsigned int part_num)
+ 		goto err_rtn;
+ 	}
+ 
++	/* Leave access to current partition as is */
+ 	boot_config = ext_csd[EXT_CSD_PART_CONF] &
+ 			EXT_CSD_BOOT_PARTITION_ACCESS_MASK;
+ 
+-	/* Enable access plus boot from that partition and boot_ack bit */
++	/* Enable boot from that partition and boot_ack bit */
+ 	boot_config |= (char)(part_num << 3 | 1 << 6);
+ 
+ 	err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
+@@ -790,41 +791,41 @@ int mmc_switch_boot_part(int dev_num, unsigned int part_num)
+ 	if (boot_config != ext_csd[EXT_CSD_PART_CONF]) {
+ 		printf("Warning: Boot partition switch failed!\n");
+ 		goto err_rtn;
+-	}
++	} else
++		mmc->part_config = ext_csd[EXT_CSD_PART_CONF];
+ 
+-	/* Program boot_bus_width field for eMMC 4.4 boot mode */
+-	if (ext_csd[EXT_CSD_CARD_TYPE] & 0xC) {
+-		/* Configure according to this card's capabilities */
+-		if (mmc->card_caps & EMMC_MODE_8BIT_DDR)
+-			boot_bus_width =  EXT_CSD_BOOT_BUS_WIDTH_DDR |
+-				EXT_CSD_BOOT_BUS_WIDTH_8BIT;
+-		else if (mmc->card_caps & EMMC_MODE_4BIT_DDR)
+-			boot_bus_width =  EXT_CSD_BOOT_BUS_WIDTH_DDR |
+-				EXT_CSD_BOOT_BUS_WIDTH_4BIT;
+-		else if (mmc->card_caps & MMC_MODE_8BIT)
+-			boot_bus_width = EXT_CSD_BOOT_BUS_WIDTH_8BIT;
+-		else if (mmc->card_caps & MMC_MODE_4BIT)
+-			boot_bus_width = EXT_CSD_BOOT_BUS_WIDTH_4BIT;
+-		else
+-			boot_bus_width = 0;
++	/* Program boot_bus_width field for eMMC fastboot mode
++	 * according to this card's capabilities
++	 */
++	if (mmc->card_caps & EMMC_MODE_8BIT_DDR)
++		boot_bus_width =  EXT_CSD_BOOT_BUS_WIDTH_DDR |
++			EXT_CSD_BOOT_BUS_WIDTH_8BIT;
++	else if (mmc->card_caps & EMMC_MODE_4BIT_DDR)
++		boot_bus_width =  EXT_CSD_BOOT_BUS_WIDTH_DDR |
++			EXT_CSD_BOOT_BUS_WIDTH_4BIT;
++	else if (mmc->card_caps & MMC_MODE_8BIT)
++		boot_bus_width = EXT_CSD_BOOT_BUS_WIDTH_8BIT;
++	else if (mmc->card_caps & MMC_MODE_4BIT)
++		boot_bus_width = EXT_CSD_BOOT_BUS_WIDTH_4BIT;
++	else
++		boot_bus_width = 0;
+ 
+-		err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
+-			EXT_CSD_BOOT_BUS_WIDTH, boot_bus_width);
++	err = mmc_switch(mmc, EXT_CSD_CMD_SET_NORMAL,
++		EXT_CSD_BOOT_BUS_WIDTH, boot_bus_width);
+ 
+-		/* Ensure that it programmed properly */
+-		err = mmc_send_ext_csd(mmc, ext_csd);
+-		if (err) {
+-			printf("Warning: fail to get ext csd for MMC!\n");
+-			goto err_rtn;
+-		}
++	/* Ensure that it programmed properly */
++	err = mmc_send_ext_csd(mmc, ext_csd);
++	if (err) {
++		printf("Warning: fail to get ext csd for MMC!\n");
++		goto err_rtn;
++	}
+ 
+-		card_boot_bus_width = ext_csd[EXT_CSD_BOOT_BUS_WIDTH];
+-		if (card_boot_bus_width != boot_bus_width) {
+-			printf("Warning: current boot_bus_width, 0x%x, is "
+-				"not same as requested boot_bus_width 0x%x!\n",
+-				card_boot_bus_width, boot_bus_width);
+-			goto err_rtn;
+-		}
++	card_boot_bus_width = ext_csd[EXT_CSD_BOOT_BUS_WIDTH];
++	if (card_boot_bus_width != boot_bus_width) {
++		printf("Warning: current boot_bus_width, 0x%x, is "
++			"not same as requested boot_bus_width 0x%x!\n",
++			card_boot_bus_width, boot_bus_width);
++		goto err_rtn;
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.7.4
+

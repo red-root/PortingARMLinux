@@ -1,0 +1,45 @@
+From e3db9d7f780276c577afd65d5e553fe58f678a56 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Fri, 23 Dec 2011 00:02:06 +0800
+Subject: [PATCH 424/678] ENGR00170876 Android: align boot commands with user
+ guide.
+
+Align latest boot command with user guide.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ include/configs/mx51_bbg_android.h |    2 +-
+ include/configs/mx53_smd_android.h |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/configs/mx51_bbg_android.h b/include/configs/mx51_bbg_android.h
+index d91529d..0eed306 100644
+--- a/include/configs/mx51_bbg_android.h
++++ b/include/configs/mx51_bbg_android.h
+@@ -170,7 +170,7 @@
+ 		"loadaddr=0x90800000\0"				\
+ 		"rd_loadaddr=0x90D00000\0"		\
+ 		"bootargs=console=ttymxc0 init=/init androidboot.console=ttymxc0 " \
+-			"di1_primary gpu_nommu gpu_memory=32M calibration\0" \
++		"di1_primary pmem=32M,64M fbmem=5M gpu_memory=32M calibration\0" \
+ 		"bootcmd_SD=mmc dev 0;"	\
+ 			"mmc read ${loadaddr} 0x800 0x2000;" \
+ 			"mmc read ${rd_loadaddr} 0x3000 0x300\0" \
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index a851b2a..b1f065d 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -167,8 +167,8 @@
+ 		"loadaddr=0x70800000\0"				\
+ 		"rd_loadaddr=0x70D00000\0"		\
+ 		"bootargs=console=ttymxc0 init=/init " \
+-			"androidboot.console=ttymxc0 video=mxcdi1fb:RGB666,XGA " \
+-			"ldb=di1 di1_primary gpu_nommu gpu_memory=64M\0" \
++		"androidboot.console=ttymxc0 video=mxcdi1fb:RGB666,XGA " \
++		"ldb=di1 di1_primary pmem=32M,64M fbmem=5M gpu_memory=64M\0"
+ 		"bootcmd_SD=mmc dev 1 0;"		\
+ 			"mmc read ${loadaddr} 0x800 0x2000;" \
+ 			"mmc read ${rd_loadaddr} 0x3000 0x300\0" \
+-- 
+1.7.7.4
+

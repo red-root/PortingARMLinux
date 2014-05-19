@@ -1,0 +1,45 @@
+From d20be8615307ac9af0cd8f2b7dcbdb1511277cfd Mon Sep 17 00:00:00 2001
+From: Huang Shijie <b32955@freescale.com>
+Date: Wed, 15 Aug 2012 10:29:40 +0800
+Subject: [PATCH 580/678] ENGR00217505-6 uboot: gpmi: set default value for
+ busy_timeout
+
+Set 0x500 to the busy_timeout in HW_GPMI_TIMING1.
+If we do not set this busy_timeout, the gpmi may become unstable.
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ drivers/mtd/nand/gpmi_nfc_gpmi.h |    1 +
+ drivers/mtd/nand/gpmi_nfc_hal.c  |    4 ++++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mtd/nand/gpmi_nfc_gpmi.h b/drivers/mtd/nand/gpmi_nfc_gpmi.h
+index 5eb9c5f..044db73 100644
+--- a/drivers/mtd/nand/gpmi_nfc_gpmi.h
++++ b/drivers/mtd/nand/gpmi_nfc_gpmi.h
+@@ -299,6 +299,7 @@
+ 	(((v) << 0) & BM_GPMI_TIMING0_DATA_SETUP)
+ 
+ #define HW_GPMI_TIMING1	(0x00000080)
++#define HW_GPMI_TIMING1_SET	(0x00000084)
+ 
+ #define BP_GPMI_TIMING1_DEVICE_BUSY_TIMEOUT      16
+ #define BM_GPMI_TIMING1_DEVICE_BUSY_TIMEOUT 0xFFFF0000
+diff --git a/drivers/mtd/nand/gpmi_nfc_hal.c b/drivers/mtd/nand/gpmi_nfc_hal.c
+index d5019bc..5eac818 100644
+--- a/drivers/mtd/nand/gpmi_nfc_hal.c
++++ b/drivers/mtd/nand/gpmi_nfc_hal.c
+@@ -199,6 +199,10 @@ static int init(void)
+ 	memcpy(&gpmi_nfc_hal.timing, &safe_timing,
+ 		sizeof(struct gpmi_nfc_timing));
+ 
++	/* Set the busy_timeout. */
++	REG_SET(CONFIG_GPMI_REG_BASE, HW_GPMI_TIMING1,
++		BF_GPMI_TIMING1_DEVICE_BUSY_TIMEOUT(0x500));
++
+ 	MTDDEBUG(MTD_DEBUG_LEVEL3, "<= %s\n", __func__);
+ 	return 0;
+ }
+-- 
+1.7.7.4
+

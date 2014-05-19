@@ -1,0 +1,34 @@
+From af52274a9f4100005e5db65123e4dc1312085b27 Mon Sep 17 00:00:00 2001
+From: Huang Shijie <b32955@freescale.com>
+Date: Fri, 17 Aug 2012 10:21:18 +0800
+Subject: [PATCH 582/678] ENGR00217505-8 uboot: MX6Q-ARD: set the default gpmi
+ clock to 20MHz
+
+Set the default clock to 20MHz. The 11Mhz is too slow.
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index 8c761c1..3fb68cd 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -532,11 +532,10 @@ int setup_gpmi_nand(void)
+ 	mxc_iomux_v3_setup_multiple_pads(nfc_pads,
+ 			ARRAY_SIZE(nfc_pads));
+ 
+-
+-	/* config gpmi and bch clock to 11Mhz*/
++	/* config gpmi and bch clock to 20Mhz, from pll2 400M pfd*/
+ 	reg = readl(CCM_BASE_ADDR + CLKCTL_CS2CDR);
+ 	reg &= 0xF800FFFF;
+-	reg |= 0x01E40000;
++	reg |= 0x02630000;
+ 	writel(reg, CCM_BASE_ADDR + CLKCTL_CS2CDR);
+ 
+ 	/* enable gpmi and bch clock gating */
+-- 
+1.7.7.4
+

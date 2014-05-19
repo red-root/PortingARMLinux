@@ -1,0 +1,64 @@
+From 01b45eb6248cfcab891112e13263d0993573e24d Mon Sep 17 00:00:00 2001
+From: Xinyu Chen <xinyu.chen@freescale.com>
+Date: Thu, 18 Aug 2011 15:38:53 +0800
+Subject: [PATCH 330/678] ENGR00154998 mx53 pcba: correct the default bootargs
+
+Default boot up with the 7' LCD on.
+
+Signed-off-by: Xinyu Chen <xinyu.chen@freescale.com>
+---
+ include/configs/mx53_pcba_android.h |   38 ++++++++--------------------------
+ 1 files changed, 9 insertions(+), 29 deletions(-)
+
+diff --git a/include/configs/mx53_pcba_android.h b/include/configs/mx53_pcba_android.h
+index e880330..65b58f8 100644
+--- a/include/configs/mx53_pcba_android.h
++++ b/include/configs/mx53_pcba_android.h
+@@ -140,35 +140,15 @@
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x400000)
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+-		"netdev=eth0\0"						\
+-		"ethprime=FEC0\0"					\
+-		"uboot=u-boot.bin\0"                                    \
+-		"kernel=uImage\0"                                       \
+-		"loadaddr=0x70800000\0"                                 \
+-		"rd_loadaddr=0x70D00000\0"                              \
+-		"nfsroot=/opt/eldk/arm\0"                               \
+-		"bootargs_base=setenv bootargs console=ttymxc0,115200\0"\
+-		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs " \
+-		    "ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"  \
+-		"bootargs_android=setenv bootargs ${bootargs} " \
+-		     "androidboot.console=ttymxc0 init=/init di0_primary "\
+-		     "video=mxcdi0fb:RGB666,XGA ldb=di0 gpu_memory=32M\0"   \
+-		"bootcmd=run bootcmd_eMMC \0"                             \
+-		"bootcmd_SD=run bootargs_base bootargs_android;"        \
+-		     "mmc read 0 ${loadaddr} 0x800 2000;"               \
+-		     "mmc read 0 ${rd_loadaddr} 0x3000 0x258;"          \
+-		     "bootm ${loadaddr} ${rd_loadaddr}\0"               \
+-		"bootcmd_eMMC=run bootargs_base bootargs_android;"        \
+-		     "mmc read 1 ${loadaddr} 0x800 2000;"               \
+-		     "mmc read 1 ${rd_loadaddr} 0x3000 0x258;"          \
+-		     "bootm ${loadaddr} ${rd_loadaddr}\0"               \
+-		"bootcmd_net=run bootargs_base bootargs_nfs; "          \
+-			"tftpboot ${loadaddr} ${kernel}; bootm\0"       \
+-		"bootcmd_android_recovery=run bootargs_base"            \
+-		     " bootargs_android_recovery;"                      \
+-		     "mmc read 0 ${loadaddr} 0x800 0x2000;bootm\0"      \
+-		"bootargs_android_recovery=setenv bootargs ${bootargs}" \
+-		     " init=/init root=/dev/mmcblk0p4 rootfs=ext4\0"    \
++		"bootfile=uImage\0"	\
++		"loadaddr=0x70800000\0"				\
++		"rd_loadaddr=0x70D00000\0"		\
++		"bootargs=console=ttymxc0 init=/init " \
++			"androidboot.console=ttymxc0 video=mxcdi0fb:RGB24,AT070TN93 " \
++			"di0_primary gpu_nommu gpu_memory=32M\0" \
++		"bootcmd_SD=mmc read 1 ${loadaddr} 0x800 0x2000;" \
++			"mmc read 1 ${rd_loadaddr} 0x3000 0x300\0" \
++		"bootcmd=run bootcmd_SD; bootm ${loadaddr} ${rd_loadaddr}\0" \
+ 
+ 
+ #define CONFIG_ARP_TIMEOUT	200UL
+-- 
+1.7.7.4
+

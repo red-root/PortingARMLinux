@@ -1,0 +1,34 @@
+From e07dc76eb140f06f9c97900c67e50474b0da26ec Mon Sep 17 00:00:00 2001
+From: Alan Tull <r80115@freescale.com>
+Date: Wed, 1 Feb 2012 05:41:45 -0600
+Subject: [PATCH 436/678] ENGR00173579 Revert FEC: Fix FEC cannot load kernel
+ accroding tftp.
+
+Revert "ENGR00162937 - FEC: Fix FEC cannot load kernel accroding tftp."
+That commit only worked on specific networks. It broke BOOTP on other
+networks.
+
+This reverts commit 51aa554b0655fb10cb7904071e7bb141042390b2.
+
+Signed-off-by: Alan Tull <r80115@freescale.com>
+---
+ net/net.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/net/net.c b/net/net.c
+index f572c92..d1cc9b2 100644
+--- a/net/net.c
++++ b/net/net.c
+@@ -509,9 +509,6 @@ restart:
+ 			x = timeHandler;
+ 			timeHandler = (thand_f *)0;
+ 			(*x)();
+-
+-			/*get packets timeout, restart net interface*/
+-			NetStartAgain();
+ 		}
+ 
+ 
+-- 
+1.7.7.4
+

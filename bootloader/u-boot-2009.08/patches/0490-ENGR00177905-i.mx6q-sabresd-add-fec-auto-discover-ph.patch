@@ -1,0 +1,32 @@
+From 7c7820f1d31c9f982a682e5460c294d515cd5502 Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Mon, 26 Mar 2012 15:13:05 +0800
+Subject: [PATCH 490/678] ENGR00177905 : i.mx6q sabresd: add fec auto discover
+ phy configuration.
+
+- i.mx6q sabresd revA ethernet phy addr is 0 (PHYADDRESS1-PHYADDRESS0:00)
+  , but revB ethernet phy address is 0x1 (PHYADDRESS1-PHYADDRESS0:01).
+  To avoid to change hardware, add auto discover phy address configuration.
+
+Signed-off-by: Fugang Duan  <B38611@freescale.com>
+---
+ include/configs/mx6q_sabresd.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index 5ef2884..72a3c93 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -162,7 +162,8 @@
+ #define CONFIG_FEC0_MIIBASE	-1
+ #define CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
+ #define CONFIG_MXC_FEC
+-#define CONFIG_FEC0_PHY_ADDR		0
++#define CONFIG_FEC0_PHY_ADDR		0xFF
++#define CONFIG_DISCOVER_PHY
+ #define CONFIG_ETH_PRIME
+ #define CONFIG_RMII
+ #define CONFIG_CMD_MII
+-- 
+1.7.7.4
+

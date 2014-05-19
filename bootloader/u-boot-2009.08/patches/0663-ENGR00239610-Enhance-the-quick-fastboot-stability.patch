@@ -1,0 +1,168 @@
+From 414014e11074d655ee7c985da2d3ac94a67bb291 Mon Sep 17 00:00:00 2001
+From: LiGang <b41990@freescale.com>
+Date: Thu, 10 Jan 2013 17:35:55 +0800
+Subject: [PATCH 663/678] ENGR00239610: Enhance the quick fastboot stability
+
+1. Correct oversight of setup and endpoint complete irq handler sequence
+2. Add check to string descriptor index
+
+Signed-off-by: LiGang <b41990@freescale.com>
+---
+ drivers/fastboot/fastboot.c  |    5 -----
+ drivers/usb/gadget/ep0.c     |   23 +++++++++++++++--------
+ drivers/usb/gadget/ep0.h     |    2 +-
+ drivers/usb/gadget/imx_udc.c |   20 ++++++++------------
+ include/fastboot.h           |    2 --
+ 5 files changed, 24 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/fastboot/fastboot.c b/drivers/fastboot/fastboot.c
+index 790334b..9594cad 100644
+--- a/drivers/fastboot/fastboot.c
++++ b/drivers/fastboot/fastboot.c
+@@ -897,11 +897,6 @@ static struct cmd_fastboot_interface interface = {
+     .transfer_buffer_size  = 0,
+ };
+ 
+-void *fastboot_get_string_table(void)
+-{
+-    return fastboot_string_table;
+-}
+-
+ /*
+  * fastboot main process, only support 'download', 'flash' command now
+  *
+diff --git a/drivers/usb/gadget/ep0.c b/drivers/usb/gadget/ep0.c
+index 6c2f68d..9f35e17 100644
+--- a/drivers/usb/gadget/ep0.c
++++ b/drivers/usb/gadget/ep0.c
+@@ -622,7 +622,7 @@ struct USB_SETUP_T {
+     u16 wLength;
+ };
+ 
+-void ep0_parse_setup(void *ctrl)
++int ep0_parse_setup(void *ctrl)
+ {
+     struct USB_SETUP_T *s = (struct USB_SETUP_T *)ctrl;
+     DBG_DEBUG("SETUP, type=0x%x, req=0x%x, value=0x%x, index=0x%x, len=0x%x\n",
+@@ -644,12 +644,18 @@ void ep0_parse_setup(void *ctrl)
+ 
+ 	case USB_DESCRIPTOR_TYPE_STRING:
+ 	    {
+-		struct usb_string_descriptor **string_table;
+-		string_table = fastboot_get_string_table();
+-		len = string_table[(s->wValue)&0xff]->bLength;
+-		len = MIN(s->wLength, len);
+-		udc_send_data(EP0_IN_INDEX,
+-			(u8 *)string_table[(s->wValue)&0xff], len, NULL);
++		struct usb_string_descriptor *string_descriptor;
++		string_descriptor = usbd_get_string((s->wValue)&0xff);
++		if (!string_descriptor) {
++			DBG_ERR("Invalid string index 0x%x\n",
++						(s->wValue)&0xff);
++			return -1;
++		} else {
++			len = string_descriptor->bLength;
++			len = MIN(s->wLength, len);
++			udc_send_data(EP0_IN_INDEX, (u8 *)string_descriptor,
++								len, NULL);
++		}
+ 		break;
+ 	    }
+ 
+@@ -660,7 +666,7 @@ void ep0_parse_setup(void *ctrl)
+ 	case USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER:
+ 	default:
+ 	    DBG_ERR("not support type=0x%x\n", type);
+-	    return;
++	    return -1;
+ 	}
+ 	break;
+     }
+@@ -710,6 +716,7 @@ void ep0_parse_setup(void *ctrl)
+ 				s->wValue, s->wIndex, s->wLength);
+ 	break;
+     }
++    return 0;
+ }
+ 
+ #endif  /* CONFIG_FASTBOOT */
+diff --git a/drivers/usb/gadget/ep0.h b/drivers/usb/gadget/ep0.h
+index 8659415..93f4c94 100644
+--- a/drivers/usb/gadget/ep0.h
++++ b/drivers/usb/gadget/ep0.h
+@@ -36,6 +36,6 @@
+ int ep0_recv_setup (struct urb *urb);
+ 
+ #ifdef CONFIG_FASTBOOT
+-void ep0_parse_setup(void *s);
++int ep0_parse_setup(void *s);
+ #endif  /* CONFIG_FASTBOOT */
+ #endif
+diff --git a/drivers/usb/gadget/imx_udc.c b/drivers/usb/gadget/imx_udc.c
+index 796d783..d836697 100644
+--- a/drivers/usb/gadget/imx_udc.c
++++ b/drivers/usb/gadget/imx_udc.c
+@@ -1409,13 +1409,6 @@ static void ep_in_handler(u32 index)
+     }
+ }
+ 
+-static void setup_handler(void)
+-{
+-    u32 setup[2];
+-    udc_get_setup(setup);
+-    ep0_parse_setup(setup);
+-}
+-
+ int udc_irq_handler(void)
+ {
+     u32 irq_src = readl(USB_USBSTS) & readl(USB_USBINTR);
+@@ -1433,11 +1426,6 @@ int udc_irq_handler(void)
+ 
+     if (irq_src & USB_STS_INT) {
+ 	u32 complete, i;
+-	if (readl(USB_ENDPTSETUPSTAT)) {
+-		DBG_INFO("recv setup packet\n");
+-		if (g_usb_ctrl.handler_ptr)
+-			setup_handler();
+-	}
+ 
+ 	complete = readl(USB_ENDPTCOMPLETE);
+ 	writel(complete, USB_ENDPTCOMPLETE);
+@@ -1451,6 +1439,14 @@ int udc_irq_handler(void)
+ 				ep_in_handler(i+EP0_IN_INDEX);
+ 		}
+ 	}
++
++	if (readl(USB_ENDPTSETUPSTAT)) {
++		u32 setup[2];
++		DBG_INFO("recv setup packet\n");
++		udc_get_setup(setup);
++		if (ep0_parse_setup(setup) < 0)
++			mxc_ep0_stall();
++	}
+     }
+ 
+     if (irq_src & USB_STS_RESET) {
+diff --git a/include/fastboot.h b/include/fastboot.h
+index 67b99b1..e9ee60e 100644
+--- a/include/fastboot.h
++++ b/include/fastboot.h
+@@ -333,7 +333,6 @@ void check_fastboot_mode(void);
+ 
+ 
+ void fastboot_quick(u8 debug);
+-void *fastboot_get_string_table(void);
+ int  fastboot_write_storage(u8 *partition_name, u32 write_len);
+ void fastboot_dump_memory(u32 *ptr, u32 lEN);
+ void fastboot_get_ep_num(u8 *in, u8 *out);
+@@ -372,7 +371,6 @@ extern u8 fastboot_debug_level;
+ 
+ #define fastboot_quick(a) 0
+ #define fastboot_get_ep_num(a, b)  0
+-#define fastboot_get_string_table()  1
+ #define fastboot_dump_memory(a, b) 0
+ #define DBG_ALWS(x...)
+ #define DBG_ERR(x...)
+-- 
+1.7.7.4
+

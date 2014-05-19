@@ -1,0 +1,67 @@
+From 29e05b14a9a4d2cdadfb4165441dea06ac2ee24c Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Wed, 7 Mar 2012 18:55:16 +0800
+Subject: [PATCH 468/678] ENGR00176328 change fastboot vid to google orignal
+
+Change fastboot vender id to orignal ID to
+avoid install USB driver.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ include/configs/mx53_smd_android.h       |    2 +-
+ include/configs/mx6q_sabrelite_android.h |    4 ++--
+ include/configs/mx6q_sabresd_android.h   |    4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index 0101169..0f5ce65 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -85,7 +85,7 @@
+ #define CONFIG_IMX_UDC		       1
+ #define CONFIG_FASTBOOT		       1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+-#define CONFIG_FASTBOOT_VENDOR_ID      0xbb4
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
+ #define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+diff --git a/include/configs/mx6q_sabrelite_android.h b/include/configs/mx6q_sabrelite_android.h
+index b933060..a574007 100644
+--- a/include/configs/mx6q_sabrelite_android.h
++++ b/include/configs/mx6q_sabrelite_android.h
+@@ -77,11 +77,11 @@
+ #define CONFIG_IMX_UDC		       1
+ #define CONFIG_FASTBOOT		       1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+-#define CONFIG_FASTBOOT_VENDOR_ID      0xbb4
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
+ #define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+-#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q arm"
++#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q sabrelite"
+ #define CONFIG_FASTBOOT_INTERFACE_STR	 "Android fastboot"
+ #define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
+ #define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
+diff --git a/include/configs/mx6q_sabresd_android.h b/include/configs/mx6q_sabresd_android.h
+index 6248eb4..883715f 100644
+--- a/include/configs/mx6q_sabresd_android.h
++++ b/include/configs/mx6q_sabresd_android.h
+@@ -31,11 +31,11 @@
+ #define CONFIG_IMX_UDC		       1
+ #define CONFIG_FASTBOOT		       1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+-#define CONFIG_FASTBOOT_VENDOR_ID      0xbb4
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
+ #define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+-#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q arm"
++#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q Sabre Smart Device"
+ #define CONFIG_FASTBOOT_INTERFACE_STR	 "Android fastboot"
+ #define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
+ #define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
+-- 
+1.7.7.4
+

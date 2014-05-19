@@ -1,0 +1,98 @@
+From 6b654d7a5811de8c20c7c0fe7ca0237a7bf78a98 Mon Sep 17 00:00:00 2001
+From: Xinyu Chen <xinyu.chen@freescale.com>
+Date: Fri, 5 Aug 2011 16:07:02 +0800
+Subject: [PATCH 325/678] ENGR00154400 mx53 pcba: bringup update for RevB
+ board
+
+Update DDR DCD configuration
+Open all the clocks during boot
+Change CV voltage to 4.2V
+
+Signed-off-by: Weihua Zou <wayne.zou@freescale.com>
+Signed-off-by: Xinyu Chen <xinyu.chen@freescale.com>
+---
+ board/freescale/mx53_pcba/flash_header.S  |   10 +++++-----
+ board/freescale/mx53_pcba/lowlevel_init.S |    9 +--------
+ board/freescale/mx53_pcba/mx53_pcba.c     |   10 ++++++++++
+ 3 files changed, 16 insertions(+), 13 deletions(-)
+
+diff --git a/board/freescale/mx53_pcba/flash_header.S b/board/freescale/mx53_pcba/flash_header.S
+index 4622fa2..68778f4 100644
+--- a/board/freescale/mx53_pcba/flash_header.S
++++ b/board/freescale/mx53_pcba/flash_header.S
+@@ -87,11 +87,11 @@ MXC_DCD_ITEM(23, IOMUXC_BASE_ADDR + 0x564, 0x00300040)
+ MXC_DCD_ITEM(24, IOMUXC_BASE_ADDR + 0x580, 0x00300040)
+ 
+ MXC_DCD_ITEM(25, ESDCTL_BASE_ADDR + 0x098, 0x00000000)
+-MXC_DCD_ITEM(26, ESDCTL_BASE_ADDR + 0x088, 0x35343535)
+-MXC_DCD_ITEM(27, ESDCTL_BASE_ADDR + 0x090, 0x4f485146)
+-MXC_DCD_ITEM(28, ESDCTL_BASE_ADDR + 0x07c, 0x01350139)
++MXC_DCD_ITEM(26, ESDCTL_BASE_ADDR + 0x07c, 0x01340135)
++MXC_DCD_ITEM(27, ESDCTL_BASE_ADDR + 0x080, 0x01390139)
++MXC_DCD_ITEM(28, ESDCTL_BASE_ADDR + 0x088, 0x34343531)
+ 
+-MXC_DCD_ITEM(29, ESDCTL_BASE_ADDR + 0x080, 0x013a0136)
++MXC_DCD_ITEM(29, ESDCTL_BASE_ADDR + 0x090, 0x54475246)
+ MXC_DCD_ITEM(30, ESDCTL_BASE_ADDR + 0x018, 0x00011740)
+ MXC_DCD_ITEM(31, ESDCTL_BASE_ADDR + 0x000, 0xc3190000)
+ MXC_DCD_ITEM(32, ESDCTL_BASE_ADDR + 0x00c, 0x9f515333)
+@@ -106,7 +106,7 @@ MXC_DCD_ITEM(38, ESDCTL_BASE_ADDR + 0x004, 0x4402002d)
+ MXC_DCD_ITEM(39, ESDCTL_BASE_ADDR + 0x01c, 0x00008032)
+ MXC_DCD_ITEM(40, ESDCTL_BASE_ADDR + 0x01c, 0x00008033)
+ 
+-MXC_DCD_ITEM(41, ESDCTL_BASE_ADDR + 0x01c, 0x00028031)
++MXC_DCD_ITEM(41, ESDCTL_BASE_ADDR + 0x01c, 0x00008031)
+ MXC_DCD_ITEM(42, ESDCTL_BASE_ADDR + 0x01c, 0x092080b0)
+ MXC_DCD_ITEM(43, ESDCTL_BASE_ADDR + 0x01c, 0x04008040)
+ MXC_DCD_ITEM(44, ESDCTL_BASE_ADDR + 0x01c, 0x0000803a)
+diff --git a/board/freescale/mx53_pcba/lowlevel_init.S b/board/freescale/mx53_pcba/lowlevel_init.S
+index 9e4b50f..6a95a21 100644
+--- a/board/freescale/mx53_pcba/lowlevel_init.S
++++ b/board/freescale/mx53_pcba/lowlevel_init.S
+@@ -161,21 +161,14 @@
+ 	str r1, [r0, #CLKCTL_CSCDR1]
+ 
+ 	/* Restore the default values in the Gate registers */
+-	ldr r1, =0xFFFF003F
++	ldr r1, =0xFFFFFFFF
+ 	str r1, [r0, #CLKCTL_CCGR0]
+-	ldr r1, =0xC00C03C0
+ 	str r1, [r0, #CLKCTL_CCGR1]
+-	ldr r1, =0x033FFC00
+ 	str r1, [r0, #CLKCTL_CCGR2]
+-	ldr r1, =0x0000FFFF
+ 	str r1, [r0, #CLKCTL_CCGR3]
+-	ldr r1, =0x3FFC000C
+ 	str r1, [r0, #CLKCTL_CCGR4]
+-	ldr r1, =0x00FFF000
+ 	str r1, [r0, #CLKCTL_CCGR5]
+-	ldr r1, =0x0000000F
+ 	str r1, [r0, #CLKCTL_CCGR6]
+-	ldr r1, =0x00000000
+ 	str r1, [r0, #CLKCTL_CCGR7]
+ 
+ 	mov r1, #0x00000
+diff --git a/board/freescale/mx53_pcba/mx53_pcba.c b/board/freescale/mx53_pcba/mx53_pcba.c
+index e4a3020..3773ee4 100644
+--- a/board/freescale/mx53_pcba/mx53_pcba.c
++++ b/board/freescale/mx53_pcba/mx53_pcba.c
+@@ -329,6 +329,16 @@ void setup_pmic_voltages(void)
+ 		if (i2c_write(0x8, 24, 1, buf, 3)) {
+ 			printf("%s:i2c_write:error\n", __func__);
+ 		}
++
++		/* Change CV voltage as 4.2v */
++		if (i2c_read(0x8, 51, 1, &buf[0], 3))
++			printf("%s:i2c_read 51:error\n", __func__);
++
++		buf[1] = (buf[1] & 0xf0) | 0x8;
++		buf[2] = (buf[2] & 0x3f) | 0xc0;
++		if (i2c_write(0x8, 51, 1, buf, 3))
++			printf("%s:i2c_write 51:error\n", __func__);
++
+ 	} else
+ 		printf("Error: Dont't found mc34708 on board.\n");
+ }
+-- 
+1.7.7.4
+

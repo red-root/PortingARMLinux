@@ -1,0 +1,32 @@
+From 3dc5c067ea894b909bd6404530e399f90e78b8fe Mon Sep 17 00:00:00 2001
+From: Mahesh Mahadevan <r9aadq@freescale.com>
+Date: Mon, 31 Oct 2011 12:11:58 -0500
+Subject: [PATCH 376/678] ENGR00161126 Enable Hush parser in MX6Q Sabrelite
+ config
+
+Enable the Hush parser in the Sabrelite config to parse boot
+scripts.
+
+Signed-off-by: Mahesh Mahadevan <r9aadq@freescale.com>
+---
+ include/configs/mx6q_sabrelite.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index b8a6f76..0dbd5ae 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -153,6 +153,10 @@
+ #define CONFIG_SYS_HZ			1000
+ 
+ #define CONFIG_CMDLINE_EDITING
++#define CONFIG_SYS_HUSH_PARSER		1 /* Use the HUSH parser */
++#ifdef	CONFIG_SYS_HUSH_PARSER
++#define	CONFIG_SYS_PROMPT_HUSH_PS2	"> "
++#endif
+ 
+ #define CONFIG_FEC0_IOBASE	ENET_BASE_ADDR
+ #define CONFIG_FEC0_PINMUX	-1
+-- 
+1.7.7.4
+

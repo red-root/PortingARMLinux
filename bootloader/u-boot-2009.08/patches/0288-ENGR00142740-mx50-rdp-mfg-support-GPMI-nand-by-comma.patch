@@ -1,0 +1,38 @@
+From 3d57bf4811ed42660e43923ca5a91a3526fe72b7 Mon Sep 17 00:00:00 2001
+From: Xinyu Chen <xinyu.chen@freescale.com>
+Date: Fri, 29 Apr 2011 14:34:10 +0800
+Subject: [PATCH 288/678] ENGR00142740 mx50 rdp: mfg support GPMI nand by
+ command line
+
+As android make UBIFS as default file system on MX508 RDP,
+we must enable MFG tool to support UBIFS image update.
+So enable GPMI nand in default commandline to detect nand devices.
+
+Signed-off-by: Xinyu Chen <xinyu.chen@freescale.com>
+---
+ include/configs/mx50_rdp_mfg.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/configs/mx50_rdp_mfg.h b/include/configs/mx50_rdp_mfg.h
+index 6c8dc7f..7ca83b2 100644
+--- a/include/configs/mx50_rdp_mfg.h
++++ b/include/configs/mx50_rdp_mfg.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX50-RDP Freescale board.
+  *
+@@ -108,7 +108,7 @@
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+ #define CONFIG_BOOTARGS         "console=ttymxc0,115200 "\
+-				"rdinit=/linuxrc"
++				"rdinit=/linuxrc gpmi:nand"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x70800000 0x70B00000"
+ #define CONFIG_ENV_IS_EMBEDDED
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+-- 
+1.7.7.4
+

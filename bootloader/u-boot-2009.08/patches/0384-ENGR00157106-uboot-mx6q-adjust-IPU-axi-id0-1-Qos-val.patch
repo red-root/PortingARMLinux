@@ -1,0 +1,35 @@
+From 78b0d1eeeb1279d76077fbf4521fff1ef732f7e9 Mon Sep 17 00:00:00 2001
+From: Jason Chen <b02280@freescale.com>
+Date: Wed, 21 Sep 2011 10:13:02 +0800
+Subject: [PATCH 384/678] ENGR00157106 uboot mx6q: adjust IPU axi-id0/1 Qos
+ value
+
+set IPU AXI-id0 Qos=0xf(bypass) and  AXI-id1 Qos=0x7,
+mx6q use AXI-id0 for IPU display channel, it should has
+highest priority(bypass), and AXI-id1 for other IPU channel,
+it has high priority.
+
+Signed-off-by: Jason Chen <b02280@freescale.com>
+---
+ board/freescale/mx6q_sabrelite/flash_header.S |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabrelite/flash_header.S b/board/freescale/mx6q_sabrelite/flash_header.S
+index 2407c26..0fbbb86 100644
+--- a/board/freescale/mx6q_sabrelite/flash_header.S
++++ b/board/freescale/mx6q_sabrelite/flash_header.S
+@@ -172,8 +172,8 @@ MXC_DCD_ITEM(90, MMDC_P0_BASE_ADDR + 0x404, 0x00011006)
+ 
+ /* enable AXI cache for VDOA/VPU/IPU */
+ MXC_DCD_ITEM(91, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
+-/* set IPU Qos=0x7 */
+-MXC_DCD_ITEM(92, IOMUXC_BASE_ADDR + 0x018, 0x00070007)
+-MXC_DCD_ITEM(93, IOMUXC_BASE_ADDR + 0x01c, 0x00070007)
++/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
++MXC_DCD_ITEM(92, IOMUXC_BASE_ADDR + 0x018, 0x007f007f)
++MXC_DCD_ITEM(93, IOMUXC_BASE_ADDR + 0x01c, 0x007f007f)
+ 
+ #endif
+-- 
+1.7.7.4
+

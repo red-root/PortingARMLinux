@@ -1,0 +1,37 @@
+From 1304702c69a3d7bfdaa407c74d498bf8b6431eb2 Mon Sep 17 00:00:00 2001
+From: Liu Ying <Ying.Liu@freescale.com>
+Date: Fri, 27 Jul 2012 12:49:51 +0800
+Subject: [PATCH 561/678] ENGR00218583-1 MX6Q/DL SabreSD:Support LVDS1
+ splashimage
+
+This patch configures iomux gpr3 register to enable LVDS1
+via IPU1 DI1 if user chooses to use it.
+
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 0bfd700..09b8f1d 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -1393,6 +1393,15 @@ void lcd_enable(void)
+ 	reg = 0x0002A953;
+ 	writel(reg, CCM_BASE_ADDR + CLKCTL_CHSCCDR);
+ 
++	/*
++	 * LVDS0 mux to IPU1 DI0.
++	 * LVDS1 mux to IPU1 DI1.
++	 */
++	reg = readl(IOMUXC_BASE_ADDR + 0xC);
++	reg &= ~(0x000003C0);
++	reg |= 0x00000100;
++	writel(reg, IOMUXC_BASE_ADDR + 0xC);
++
+ 	if (di == 1)
+ 		writel(0x40C, IOMUXC_BASE_ADDR + 0x8);
+ 	else
+-- 
+1.7.7.4
+

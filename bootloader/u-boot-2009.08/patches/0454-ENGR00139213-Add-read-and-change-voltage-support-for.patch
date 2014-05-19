@@ -1,0 +1,695 @@
+From c1ce2e692f4c9ac475504b4976b82de241e36b45 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Thu, 16 Feb 2012 01:38:47 +0800
+Subject: [PATCH 454/678] ENGR00139213: Add read and change voltage support
+ for mx6
+
+dd read and change voltage support for mx6.
+For help, pls type "help regul"
+Detail command info:
+regul list - List all regulators' name
+regul show all - Display all regulators' voltage
+regul show core - Show core voltage in mV
+regul show periph - Show peripheral voltage in mV
+regul show <regulator name> - Show regulator's voltage in mV
+regul set core <voltage value> - Set core voltage in mV
+regul set periph <voltage value> - Set periph voltage in mV
+regul set <regulator name> <voltage value> - Set regulator's voltage in
+mV
+
+Example:
+MX6Q ARM2 U-Boot > regul list
+Name            Voltage
+vddpu
+vddcore
+vddsoc
+vdd2p5
+vdd1p1
+vdd3p0
+MX6Q ARM2 U-Boot > regul show all
+Name            Voltage
+vddpu           1100000
+vddcore         1100000
+vddsoc          1200000
+vdd2p5          2400000
+vdd1p1          1100000
+vdd3p0          3000000
+MX6Q ARM2 U-Boot > regul show periph
+Name            Voltage
+periph:         1100000
+MX6Q ARM2 U-Boot > regul show core
+Name            Voltage
+core:           1100000
+MX6Q ARM2 U-Boot > regul set core 1100000
+Set voltage succeed!
+Name            Voltage
+core:           1100000
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ common/Makefile                       |    1 +
+ common/cmd_regul.c                    |  106 +++++++++++++
+ drivers/power/Makefile                |    1 +
+ drivers/power/anatop.c                |  277 +++++++++++++++++++++++++++++++++
+ include/asm-arm/regulator.h           |   49 ++++++
+ include/configs/mx6q_arm2.h           |    8 +
+ include/configs/mx6q_arm2_lpddr2.h    |    8 +
+ include/configs/mx6q_arm2_lpddr2pop.h |    8 +
+ include/configs/mx6q_sabreauto.h      |    8 +
+ include/configs/mx6q_sabrelite.h      |    8 +
+ include/configs/mx6q_sabresd.h        |    8 +
+ 11 files changed, 482 insertions(+), 0 deletions(-)
+
+diff --git a/common/Makefile b/common/Makefile
+index 1f218e7..413b18c 100644
+--- a/common/Makefile
++++ b/common/Makefile
+@@ -136,6 +136,7 @@ endif
+ COBJS-y += cmd_pcmcia.o
+ COBJS-$(CONFIG_CMD_PORTIO) += cmd_portio.o
+ COBJS-$(CONFIG_CMD_REGINFO) += cmd_reginfo.o
++COBJS-$(CONFIG_CMD_REGUL) += cmd_regul.o
+ COBJS-$(CONFIG_CMD_REISER) += cmd_reiser.o
+ COBJS-$(CONFIG_CMD_SATA) += cmd_sata.o
+ COBJS-$(CONFIG_CMD_SF) += cmd_sf.o
+diff --git a/common/cmd_regul.c b/common/cmd_regul.c
+new file mode 100644
+index 0000000..343d616
+--- /dev/null
++++ b/common/cmd_regul.c
+@@ -0,0 +1,106 @@
++/*
++ * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#include <linux/types.h>
++#include <command.h>
++#include <common.h>
++#include <asm/regulator.h>
++
++int do_regulops(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
++{
++	int rc = 0;
++	int uv = 0;
++
++	switch (argc) {
++	case 2:
++		if (strcmp(argv[1], "list") == 0)
++			regul_list(0);
++		else
++			printf("Unsupported command: %s!\n", argv[1]);
++
++		break;
++	case 3:
++		if (strcmp(argv[1], "show") == 0) {
++			if (strcmp(argv[2], "all") == 0) {
++				regul_list(1);
++				break;
++			} else if (strcmp(argv[2], "core") == 0)
++				uv = regul_get_core();
++			else if (strcmp(argv[2], "periph") == 0)
++				uv = regul_get_periph();
++			else
++				uv = regul_get(argv[2]);
++
++			if (uv >= 0)
++				printf("Name\t\tVoltage\n");
++				printf("%s:\t\t%d\n", argv[2], uv);
++			else
++				printf("Can't get regulator's voltage!\n");
++		} else
++			printf("Unsupported command: %s!\n", argv[1]);
++		break;
++	case 4:
++		if (strcmp(argv[1], "set") == 0) {
++			uv = simple_strtoul(argv[3], NULL, 10);
++			if (strcmp(argv[2], "core") == 0)
++				rc = regul_set_core(uv);
++			else if (strcmp(argv[2], "periph") == 0)
++				rc = regul_set_periph(uv);
++			else
++				rc = regul_set(argv[2], uv);
++
++			if (!rc) {
++				printf("Set voltage succeed!\n");
++				printf("Name\t\tVoltage\n");
++				printf("%s:\t\t%d\n", argv[2], uv);
++			}
++		} else
++			printf("Unsupported command: %s!\n", argv[1]);
++		break;
++	default:
++		rc = 1;
++		printf("Too many or less parameters!\n");
++		break;
++	}
++
++	return rc;
++}
++
++U_BOOT_CMD(
++	regul, 4, 1, do_regulops,
++	"Regulator sub system",
++	"list - List all regulators' name\n"
++	"regul show all "
++	"- Display all regulators' voltage\n"
++	"regul show core "
++	"- Show core voltage in mV\n"
++	"regul show periph "
++	"- Show peripheral voltage in mV\n"
++	"regul show <regulator name> "
++	"- Show regulator's voltage in mV\n"
++	"regul set core <voltage value> "
++	"- Set core voltage in mV\n"
++	"regul set periph <voltage value> "
++	"- Set periph voltage in mV\n"
++	"regul set <regulator name> <voltage value> "
++	"- Set regulator's voltage in mV");
++
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index dd06514..a4ec1e9 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -25,6 +25,7 @@ include $(TOPDIR)/config.mk
+ 
+ LIB 	:= $(obj)libpower.a
+ 
++COBJS-$(CONFIG_ANATOP_REGULATOR) += anatop.o
+ COBJS-$(CONFIG_TWL4030_POWER)	+= twl4030.o
+ 
+ COBJS	:= $(COBJS-y)
+diff --git a/drivers/power/anatop.c b/drivers/power/anatop.c
+new file mode 100644
+index 0000000..7c6015c
+--- /dev/null
++++ b/drivers/power/anatop.c
+@@ -0,0 +1,277 @@
++/*
++ * Copyright (C) 2012 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <asm/arch/mx6.h>
++#include <asm/arch/regs-anadig.h>
++#include <asm/regulator.h>
++#include <asm/errno.h>
++#include <asm/io.h>
++#include <common.h>
++
++static int get_voltage(struct anatop_regulator_data *rdata)
++{
++	int uv;
++
++	if (rdata->control_reg) {
++		u32 val = (readl(rdata->control_reg) >>
++			   rdata->vol_bit_shift) & rdata->vol_bit_mask;
++		uv = rdata->min_voltage + (val - rdata->min_bit_val) * 25000;
++#ifdef DEBUG
++		printf("vddio = %d, val=%u\n", uv, val);
++#endif
++		return uv;
++	} else {
++		printf("Regulator not supported.\n");
++		return -EOPNOTSUPP;
++	}
++}
++
++static int set_voltage(struct anatop_regulator_data *rdata, int uv)
++{
++	u32 val, reg;
++
++#ifdef DEBUG
++	printf("%s: uv %d, min %d, max %d\n", __func__,
++		uv, rdata->min_voltage, rdata->max_voltage);
++#endif
++
++	if (uv < rdata->min_voltage || uv > rdata->max_voltage) {
++		printf("Voltage not supported!\n");
++		return -EINVAL;
++	}
++
++	if (rdata->control_reg) {
++		val = rdata->min_bit_val +
++		      (uv - rdata->min_voltage) / 25000;
++
++		reg = (readl(rdata->control_reg) &
++			~(rdata->vol_bit_mask <<
++			rdata->vol_bit_shift));
++#ifdef DEBUG
++		printf("%s: calculated val %d\n", __func__, val);
++#endif
++		writel((val << rdata->vol_bit_shift) | reg,
++			     rdata->control_reg);
++		return 0;
++	} else {
++		printf("Regulator not supported!\n");
++		return -EOPNOTSUPP;
++	}
++}
++
++static int enable(struct anatop_regulator_data *sreg)
++{
++	return 0;
++}
++
++static int disable(struct anatop_regulator_data *sreg)
++{
++	return 0;
++}
++
++static int is_enabled(struct anatop_regulator_data *sreg)
++{
++	return 1;
++}
++
++#ifdef CONFIG_MX6Q
++static struct anatop_regulator_data vdd_data_set[] = {
++	{
++	.name		= "vddpu",
++	.set_voltage	= set_voltage,
++	.get_voltage	= get_voltage,
++	.enable		= enable,
++	.disable	= disable,
++	.is_enabled	= is_enabled,
++	.control_reg	= (u32)(ANATOP_BASE_ADDR + HW_ANADIG_REG_CORE),
++	.vol_bit_shift	= 9,
++	.vol_bit_mask	= 0x1F,
++	.min_bit_val	= 1,
++	.min_voltage	= 725000,
++	.max_voltage	= 1300000,
++	},
++	{
++	.name		= "vddcore",
++	.set_voltage	= set_voltage,
++	.get_voltage	= get_voltage,
++	.enable		= enable,
++	.disable	= disable,
++	.is_enabled	= is_enabled,
++	.control_reg	= (u32)(ANATOP_BASE_ADDR + HW_ANADIG_REG_CORE),
++	.vol_bit_shift	= 0,
++	.vol_bit_mask	= 0x1F,
++	.min_bit_val	= 1,
++	.min_voltage	= 725000,
++	.max_voltage	= 1300000,
++	},
++	{
++	.name		= "vddsoc",
++	.set_voltage	= set_voltage,
++	.get_voltage	= get_voltage,
++	.enable		= enable,
++	.disable	= disable,
++	.is_enabled	= is_enabled,
++	.control_reg	= (u32)(ANATOP_BASE_ADDR + HW_ANADIG_REG_CORE),
++	.vol_bit_shift	= 18,
++	.vol_bit_mask	= 0x1F,
++	.min_bit_val	= 1,
++	.min_voltage	= 725000,
++	.max_voltage	= 1300000,
++	},
++	{
++	.name		= "vdd2p5",
++	.set_voltage	= set_voltage,
++	.get_voltage	= get_voltage,
++	.enable		= enable,
++	.disable	= disable,
++	.is_enabled	= is_enabled,
++	.control_reg	= (u32)(ANATOP_BASE_ADDR + HW_ANADIG_REG_2P5),
++	.vol_bit_shift	= 8,
++	.vol_bit_mask	= 0x1F,
++	.min_bit_val	= 0,
++	.min_voltage	= 2000000,
++	.max_voltage	= 2775000,
++	},
++	{
++	.name		= "vdd1p1",
++	.set_voltage	= set_voltage,
++	.get_voltage	= get_voltage,
++	.enable		= enable,
++	.disable	= disable,
++	.is_enabled	= is_enabled,
++	.control_reg	= (u32)(ANATOP_BASE_ADDR + HW_ANADIG_REG_1P1),
++	.vol_bit_shift	= 8,
++	.vol_bit_mask	= 0x1F,
++	.min_bit_val	= 4,
++	.min_voltage	= 800000,
++	.max_voltage	= 1400000,
++	},
++	{
++	.name		= "vdd3p0",
++	.set_voltage	= set_voltage,
++	.get_voltage	= get_voltage,
++	.enable		= enable,
++	.disable	= disable,
++	.is_enabled	= is_enabled,
++	.control_reg	= (u32)(ANATOP_BASE_ADDR + HW_ANADIG_REG_3P0),
++	.vol_bit_shift	= 8,
++	.vol_bit_mask	= 0x1F,
++	.min_bit_val	= 7,
++	.min_voltage	= 2800000,
++	.max_voltage	= 3150000,
++	},
++};
++#endif
++
++int regul_list(int show_val)
++{
++	int i = 0;
++
++	for (i = 0; i < ARRAY_SIZE(vdd_data_set); ++i) {
++		if (show_val) {
++			int uv = 0;
++
++			uv = vdd_data_set[i].get_voltage(&vdd_data_set[i]);
++			printf("%s\t\t%d\n", vdd_data_set[i].name, uv);
++		} else
++			printf("%s\n", vdd_data_set[i].name);
++	}
++
++	return 0;
++}
++
++int regul_set(char *vdd_name, int uv)
++{
++	int i = 0;
++	struct anatop_regulator_data *vdd_data;
++
++	for (i = 0; i < ARRAY_SIZE(vdd_data_set); ++i) {
++		if (!strcmp(vdd_name, vdd_data_set[i].name)) {
++			vdd_data = &vdd_data_set[i];
++			break;
++		}
++	}
++
++	if (i == ARRAY_SIZE(vdd_data_set)) {
++		printf("No regulator as %s!\n", vdd_name);
++		return -1;
++	}
++
++	return vdd_data->set_voltage(vdd_data, uv);
++}
++
++int regul_get(char *vdd_name)
++{
++	int i = 0;
++	struct anatop_regulator_data *vdd_data;
++
++	for (i = 0; i < ARRAY_SIZE(vdd_data_set); ++i) {
++		if (!strcmp(vdd_name, vdd_data_set[i].name)) {
++			vdd_data = &vdd_data_set[i];
++			break;
++		}
++	}
++
++	if (i == ARRAY_SIZE(vdd_data_set)) {
++		printf("No regulator as %s!\n", vdd_name);
++		return -1;
++	}
++
++	return vdd_data->get_voltage(vdd_data);
++}
++
++int regul_set_core(int uv)
++{
++#ifdef CONFIG_CORE_REGULATOR_NAME
++	return regul_set(CONFIG_CORE_REGULATOR_NAME, uv);
++#else
++	printf("error: CONFIG_CORE_REGULATOR_NAME not set!\n");
++	return -1;
++#endif
++}
++
++int regul_get_core(void)
++{
++#ifdef CONFIG_CORE_REGULATOR_NAME
++	return regul_get(CONFIG_CORE_REGULATOR_NAME);
++#else
++	printf("error: CONFIG_CORE_REGULATOR_NAME not set!\n");
++	return -1;
++#endif
++}
++
++int regul_set_periph(int uv)
++{
++#ifdef CONFIG_PERIPH_REGULATOR_NAME
++	return regul_set(CONFIG_PERIPH_REGULATOR_NAME, uv);
++#else
++	printf("error: CONFIG_PERIPH_REGULATOR_NAME not set!\n");
++	return -1;
++#endif
++}
++
++int regul_get_periph(void)
++{
++#ifdef CONFIG_PERIPH_REGULATOR_NAME
++	return regul_get(CONFIG_PERIPH_REGULATOR_NAME);
++#else
++	printf("error: CONFIG_PERIPH_REGULATOR_NAME not set!\n");
++	return -1;
++#endif
++}
++
+diff --git a/include/asm-arm/regulator.h b/include/asm-arm/regulator.h
+new file mode 100644
+index 0000000..d3f0802
+--- /dev/null
++++ b/include/asm-arm/regulator.h
+@@ -0,0 +1,49 @@
++/*
++ * Copyright (C) 2012 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++struct anatop_regulator_data {
++	char name[80];
++	char *parent_name;
++	int (*reg_register)(struct anatop_regulator_data *sreg);
++	int (*set_voltage)(struct anatop_regulator_data *sreg, int uv);
++	int (*get_voltage)(struct anatop_regulator_data *sreg);
++	int (*set_current)(struct anatop_regulator_data *sreg, int uA);
++	int (*get_current)(struct anatop_regulator_data *sreg);
++	int (*enable)(struct anatop_regulator_data *sreg);
++	int (*disable)(struct anatop_regulator_data *sreg);
++	int (*is_enabled)(struct anatop_regulator_data *sreg);
++	int (*set_mode)(struct anatop_regulator_data *sreg, int mode);
++	int (*get_mode)(struct anatop_regulator_data *sreg);
++	int (*get_optimum_mode)(struct anatop_regulator_data *sreg,
++	int input_uV, int output_uV, int load_uA);
++	int control_reg;
++	int vol_bit_shift;
++	int vol_bit_mask;
++	int min_bit_val;
++	int min_voltage;
++	int max_voltage;
++	int max_current;
++};
++
++int regul_list(int show_val);
++int regul_set(char *vdd_name, int uv);
++int regul_get(char *vdd_name);
++int regul_set_core(int uv);
++int regul_get_core(void);
++int regul_set_periph(int uv);
++int regul_get_periph(void);
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index fb25a89..f7d8759 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -96,6 +96,7 @@
+ #define CONFIG_CMD_SF
+ #define CONFIG_CMD_MMC
+ #define CONFIG_CMD_ENV
++#define CONFIG_CMD_REGUL
+ 
+ #define CONFIG_CMD_CLOCK
+ #define CONFIG_REF_CLK_FREQ CONFIG_MX6_HCLK_FREQ
+@@ -204,6 +205,13 @@
+ 	#define MAX_SPI_BYTES		(64 * 4)
+ #endif
+ 
++/* Regulator Configs */
++#ifdef CONFIG_CMD_REGUL
++	#define CONFIG_ANATOP_REGULATOR
++	#define CONFIG_CORE_REGULATOR_NAME "vdd1p1"
++	#define CONFIG_PERIPH_REGULATOR_NAME "vdd1p1"
++#endif
++
+ /*
+  * MMC Configs
+  */
+diff --git a/include/configs/mx6q_arm2_lpddr2.h b/include/configs/mx6q_arm2_lpddr2.h
+index 59c5a16..9e37e48 100644
+--- a/include/configs/mx6q_arm2_lpddr2.h
++++ b/include/configs/mx6q_arm2_lpddr2.h
+@@ -95,6 +95,7 @@
+ 
+ #define CONFIG_CMD_MMC
+ #define CONFIG_CMD_ENV
++#define CONFIG_CMD_REGUL
+ 
+ #define CONFIG_CMD_CLOCK
+ #define CONFIG_REF_CLK_FREQ CONFIG_MX6_HCLK_FREQ
+@@ -179,6 +180,13 @@
+ 	#define CONFIG_SYS_I2C_SLAVE            0x1f
+ #endif
+ 
++/* Regulator Configs */
++#ifdef CONFIG_CMD_REGUL
++	#define CONFIG_ANATOP_REGULATOR
++	#define CONFIG_CORE_REGULATOR_NAME "vdd1p1"
++	#define CONFIG_PERIPH_REGULATOR_NAME "vdd1p1"
++#endif
++
+ /*
+  * MMC Configs
+  */
+diff --git a/include/configs/mx6q_arm2_lpddr2pop.h b/include/configs/mx6q_arm2_lpddr2pop.h
+index 45aea16..bb5ce46 100755
+--- a/include/configs/mx6q_arm2_lpddr2pop.h
++++ b/include/configs/mx6q_arm2_lpddr2pop.h
+@@ -98,6 +98,7 @@
+ #define CONFIG_CMD_SF
+ #define CONFIG_CMD_MMC
+ #define CONFIG_CMD_ENV
++#define CONFIG_CMD_REGUL
+ 
+ #define CONFIG_CMD_CLOCK
+ #define CONFIG_REF_CLK_FREQ CONFIG_MX6_HCLK_FREQ
+@@ -206,6 +207,13 @@
+ 	#define MAX_SPI_BYTES		(64 * 4)
+ #endif
+ 
++/* Regulator Configs */
++#ifdef CONFIG_CMD_REGUL
++	#define CONFIG_ANATOP_REGULATOR
++	#define CONFIG_CORE_REGULATOR_NAME "vdd1p1"
++	#define CONFIG_PERIPH_REGULATOR_NAME "vdd1p1"
++#endif
++
+ /*
+  * MMC Configs
+  */
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index 7b497a7..1c0590e 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -96,6 +96,7 @@
+ #define CONFIG_CMD_SF
+ #define CONFIG_CMD_MMC
+ #define CONFIG_CMD_ENV
++#define CONFIG_CMD_REGUL
+ 
+ #define CONFIG_CMD_CLOCK
+ #define CONFIG_REF_CLK_FREQ CONFIG_MX6_HCLK_FREQ
+@@ -205,6 +206,13 @@
+ 	#define MAX_SPI_BYTES		(64 * 4)
+ #endif
+ 
++/* Regulator Configs */
++#ifdef CONFIG_CMD_REGUL
++	#define CONFIG_ANATOP_REGULATOR
++	#define CONFIG_CORE_REGULATOR_NAME "vdd1p1"
++	#define CONFIG_PERIPH_REGULATOR_NAME "vdd1p1"
++#endif
++
+ /*
+  * MMC Configs
+  */
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index 1e8587d..362d1fe 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -97,6 +97,7 @@
+ #define CONFIG_CMD_MMC
+ #define CONFIG_CMD_SF
+ #define CONFIG_CMD_ENV
++#define CONFIG_CMD_REGUL
+ 
+ #define CONFIG_CMD_CLOCK
+ #define CONFIG_REF_CLK_FREQ CONFIG_MX6_HCLK_FREQ
+@@ -221,6 +222,13 @@
+ 	#define MAX_SPI_BYTES		(64 * 4)
+ #endif
+ 
++/* Regulator Configs */
++#ifdef CONFIG_CMD_REGUL
++	#define CONFIG_ANATOP_REGULATOR
++	#define CONFIG_CORE_REGULATOR_NAME "vdd1p1"
++	#define CONFIG_PERIPH_REGULATOR_NAME "vdd1p1"
++#endif
++
+ /*
+  * MMC Configs
+  */
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index c5c02e6..5ef2884 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -96,6 +96,7 @@
+ #define CONFIG_CMD_SF
+ #define CONFIG_CMD_MMC
+ #define CONFIG_CMD_ENV
++#define CONFIG_CMD_REGUL
+ 
+ #define CONFIG_CMD_CLOCK
+ #define CONFIG_REF_CLK_FREQ CONFIG_MX6_HCLK_FREQ
+@@ -204,6 +205,13 @@
+ 	#define MAX_SPI_BYTES		(64 * 4)
+ #endif
+ 
++/* Regulator Configs */
++#ifdef CONFIG_CMD_REGUL
++	#define CONFIG_ANATOP_REGULATOR
++	#define CONFIG_CORE_REGULATOR_NAME "vdd1p1"
++	#define CONFIG_PERIPH_REGULATOR_NAME "vdd1p1"
++#endif
++
+ /*
+  * MMC Configs
+  */
+-- 
+1.7.7.4
+

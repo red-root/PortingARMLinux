@@ -1,0 +1,61 @@
+From b7c5badf94ffbe6cd0845efbb75e16e05e3af404 Mon Sep 17 00:00:00 2001
+From: Anson Huang <b20788@freescale.com>
+Date: Wed, 5 Dec 2012 13:58:34 -0500
+Subject: [PATCH 651/678] ENGR00235821 mx6: correct work flow of PFDs
+
+PFDs need to be gate/ungate after PLL lock to reset
+PFDs to right state. Otherwise PFDs may lose correct
+state in state-machine, then no output clock.
+For i.MX6DL and i.MX6SL, ROM have taken care of PFD396
+already since the bus clock needs it.
+
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/generic.c |   31 +++++++++++++++++++++++++++++++
+ 1 files changed, 31 insertions(+), 0 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index bd47130..fbba7ff 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -1015,6 +1015,37 @@ int arch_cpu_init(void)
+ {
+ 	int val;
+ 
++	/* Due to hardware limitation, on MX6Q we need to gate/ungate all PFDs
++	 * to make sure PFD is working right, otherwise, PFDs may
++	 * not output clock after reset, MX6DL and MX6SL have added 396M pfd
++	 * workaround in ROM code, as bus clock need it
++	 */
++	writel(BM_ANADIG_PFD_480_PFD3_CLKGATE |
++		BM_ANADIG_PFD_480_PFD2_CLKGATE |
++		BM_ANADIG_PFD_480_PFD1_CLKGATE |
++		BM_ANADIG_PFD_480_PFD0_CLKGATE,
++		ANATOP_BASE_ADDR + HW_ANADIG_PFD_480_SET);
++	writel(BM_ANADIG_PFD_528_PFD3_CLKGATE |
++#ifdef CONFIG_MX6Q
++		BM_ANADIG_PFD_528_PFD2_CLKGATE |
++#endif
++		BM_ANADIG_PFD_528_PFD1_CLKGATE |
++		BM_ANADIG_PFD_528_PFD0_CLKGATE,
++		ANATOP_BASE_ADDR + HW_ANADIG_PFD_528_SET);
++
++	writel(BM_ANADIG_PFD_480_PFD3_CLKGATE |
++		BM_ANADIG_PFD_480_PFD2_CLKGATE |
++		BM_ANADIG_PFD_480_PFD1_CLKGATE |
++		BM_ANADIG_PFD_480_PFD0_CLKGATE,
++		ANATOP_BASE_ADDR + HW_ANADIG_PFD_480_CLR);
++	writel(BM_ANADIG_PFD_528_PFD3_CLKGATE |
++#ifdef CONFIG_MX6Q
++		BM_ANADIG_PFD_528_PFD2_CLKGATE |
++#endif
++		BM_ANADIG_PFD_528_PFD1_CLKGATE |
++		BM_ANADIG_PFD_528_PFD0_CLKGATE,
++		ANATOP_BASE_ADDR + HW_ANADIG_PFD_528_CLR);
++
+ 	icache_enable();
+ 	dcache_enable();
+ 
+-- 
+1.7.7.4
+

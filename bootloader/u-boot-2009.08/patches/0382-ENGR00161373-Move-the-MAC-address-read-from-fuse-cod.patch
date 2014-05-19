@@ -1,0 +1,160 @@
+From ad856cbcbd8b9cf11a23ad1ca0343c69066482f7 Mon Sep 17 00:00:00 2001
+From: Mahesh Mahadevan <r9aadq@freescale.com>
+Date: Thu, 3 Nov 2011 08:22:55 -0500
+Subject: [PATCH 382/678] ENGR00161373 Move the MAC address read from fuse
+ code to MX6 SoC file
+
+Move the code to read the mac address from the fuse to SoC file
+and out of the board file
+
+Signed-off-by: Mahesh Mahadevan <r9aadq@freescale.com>
+---
+ board/freescale/mx6q_arm2/mx6q_arm2.c           |   29 -----------------------
+ board/freescale/mx6q_sabrelite/mx6q_sabrelite.c |   28 ----------------------
+ cpu/arm_cortexa8/mx6/generic.c                  |   23 ++++++++++++++++-
+ 3 files changed, 21 insertions(+), 59 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index d48601e..bbc5ea8 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -53,10 +53,6 @@
+ #include <asm/arch/mmu.h>
+ #endif
+ 
+-#ifdef CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
+-#include <asm/imx_iim.h>
+-#endif
+-
+ #ifdef CONFIG_CMD_CLOCK
+ #include <asm/clock.h>
+ #endif
+@@ -456,31 +452,6 @@ int setup_gpmi_nand(void)
+ }
+ #endif
+ 
+-
+-#define HW_OCOTP_MACn(n)       (0x00000620 + (n) * 0x10)
+-
+-#ifdef CONFIG_MXC_FEC
+-#ifdef CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
+-
+-int fec_get_mac_addr(unsigned char *mac)
+-{
+-	unsigned int value;
+-
+-	value = readl(OCOTP_BASE_ADDR + HW_OCOTP_MACn(0));
+-	mac[0] = value & 0xff;
+-	mac[1] = (value >> 8) & 0xff;
+-	mac[2] = (value >> 16) & 0xff;
+-	mac[3] = (value >> 24) & 0xff;
+-	value = readl(OCOTP_BASE_ADDR + HW_OCOTP_MACn(1));
+-	mac[4] = value & 0xff;
+-	mac[5] = (value >> 8) & 0xff;
+-
+-	return 0;
+-}
+-
+-#endif
+-#endif
+-
+ #ifdef CONFIG_NET_MULTI
+ int board_eth_init(bd_t *bis)
+ {
+diff --git a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+index 9f499e7..dc87502 100644
+--- a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
++++ b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+@@ -41,10 +41,6 @@
+ #include <asm/arch/mmu.h>
+ #endif
+ 
+-#ifdef CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
+-#include <asm/imx_iim.h>
+-#endif
+-
+ #ifdef CONFIG_CMD_CLOCK
+ #include <asm/clock.h>
+ #endif
+@@ -295,30 +291,6 @@ void spi_io_init(struct imx_spi_dev_t *dev)
+ }
+ #endif
+ 
+-#define HW_OCOTP_MACn(n)       (0x00000620 + (n) * 0x10)
+-
+-#ifdef CONFIG_MXC_FEC
+-#ifdef CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
+-
+-int fec_get_mac_addr(unsigned char *mac)
+-{
+-	unsigned int value;
+-
+-	value = readl(OCOTP_BASE_ADDR + HW_OCOTP_MACn(0));
+-	mac[0] = value & 0xff;
+-	mac[1] = (value >> 8) & 0xff;
+-	mac[2] = (value >> 16) & 0xff;
+-	mac[3] = (value >> 24) & 0xff;
+-	value = readl(OCOTP_BASE_ADDR + HW_OCOTP_MACn(1));
+-	mac[4] = value & 0xff;
+-	mac[5] = (value >> 8) & 0xff;
+-
+-	return 0;
+-}
+-
+-#endif
+-#endif
+-
+ #ifdef CONFIG_NET_MULTI
+ int board_eth_init(bd_t *bis)
+ {
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 3ffc420..019a3f3 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -33,6 +33,9 @@
+ #ifdef CONFIG_ARCH_CPU_INIT
+ #include <asm/cache-cp15.h>
+ #endif
++#ifdef CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
++#include <asm/arch/regs-ocotp.h>
++#endif
+ 
+ enum pll_clocks {
+ 	CPU_PLL1,	/* System PLL */
+@@ -527,8 +530,6 @@ int clk_info(u32 clk_type)
+ 	return 0;
+ }
+ 
+-
+-
+ static int config_pll_clk(enum pll_clocks pll, u32 divider)
+ {
+ 	u32 ccsr = readl(CCM_BASE_ADDR + CLKCTL_CCSR);
+@@ -737,6 +738,24 @@ int print_cpuinfo(void)
+ extern int mxc_fec_initialize(bd_t *bis);
+ extern void mxc_fec_set_mac_from_env(char *mac_addr);
+ void enet_board_init(void);
++#ifdef CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
++int fec_get_mac_addr(unsigned char *mac)
++{
++	unsigned int value;
++
++	value = readl(OCOTP_BASE_ADDR + HW_OCOTP_MACn(0));
++	mac[5] = value & 0xff;
++	mac[4] = (value >> 8) & 0xff;
++	mac[3] = (value >> 16) & 0xff;
++	mac[2] = (value >> 24) & 0xff;
++	value = readl(OCOTP_BASE_ADDR + HW_OCOTP_MACn(1));
++	mac[1] = value & 0xff;
++	mac[0] = (value >> 8) & 0xff;
++
++	return 0;
++}
++#endif
++
+ #endif
+ 
+ int cpu_eth_init(bd_t *bis)
+-- 
+1.7.7.4
+

@@ -1,0 +1,30 @@
+From 3c3fe71df7f1ac0f12baaab4a71df84aa3ef73a9 Mon Sep 17 00:00:00 2001
+From: Robin Gong <B38343@freescale.com>
+Date: Tue, 24 Jul 2012 10:42:59 +0800
+Subject: [PATCH 556/678] ENGR00218067 mx6sl LDO_BYPASS: enable LDO BYPASS in
+ mx6sl by default
+
+To validate LDO bypass function fully, enable CONFIG_MX6_INTER_LDO_BYPASS
+on u-boot and kernel, only for mx6sl.
+
+Signed-off-by: Robin Gong <B38343@freescale.com>
+---
+ include/configs/mx6sl_arm2.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6sl_arm2.h b/include/configs/mx6sl_arm2.h
+index d24068e..f355f42 100644
+--- a/include/configs/mx6sl_arm2.h
++++ b/include/configs/mx6sl_arm2.h
+@@ -278,7 +278,7 @@
+ 	#define CONFIG_SYS_I2C_PORT             I2C1_BASE_ADDR
+ 	#define CONFIG_SYS_I2C_SPEED            100000
+ 	#define CONFIG_SYS_I2C_SLAVE            0x8
+-	#define CONFIG_MX6_INTER_LDO_BYPASS	0
++	#define CONFIG_MX6_INTER_LDO_BYPASS	1
+ #endif
+ 
+ /*#define CONFIG_SPLASH_SCREEN*/
+-- 
+1.7.7.4
+

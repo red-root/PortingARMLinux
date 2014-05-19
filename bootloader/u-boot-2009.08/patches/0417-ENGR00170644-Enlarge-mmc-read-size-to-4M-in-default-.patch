@@ -1,0 +1,72 @@
+From eb9d8c0430dcc985e601129ae1322040d3f98835 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Tue, 20 Dec 2011 14:03:25 +0800
+Subject: [PATCH 417/678] ENGR00170644: Enlarge mmc read size to 4M in default
+ env
+
+For uImage's size of mx6q is larger than 3M, we enlarge mmc read size to
+4M in default env.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ include/configs/mx6q_arm2.h           |    2 +-
+ include/configs/mx6q_arm2_lpddr2.h    |    2 +-
+ include/configs/mx6q_arm2_lpddr2pop.h |    2 +-
+ include/configs/mx6q_sabreauto.h      |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index 1d08bb0..18a351a 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -127,7 +127,7 @@
+ 			"root=/dev/mmcblk0p1 rootwait\0"                \
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "   \
+ 		"mmc dev 3; "	\
+-		"mmc read ${loadaddr} 0x800 0x1800; bootm\0"	\
++		"mmc read ${loadaddr} 0x800 0x2000; bootm\0"	\
+ 		"bootcmd=run bootcmd_net\0"                             \
+ 
+ 
+diff --git a/include/configs/mx6q_arm2_lpddr2.h b/include/configs/mx6q_arm2_lpddr2.h
+index 9847aa1..a9979e9 100644
+--- a/include/configs/mx6q_arm2_lpddr2.h
++++ b/include/configs/mx6q_arm2_lpddr2.h
+@@ -124,7 +124,7 @@
+ 			"root=/dev/mmcblk0p1 rootwait\0"                \
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "   \
+ 		"mmc dev 3; "	\
+-		"mmc read ${loadaddr} 0x800 0x1800; bootm\0"	\
++		"mmc read ${loadaddr} 0x800 0x2000; bootm\0"	\
+ 		"bootcmd=run bootcmd_net\0"                             \
+ 
+ 
+diff --git a/include/configs/mx6q_arm2_lpddr2pop.h b/include/configs/mx6q_arm2_lpddr2pop.h
+index 73d882f..d1d14ae 100755
+--- a/include/configs/mx6q_arm2_lpddr2pop.h
++++ b/include/configs/mx6q_arm2_lpddr2pop.h
+@@ -129,7 +129,7 @@
+ 			"root=/dev/mmcblk0p1 rootwait\0"                \
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "   \
+ 		"mmc dev 3; "	\
+-		"mmc read ${loadaddr} 0x800 0x1800; bootm\0"	\
++		"mmc read ${loadaddr} 0x800 0x2000; bootm\0"	\
+ 		"bootcmd=run bootcmd_net\0"                             \
+ 
+ 
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index 0043f9b..cd0aa73 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -127,7 +127,7 @@
+ 			"root=/dev/mmcblk0p1 rootwait\0"                \
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "   \
+ 		"mmc dev 2; "	\
+-		"mmc read ${loadaddr} 0x800 0x1800; bootm\0"	\
++		"mmc read ${loadaddr} 0x800 0x2000; bootm\0"	\
+ 		"bootcmd=run bootcmd_mmc\0"                             \
+ 
+ 
+-- 
+1.7.7.4
+

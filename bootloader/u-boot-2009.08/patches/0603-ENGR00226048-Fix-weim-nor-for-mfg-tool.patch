@@ -1,0 +1,59 @@
+From ce91cea872f6b8d079d3a54f0d1e0647be07f91b Mon Sep 17 00:00:00 2001
+From: Alejandro Sierra <b18039@freescale.com>
+Date: Wed, 26 Sep 2012 20:50:07 -0500
+Subject: [PATCH 603/678] ENGR00226048 Fix weim nor for mfg tool
+
+Weim interface share pins with I2C.
+A define was declared to enable weim
+pins and disable I2C when mfg tool is used.
+
+Signed-off-by: Alejandro Sierra <b18039@freescale.com>
+---
+ include/configs/mx6q_sabreauto_weimnor_mfg.h    |    3 +--
+ include/configs/mx6solo_sabreauto_weimnor_mfg.h |    2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/include/configs/mx6q_sabreauto_weimnor_mfg.h b/include/configs/mx6q_sabreauto_weimnor_mfg.h
+index 349afc0..cc5044b 100644
+--- a/include/configs/mx6q_sabreauto_weimnor_mfg.h
++++ b/include/configs/mx6q_sabreauto_weimnor_mfg.h
+@@ -33,7 +33,7 @@
+ #define CONFIG_FLASH_HEADER
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+-
++#define CONFIG_CMD_WEIMNOR
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+ 
+ #define CONFIG_ARCH_CPU_INIT
+@@ -92,7 +92,6 @@
+ #define CONFIG_BOOTP_DNS
+ 
+ #define CONFIG_CMD_SPI
+-#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
+ 
+ /* Enable below configure when supporting nand */
+diff --git a/include/configs/mx6solo_sabreauto_weimnor_mfg.h b/include/configs/mx6solo_sabreauto_weimnor_mfg.h
+index eb33186..5201223 100644
+--- a/include/configs/mx6solo_sabreauto_weimnor_mfg.h
++++ b/include/configs/mx6solo_sabreauto_weimnor_mfg.h
+@@ -35,6 +35,7 @@
+ #define CONFIG_FLASH_HEADER
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
++#define CONFIG_CMD_WEIMNOR
+ 
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+ 
+@@ -94,7 +95,6 @@
+ #define CONFIG_BOOTP_DNS
+ 
+ #define CONFIG_CMD_SPI
+-#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
+ 
+ /* Enable below configure when supporting nand */
+-- 
+1.7.7.4
+

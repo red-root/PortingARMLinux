@@ -1,0 +1,29 @@
+From 8b6086d7e9ca02bb73393c1ea3e991817414b0d8 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Thu, 12 Jan 2012 10:38:29 +0800
+Subject: [PATCH 430/678] ENGR00171872 Android: update sabrelite default
+ config fix a typo.
+
+Fix a typo in default config.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ include/configs/mx6q_sabrelite_android.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6q_sabrelite_android.h b/include/configs/mx6q_sabrelite_android.h
+index 2c5e09f..c9e1f73 100644
+--- a/include/configs/mx6q_sabrelite_android.h
++++ b/include/configs/mx6q_sabrelite_android.h
+@@ -149,7 +149,7 @@
+ 		"ethaddr=00:04:9f:00:ea:d3\0"		\
+ 		"bootfile=uImage\0"	\
+ 		"bootargs=console=ttymxc0,115200 init=/init rw " \
+-		"video=mxcfb0 fbmem=10M vmalloc=400M enable_wiat_mode=off\0" \
++		"video=mxcfb0 fbmem=10M vmalloc=400M enable_wait_mode=off\0" \
+ 		"bootcmd_SD=mmc dev 1;"		\
+ 			"mmc read ${loadaddr} 0x800 0x2000;" \
+ 			"mmc read ${rd_loadaddr} 0x3000 0x300\0" \
+-- 
+1.7.7.4
+

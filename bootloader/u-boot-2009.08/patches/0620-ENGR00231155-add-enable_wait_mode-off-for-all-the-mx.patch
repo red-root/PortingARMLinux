@@ -1,0 +1,181 @@
+From 09420eacbc8a5b9c87da1377a7d24125d3950703 Mon Sep 17 00:00:00 2001
+From: Tony LIU <junjie.liu@freescale.com>
+Date: Thu, 25 Oct 2012 16:37:53 +0800
+Subject: [PATCH 620/678] ENGR00231155 add enable_wait_mode=off for all the
+ mx6q/dl mfg uboot
+
+- currently only a work around can be applied, the root cause is not
+  identified yet
+  The workaround is to disable wait mode, so all the mfgtool uboot
+  need to add "enable_wait_mode=off" in the cmd line pass to kernel
+
+Signed-off-by: Tony LIU <junjie.liu@freescale.com>
+---
+ include/configs/mx6dl_arm2_mfg.h                |    3 ++-
+ include/configs/mx6dl_sabresd_mfg.h             |    3 ++-
+ include/configs/mx6q_arm2_mfg.h                 |    3 ++-
+ include/configs/mx6q_sabreauto_mfg.h            |    3 ++-
+ include/configs/mx6q_sabreauto_spi-nor_mfg.h    |    3 ++-
+ include/configs/mx6q_sabreauto_weimnor_mfg.h    |    2 +-
+ include/configs/mx6q_sabrelite_mfg.h            |    3 ++-
+ include/configs/mx6q_sabresd_mfg.h              |    3 ++-
+ include/configs/mx6solo_sabreauto_mfg.h         |    2 +-
+ include/configs/mx6solo_sabreauto_spi-nor_mfg.h |    3 ++-
+ include/configs/mx6solo_sabreauto_weimnor_mfg.h |    3 ++-
+ 11 files changed, 20 insertions(+), 11 deletions(-)
+
+diff --git a/include/configs/mx6dl_arm2_mfg.h b/include/configs/mx6dl_arm2_mfg.h
+index aa6d0dc..f645b53 100644
+--- a/include/configs/mx6dl_arm2_mfg.h
++++ b/include/configs/mx6dl_arm2_mfg.h
+@@ -114,7 +114,8 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc"
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
++				"enable_wait_mode=off"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+ 		"netdev=eth0\0"						\
+diff --git a/include/configs/mx6dl_sabresd_mfg.h b/include/configs/mx6dl_sabresd_mfg.h
+index aee4f38..2d1298b 100644
+--- a/include/configs/mx6dl_sabresd_mfg.h
++++ b/include/configs/mx6dl_sabresd_mfg.h
+@@ -116,7 +116,8 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc0,115200 rdinit=/linuxrc"
++#define CONFIG_BOOTARGS         "console=ttymxc0,115200 rdinit=/linuxrc "\
++				"enable_wait_mode=off"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6q_arm2_mfg.h b/include/configs/mx6q_arm2_mfg.h
+index 6960a77..45d66b4 100644
+--- a/include/configs/mx6q_arm2_mfg.h
++++ b/include/configs/mx6q_arm2_mfg.h
+@@ -111,7 +111,8 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc"
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
++				"enable_wait_mode=off"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+ 		"netdev=eth0\0"						\
+diff --git a/include/configs/mx6q_sabreauto_mfg.h b/include/configs/mx6q_sabreauto_mfg.h
+index 29a1afb..fa5417f 100644
+--- a/include/configs/mx6q_sabreauto_mfg.h
++++ b/include/configs/mx6q_sabreauto_mfg.h
+@@ -116,7 +116,8 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc"
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc " \
++				"enable_wait_mode=off"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6q_sabreauto_spi-nor_mfg.h b/include/configs/mx6q_sabreauto_spi-nor_mfg.h
+index bf7ff73..6697ac1 100644
+--- a/include/configs/mx6q_sabreauto_spi-nor_mfg.h
++++ b/include/configs/mx6q_sabreauto_spi-nor_mfg.h
+@@ -115,7 +115,8 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc spi-nor"
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
++				"enable_wait_mode=off spi-nor"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6q_sabreauto_weimnor_mfg.h b/include/configs/mx6q_sabreauto_weimnor_mfg.h
+index cc5044b..d3d7ea0 100644
+--- a/include/configs/mx6q_sabreauto_weimnor_mfg.h
++++ b/include/configs/mx6q_sabreauto_weimnor_mfg.h
+@@ -116,7 +116,7 @@
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+ #define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc " \
+-							"weim-nor"
++				"enable_wait_mode=off weim-nor"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6q_sabrelite_mfg.h b/include/configs/mx6q_sabrelite_mfg.h
+index 115b4f5..20f9537 100644
+--- a/include/configs/mx6q_sabrelite_mfg.h
++++ b/include/configs/mx6q_sabrelite_mfg.h
+@@ -113,7 +113,8 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	0x10c00000
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc1,115200 rdinit=/linuxrc"
++#define CONFIG_BOOTARGS         "console=ttymxc1,115200 rdinit=/linuxrc "\
++				"enable_wait_mode=off"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6q_sabresd_mfg.h b/include/configs/mx6q_sabresd_mfg.h
+index 62f0c06..cbcda71 100644
+--- a/include/configs/mx6q_sabresd_mfg.h
++++ b/include/configs/mx6q_sabresd_mfg.h
+@@ -113,7 +113,8 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	0x10c00000
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc0,115200 rdinit=/linuxrc"
++#define CONFIG_BOOTARGS         "console=ttymxc0,115200 rdinit=/linuxrc "\
++				"enable_wait_mode=off"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6solo_sabreauto_mfg.h b/include/configs/mx6solo_sabreauto_mfg.h
+index d7c0c56..e921036 100644
+--- a/include/configs/mx6solo_sabreauto_mfg.h
++++ b/include/configs/mx6solo_sabreauto_mfg.h
+@@ -118,7 +118,7 @@
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+ #define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
+-				"nosmp arm_freq=800"
++				"nosmp arm_freq=800 enable_wait_mode=off"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6solo_sabreauto_spi-nor_mfg.h b/include/configs/mx6solo_sabreauto_spi-nor_mfg.h
+index 8ad6b71..a757cca 100644
+--- a/include/configs/mx6solo_sabreauto_spi-nor_mfg.h
++++ b/include/configs/mx6solo_sabreauto_spi-nor_mfg.h
+@@ -117,7 +117,8 @@
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+ #define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
+-				"nosmp arm_freq=800 spi-nor"
++				"enable_wait_mode=off nosmp "\
++				"arm_freq=800 spi-nor"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6solo_sabreauto_weimnor_mfg.h b/include/configs/mx6solo_sabreauto_weimnor_mfg.h
+index 5201223..8ad560a 100644
+--- a/include/configs/mx6solo_sabreauto_weimnor_mfg.h
++++ b/include/configs/mx6solo_sabreauto_weimnor_mfg.h
+@@ -118,7 +118,8 @@
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+ #define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
+-				"nosmp arm_freq=800 weim-nor"
++				"enable_wait_mode=off nosmp "\
++				"arm_freq=800 weim-nor"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+-- 
+1.7.7.4
+

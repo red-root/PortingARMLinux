@@ -1,0 +1,113 @@
+From 44d91a044adf84106264ae104837a23a191bf67b Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Tue, 10 Jan 2012 15:17:01 +0800
+Subject: [PATCH 429/678] ENGR00171633 MX6Q: config: android: update default
+ config.
+
+1. C macro don't eval, so the rd_loadaddr will be (CONFIG_LOADADDR + 0x300000)
+rather then number, will cause uboot can't boot, change this to a number which
+make default boot env correct.
+
+2. update android mx6q saberlite config to align lastest code status.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ include/configs/mx6q_arm2.h              |    4 ++--
+ include/configs/mx6q_sabrelite.h         |    4 ++--
+ include/configs/mx6q_sabrelite_android.h |    8 ++++----
+ include/configs/mx6q_sabrelite_mfg.h     |    4 ++--
+ 4 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index 18a351a..cf466de 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Q Armadillo2 Freescale board.
+  *
+@@ -110,7 +110,7 @@
+ #define CONFIG_PRIME	"FEC0"
+ 
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+-#define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
++#define CONFIG_RD_LOADADDR	0x11000000
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+ 		"netdev=eth0\0"						\
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index c94cd6a..39933e2 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Q SABRE-Lite Freescale board.
+  *
+@@ -111,7 +111,7 @@
+ #define CONFIG_PRIME	"FEC0"
+ 
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+-#define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
++#define CONFIG_RD_LOADADDR      0x11000000
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+ 		"netdev=eth0\0"						\
+diff --git a/include/configs/mx6q_sabrelite_android.h b/include/configs/mx6q_sabrelite_android.h
+index d32a26c..2c5e09f 100644
+--- a/include/configs/mx6q_sabrelite_android.h
++++ b/include/configs/mx6q_sabrelite_android.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Q SABRE-Lite Freescale board.
+  *
+@@ -141,15 +141,15 @@
+ #define CONFIG_PRIME	"FEC0"
+ 
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+-#define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x600000) /* 6M */
++#define CONFIG_RD_LOADADDR	0x11000000
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+ 		"netdev=eth0\0"						\
+ 		"ethprime=FEC0\0"					\
+ 		"ethaddr=00:04:9f:00:ea:d3\0"		\
+ 		"bootfile=uImage\0"	\
+-		"bootargs=console=ttymxc1 init=/init " \
+-			"androidboot.console=ttymxc1 video=mxcfb0:bpp=16 fbmem=5M\0" \
++		"bootargs=console=ttymxc0,115200 init=/init rw " \
++		"video=mxcfb0 fbmem=10M vmalloc=400M enable_wiat_mode=off\0" \
+ 		"bootcmd_SD=mmc dev 1;"		\
+ 			"mmc read ${loadaddr} 0x800 0x2000;" \
+ 			"mmc read ${rd_loadaddr} 0x3000 0x300\0" \
+diff --git a/include/configs/mx6q_sabrelite_mfg.h b/include/configs/mx6q_sabrelite_mfg.h
+index 5bb6743..8064306 100644
+--- a/include/configs/mx6q_sabrelite_mfg.h
++++ b/include/configs/mx6q_sabrelite_mfg.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Q SABRE-Lite Freescale board.
+  *
+@@ -110,7 +110,7 @@
+ #define CONFIG_PRIME	"FEC0"
+ 
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+-#define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
++#define CONFIG_RD_LOADADDR	0x10c00000
+ 
+ #define CONFIG_BOOTARGS         "console=ttymxc1,115200 rdinit=/linuxrc"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+-- 
+1.7.7.4
+

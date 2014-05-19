@@ -1,0 +1,152 @@
+From c1c2931c8e4b41e949fc1e77999b41c32f26da7b Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Tue, 1 Nov 2011 15:07:04 +0800
+Subject: [PATCH 375/678] ENGR00161133: Add spi-nor support for mx6q
+
+Add spi-nor support for mx6q.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ board/freescale/mx6q_arm2/mx6q_arm2.c |   68 +++++++++++++++++++++++++++++++++
+ include/asm-arm/arch-mx6/mx6_pins.h   |    2 +-
+ include/configs/mx6q_arm2.h           |   15 +++++++-
+ 3 files changed, 83 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index 54873f3..4e1cc73 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -35,6 +35,10 @@
+ #include <lcd.h>
+ #endif
+ 
++#ifdef CONFIG_IMX_ECSPI
++#include <imx_spi.h>
++#endif
++
+ #if CONFIG_I2C_MXC
+ #include <i2c.h>
+ #endif
+@@ -336,6 +340,70 @@ void setup_lvds_poweron(void)
+ #endif
+ #endif
+ 
++#ifdef CONFIG_IMX_ECSPI
++s32 spi_get_cfg(struct imx_spi_dev_t *dev)
++{
++	switch (dev->slave.cs) {
++	case 0:
++		/* SPI-NOR */
++		dev->base = ECSPI1_BASE_ADDR;
++		dev->freq = 25000000;
++		dev->ss_pol = IMX_SPI_ACTIVE_LOW;
++		dev->ss = 0;
++		dev->fifo_sz = 64 * 4;
++		dev->us_delay = 0;
++		break;
++	case 1:
++		/* SPI-NOR */
++		dev->base = ECSPI1_BASE_ADDR;
++		dev->freq = 25000000;
++		dev->ss_pol = IMX_SPI_ACTIVE_LOW;
++		dev->ss = 1;
++		dev->fifo_sz = 64 * 4;
++		dev->us_delay = 0;
++		break;
++	default:
++		printf("Invalid Bus ID!\n");
++	}
++
++	return 0;
++}
++
++void spi_io_init(struct imx_spi_dev_t *dev)
++{
++	u32 reg;
++
++	switch (dev->base) {
++	case ECSPI1_BASE_ADDR:
++		/* Enable clock */
++		reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR1);
++		reg |= 0x3;
++		writel(reg, CCM_BASE_ADDR + CLKCTL_CCGR1);
++
++		/* SCLK */
++		mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_D16__ECSPI1_SCLK);
++
++		/* MISO */
++		mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_D17__ECSPI1_MISO);
++
++		/* MOSI */
++		mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_D18__ECSPI1_MOSI);
++
++		if (dev->ss == 0)
++			mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_EB2__ECSPI1_SS0);
++		else if (dev->ss == 1)
++			mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_D19__ECSPI1_SS1);
++		break;
++	case ECSPI2_BASE_ADDR:
++	case ECSPI3_BASE_ADDR:
++		/* ecspi2-3 fall through */
++		break;
++	default:
++		break;
++	}
++}
++#endif
++
+ #define HW_OCOTP_MACn(n)       (0x00000620 + (n) * 0x10)
+ 
+ #ifdef CONFIG_MXC_FEC
+diff --git a/include/asm-arm/arch-mx6/mx6_pins.h b/include/asm-arm/arch-mx6/mx6_pins.h
+index d50e17c..97931b5 100644
+--- a/include/asm-arm/arch-mx6/mx6_pins.h
++++ b/include/asm-arm/arch-mx6/mx6_pins.h
+@@ -3756,7 +3756,7 @@ typedef enum iomux_config {
+ #define  MX6Q_PAD_EIM_A25__PL301_MX6QPER1_HBURST_0               (_MX6Q_PAD_EIM_A25__PL301_MX6QPER1_HBURST_0 | MUX_PAD_CTRL(NO_PAD_CTRL))
+ 
+ #define  MX6Q_PAD_EIM_EB2__WEIM_WEIM_EB_2                        (_MX6Q_PAD_EIM_EB2__WEIM_WEIM_EB_2 | MUX_PAD_CTRL(NO_PAD_CTRL))
+-#define  MX6Q_PAD_EIM_EB2__ECSPI1_SS0                            (_MX6Q_PAD_EIM_EB2__ECSPI1_SS0 | MUX_PAD_CTRL(NO_PAD_CTRL))
++#define  MX6Q_PAD_EIM_EB2__ECSPI1_SS0                            (_MX6Q_PAD_EIM_EB2__ECSPI1_SS0 | MUX_PAD_CTRL(MX6Q_ECSPI_PAD_CTRL))
+ #define  MX6Q_PAD_EIM_EB2__CCM_DI1_EXT_CLK                       (_MX6Q_PAD_EIM_EB2__CCM_DI1_EXT_CLK | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_EIM_EB2__IPU2_CSI1_D_19                        (_MX6Q_PAD_EIM_EB2__IPU2_CSI1_D_19 | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_EIM_EB2__HDMI_TX_DDC_SCL                       (_MX6Q_PAD_EIM_EB2__HDMI_TX_DDC_SCL | MUX_PAD_CTRL(NO_PAD_CTRL))
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index a531cb8..165d13a 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -88,10 +88,11 @@
+ #define CONFIG_BOOTP_GATEWAY
+ #define CONFIG_BOOTP_DNS
+ 
++#define CONFIG_CMD_SPI
+ #define CONFIG_CMD_I2C
+ 
+ /* Enable below configure when supporting nand */
+-
++#define CONFIG_CMD_SF
+ #define CONFIG_CMD_MMC
+ #define CONFIG_CMD_ENV
+ 
+@@ -179,6 +180,18 @@
+ #endif
+ 
+ /*
++ * SPI Configs
++ */
++#ifdef CONFIG_CMD_SF
++	#define CONFIG_FSL_SF		1
++	#define CONFIG_SPI_FLASH_IMX_M25PXX	1
++	#define CONFIG_SPI_FLASH_CS	1
++	#define CONFIG_IMX_ECSPI
++	#define IMX_CSPI_VER_2_3	1
++	#define MAX_SPI_BYTES		(64 * 4)
++#endif
++
++/*
+  * MMC Configs
+  */
+ #ifdef CONFIG_CMD_MMC
+-- 
+1.7.7.4
+

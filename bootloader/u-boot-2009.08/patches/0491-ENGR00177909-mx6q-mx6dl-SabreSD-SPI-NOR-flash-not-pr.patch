@@ -1,0 +1,152 @@
+From c51f28d353506c754059fe762f258e1749d8166a Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Mon, 26 Mar 2012 15:43:12 +0800
+Subject: [PATCH 491/678] ENGR00177909: mx6q/mx6dl SabreSD: SPI-NOR flash not
+ probed as expected
+
+SPI NOR flash(m25p32-vmw6tg) not probed and function as expected, this
+due to the lack of iomux pad config and incorrect CS line.
+
+This patch fix the above issue and also fix the mfg config file
+
+(For the code readable, I intent to omit the following checkpatch warning:
+ in the iomux/mx6_pins.h WARNING: line over 80 characters)
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ include/asm-arm/arch-mx6/mx6_pins.h   |   10 +++++-----
+ include/asm-arm/arch-mx6/mx6dl_pins.h |    8 ++++----
+ include/configs/mx6dl_sabresd.h       |    2 +-
+ include/configs/mx6q_sabresd.h        |    2 +-
+ include/configs/mx6q_sabresd_mfg.h    |    2 +-
+ 5 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/include/asm-arm/arch-mx6/mx6_pins.h b/include/asm-arm/arch-mx6/mx6_pins.h
+index 50fd6f5..af835ce 100644
+--- a/include/asm-arm/arch-mx6/mx6_pins.h
++++ b/include/asm-arm/arch-mx6/mx6_pins.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright (C) 2012 Freescale Semiconductor, Inc. All Rights Reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -4755,7 +4755,7 @@ typedef enum iomux_config {
+ 
+ #define  MX6Q_PAD_DRAM_D63__MMDC_DRAM_D_63                       (_MX6Q_PAD_DRAM_D63__MMDC_DRAM_D_63 | MUX_PAD_CTRL(NO_PAD_CTRL))
+ 
+-#define  MX6Q_PAD_KEY_COL0__ECSPI1_SCLK                          (_MX6Q_PAD_KEY_COL0__ECSPI1_SCLK | MUX_PAD_CTRL(NO_PAD_CTRL))
++#define  MX6Q_PAD_KEY_COL0__ECSPI1_SCLK                          (_MX6Q_PAD_KEY_COL0__ECSPI1_SCLK | MUX_PAD_CTRL(MX6Q_ECSPI_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_COL0__ENET_RDATA_3                         (_MX6Q_PAD_KEY_COL0__ENET_RDATA_3 | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_COL0__AUDMUX_AUD5_TXC                      (_MX6Q_PAD_KEY_COL0__AUDMUX_AUD5_TXC | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_COL0__KPP_COL_0                            (_MX6Q_PAD_KEY_COL0__KPP_COL_0 | MUX_PAD_CTRL(NO_PAD_CTRL))
+@@ -4765,7 +4765,7 @@ typedef enum iomux_config {
+ #define  MX6Q_PAD_KEY_COL0__DCIC1_DCIC_OUT                       (_MX6Q_PAD_KEY_COL0__DCIC1_DCIC_OUT | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_COL0__SRC_ANY_PU_RST                       (_MX6Q_PAD_KEY_COL0__SRC_ANY_PU_RST | MUX_PAD_CTRL(NO_PAD_CTRL))
+ 
+-#define  MX6Q_PAD_KEY_ROW0__ECSPI1_MOSI                          (_MX6Q_PAD_KEY_ROW0__ECSPI1_MOSI | MUX_PAD_CTRL(NO_PAD_CTRL))
++#define  MX6Q_PAD_KEY_ROW0__ECSPI1_MOSI                          (_MX6Q_PAD_KEY_ROW0__ECSPI1_MOSI | MUX_PAD_CTRL(MX6Q_ECSPI_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_ROW0__ENET_TDATA_3                         (_MX6Q_PAD_KEY_ROW0__ENET_TDATA_3 | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_ROW0__AUDMUX_AUD5_TXD                      (_MX6Q_PAD_KEY_ROW0__AUDMUX_AUD5_TXD | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_ROW0__KPP_ROW_0                            (_MX6Q_PAD_KEY_ROW0__KPP_ROW_0 | MUX_PAD_CTRL(NO_PAD_CTRL))
+@@ -4775,7 +4775,7 @@ typedef enum iomux_config {
+ #define  MX6Q_PAD_KEY_ROW0__DCIC2_DCIC_OUT                       (_MX6Q_PAD_KEY_ROW0__DCIC2_DCIC_OUT | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_ROW0__PL301_MX6QPER1_HADDR_0               (_MX6Q_PAD_KEY_ROW0__PL301_MX6QPER1_HADDR_0 | MUX_PAD_CTRL(NO_PAD_CTRL))
+ 
+-#define  MX6Q_PAD_KEY_COL1__ECSPI1_MISO                          (_MX6Q_PAD_KEY_COL1__ECSPI1_MISO | MUX_PAD_CTRL(NO_PAD_CTRL))
++#define  MX6Q_PAD_KEY_COL1__ECSPI1_MISO                          (_MX6Q_PAD_KEY_COL1__ECSPI1_MISO | MUX_PAD_CTRL(MX6Q_ECSPI_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_COL1__ENET_MDIO                            (_MX6Q_PAD_KEY_COL1__ENET_MDIO | MUX_PAD_CTRL(MX6Q_ENET_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_COL1__AUDMUX_AUD5_TXFS                     (_MX6Q_PAD_KEY_COL1__AUDMUX_AUD5_TXFS | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_COL1__KPP_COL_1                            (_MX6Q_PAD_KEY_COL1__KPP_COL_1 | MUX_PAD_CTRL(NO_PAD_CTRL))
+@@ -4785,7 +4785,7 @@ typedef enum iomux_config {
+ #define  MX6Q_PAD_KEY_COL1__USDHC1_VSELECT                       (_MX6Q_PAD_KEY_COL1__USDHC1_VSELECT | MUX_PAD_CTRL(MX6Q_USDHC_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_COL1__PL301_MX6QPER1_HADDR_1               (_MX6Q_PAD_KEY_COL1__PL301_MX6QPER1_HADDR_1 | MUX_PAD_CTRL(NO_PAD_CTRL))
+ 
+-#define  MX6Q_PAD_KEY_ROW1__ECSPI1_SS0                           (_MX6Q_PAD_KEY_ROW1__ECSPI1_SS0 | MUX_PAD_CTRL(NO_PAD_CTRL))
++#define  MX6Q_PAD_KEY_ROW1__ECSPI1_SS0                           (_MX6Q_PAD_KEY_ROW1__ECSPI1_SS0 | MUX_PAD_CTRL(MX6Q_ECSPI_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_ROW1__ENET_COL                             (_MX6Q_PAD_KEY_ROW1__ENET_COL | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_ROW1__AUDMUX_AUD5_RXD                      (_MX6Q_PAD_KEY_ROW1__AUDMUX_AUD5_RXD | MUX_PAD_CTRL(NO_PAD_CTRL))
+ #define  MX6Q_PAD_KEY_ROW1__KPP_ROW_1                            (_MX6Q_PAD_KEY_ROW1__KPP_ROW_1 | MUX_PAD_CTRL(NO_PAD_CTRL))
+diff --git a/include/asm-arm/arch-mx6/mx6dl_pins.h b/include/asm-arm/arch-mx6/mx6dl_pins.h
+index 8976ce3..6963229 100644
+--- a/include/asm-arm/arch-mx6/mx6dl_pins.h
++++ b/include/asm-arm/arch-mx6/mx6dl_pins.h
+@@ -2602,7 +2602,7 @@
+ 		IOMUX_PAD(0x0628, NO_MUX_I, 0, 0x0000, 0, NO_PAD_CTRL)
+ 
+ #define MX6DL_PAD_KEY_COL0__ECSPI1_SCLK                                        \
+-		IOMUX_PAD(0x062C, 0x0244, 0, 0x07D8, 3, NO_PAD_CTRL)
++		IOMUX_PAD(0x062C, 0x0244, 0, 0x07D8, 3, MX6DL_ECSPI_PAD_CTRL)
+ #define MX6DL_PAD_KEY_COL0__ENET_RDATA_3                                       \
+ 		IOMUX_PAD(0x062C, 0x0244, 1, 0x0824, 0, NO_PAD_CTRL)
+ #define MX6DL_PAD_KEY_COL0__AUDMUX_AUD5_TXC                                    \
+@@ -2621,7 +2621,7 @@
+ 		IOMUX_PAD(0x062C, 0x0244, 7, 0x0000, 0, NO_PAD_CTRL)
+ 
+ #define MX6DL_PAD_KEY_COL1__ECSPI1_MISO                                        \
+-		IOMUX_PAD(0x0630, 0x0248, 0, 0x07DC, 3, NO_PAD_CTRL)
++		IOMUX_PAD(0x0630, 0x0248, 0, 0x07DC, 3, MX6DL_ECSPI_PAD_CTRL)
+ #define MX6DL_PAD_KEY_COL1__ENET_MDIO                                          \
+ 		IOMUX_PAD(0x0630, 0x0248, 1, 0x0810, 1, MX6DL_ENET_PAD_CTRL)
+ #define MX6DL_PAD_KEY_COL1__AUDMUX_AUD5_TXFS                                   \
+@@ -2693,7 +2693,7 @@
+ 		IOMUX_PAD(0x063C, 0x0254, 7, 0x0000, 0, NO_PAD_CTRL)
+ 
+ #define MX6DL_PAD_KEY_ROW0__ECSPI1_MOSI                                        \
+-		IOMUX_PAD(0x0640, 0x0258, 0, 0x07E0, 3, NO_PAD_CTRL)
++		IOMUX_PAD(0x0640, 0x0258, 0, 0x07E0, 3, MX6DL_ECSPI_PAD_CTRL)
+ #define MX6DL_PAD_KEY_ROW0__ENET_TDATA_3                                       \
+ 		IOMUX_PAD(0x0640, 0x0258, 1, 0x0000, 0, NO_PAD_CTRL)
+ #define MX6DL_PAD_KEY_ROW0__AUDMUX_AUD5_TXD                                    \
+@@ -2712,7 +2712,7 @@
+ 		IOMUX_PAD(0x0640, 0x0258, 7, 0x0000, 0, NO_PAD_CTRL)
+ 
+ #define MX6DL_PAD_KEY_ROW1__ECSPI1_SS0                                         \
+-		IOMUX_PAD(0x0644, 0x025C, 0, 0x07E4, 3, NO_PAD_CTRL)
++		IOMUX_PAD(0x0644, 0x025C, 0, 0x07E4, 3, MX6DL_ECSPI_PAD_CTRL)
+ #define MX6DL_PAD_KEY_ROW1__ENET_COL                                           \
+ 		IOMUX_PAD(0x0644, 0x025C, 1, 0x0000, 0, NO_PAD_CTRL)
+ #define MX6DL_PAD_KEY_ROW1__AUDMUX_AUD5_RXD                                    \
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index 5580186..91ed159 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -201,7 +201,7 @@
+ #ifdef CONFIG_CMD_SF
+ 	#define CONFIG_FSL_SF		1
+ 	#define CONFIG_SPI_FLASH_IMX_M25PXX	1
+-	#define CONFIG_SPI_FLASH_CS	1
++	#define CONFIG_SPI_FLASH_CS	0
+ 	#define CONFIG_IMX_ECSPI
+ 	#define IMX_CSPI_VER_2_3	1
+ 	#define MAX_SPI_BYTES		(64 * 4)
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index 72a3c93..b699287 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -200,7 +200,7 @@
+ #ifdef CONFIG_CMD_SF
+ 	#define CONFIG_FSL_SF		1
+ 	#define CONFIG_SPI_FLASH_IMX_M25PXX	1
+-	#define CONFIG_SPI_FLASH_CS	1
++	#define CONFIG_SPI_FLASH_CS	0
+ 	#define CONFIG_IMX_ECSPI
+ 	#define IMX_CSPI_VER_2_3	1
+ 	#define MAX_SPI_BYTES		(64 * 4)
+diff --git a/include/configs/mx6q_sabresd_mfg.h b/include/configs/mx6q_sabresd_mfg.h
+index 0e27db1..16fc9e8 100644
+--- a/include/configs/mx6q_sabresd_mfg.h
++++ b/include/configs/mx6q_sabresd_mfg.h
+@@ -187,7 +187,7 @@
+ #ifdef CONFIG_CMD_SF
+ 	#define CONFIG_FSL_SF		1
+ 	#define CONFIG_SPI_FLASH_IMX_M25PXX	1
+-	#define CONFIG_SPI_FLASH_CS	1
++	#define CONFIG_SPI_FLASH_CS	0
+ 	#define CONFIG_IMX_ECSPI
+ 	#define IMX_CSPI_VER_2_3	1
+ 	#define MAX_SPI_BYTES		(64 * 4)
+-- 
+1.7.7.4
+

@@ -1,0 +1,42 @@
+From 372ec1fe34e6d3a03c7cd05c4e9c3e2ad2b364d2 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Thu, 3 May 2012 14:05:04 +0800
+Subject: [PATCH 522/678] ENGR00181337-4 i.mx6 : i.mx6sl: Fix FEC RX CRC Error
+
+Since FEC_RX_ER is not connected with PHY(LAN8720A), we need
+either configure FEC_RX_ER PAD to other mode than FEC_RX_ER,
+or configure FEC_RX_ER PAD to FEC_RX_ER but need pull it down,
+otherwise, FEC MAC will report CRC error always. We configure
+FEC_RX_ER PAD to GPIO mode here and remove the SW hack which
+ignore the CRC error in fec driver
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ board/freescale/mx6sl_arm2/mx6sl_arm2.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/board/freescale/mx6sl_arm2/mx6sl_arm2.c b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+index c6c3e8e..cff96c0 100644
+--- a/board/freescale/mx6sl_arm2/mx6sl_arm2.c
++++ b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+@@ -593,7 +593,16 @@ iomux_v3_cfg_t enet_pads[] = {
+ #else
+ 	MX6SL_PAD_FEC_REF_CLK__GPIO_4_26, /* clock from OSC */
+ #endif
+-	MX6SL_PAD_FEC_RX_ER__FEC_RX_ER,
++
++	/*
++	 * Since FEC_RX_ER is not connected with PHY(LAN8720A), we need
++	 * either configure FEC_RX_ER PAD to other mode than FEC_RX_ER,
++	 * or configure FEC_RX_ER PAD to FEC_RX_ER but need pull it down,
++	 * otherwise, FEC MAC will report CRC error always. We configure
++	 * FEC_RX_ER PAD to GPIO mode here.
++	 */
++
++	MX6SL_PAD_FEC_RX_ER__GPIO_4_19,
+ 	MX6SL_PAD_FEC_TX_CLK__GPIO_4_21, /* Phy power enable */
+ };
+ 
+-- 
+1.7.7.4
+

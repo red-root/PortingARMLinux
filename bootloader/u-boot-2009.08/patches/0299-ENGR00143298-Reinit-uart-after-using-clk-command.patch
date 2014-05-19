@@ -1,0 +1,45 @@
+From b495365cdba6f1ddf762e67f2bb4b6693c1f24d2 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Thu, 12 May 2011 19:29:06 +0800
+Subject: [PATCH 299/678] ENGR00143298: Reinit uart after using clk command
+
+For clk command always make console output mess characters,
+here we reinitilize it after clock is changed.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ cpu/arm_cortexa8/mx51/generic.c |    3 +++
+ cpu/arm_cortexa8/mx53/generic.c |    3 +++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx51/generic.c b/cpu/arm_cortexa8/mx51/generic.c
+index 2a1c430..b116922 100644
+--- a/cpu/arm_cortexa8/mx51/generic.c
++++ b/cpu/arm_cortexa8/mx51/generic.c
+@@ -956,6 +956,9 @@ int clk_config(u32 ref, u32 freq, u32 clk_type)
+ 		printf("Unsupported or invalid clock type! :(\n");
+ 	}
+ 
++	serial_init();
++	printf("Serial reinitilized!\n");
++
+ 	return 0;
+ }
+ #endif
+diff --git a/cpu/arm_cortexa8/mx53/generic.c b/cpu/arm_cortexa8/mx53/generic.c
+index 23a2640..1357462 100644
+--- a/cpu/arm_cortexa8/mx53/generic.c
++++ b/cpu/arm_cortexa8/mx53/generic.c
+@@ -987,6 +987,9 @@ int clk_config(u32 ref, u32 freq, u32 clk_type)
+ 		printf("Unsupported or invalid clock type! :(\n");
+ 	}
+ 
++	serial_init();
++	printf("Serial reinitilized!\n");
++
+ 	return 0;
+ }
+ #endif
+-- 
+1.7.7.4
+

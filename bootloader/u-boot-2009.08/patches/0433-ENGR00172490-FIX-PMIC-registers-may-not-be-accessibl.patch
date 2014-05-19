@@ -1,0 +1,67 @@
+From 1a5fa49e7fc5f3516dfa667371c2be6b57a6ab32 Mon Sep 17 00:00:00 2001
+From: Robby Cai <R63905@freescale.com>
+Date: Fri, 20 Jan 2012 17:31:08 +0800
+Subject: [PATCH 433/678] ENGR00172490: FIX: PMIC registers may not be
+ accessible in u-boot via SPI
+
+The system PMIC registers may not be accessible in u-boot via SPI if
+function pmic_reg() is called in the latter part of boot up process in u-boot.
+
+It is because the imx_spi_slave structure is allocated from malloc() in
+the spi_setup_slave() function. However, this structure is not completely
+initialized, which may result in using a dirty control register value
+at CSPI during transfer.
+
+memset() the imx_spi_slave structure after malloc() can resolve this problem
+
+Please refer to CT39243849.
+
+Signed-off-by: Robby Cai <R63905@freescale.com>
+---
+ drivers/spi/imx_cspi.c  |    4 +++-
+ drivers/spi/imx_ecspi.c |    4 +++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/spi/imx_cspi.c b/drivers/spi/imx_cspi.c
+index 438ab8d..1f4e117 100644
+--- a/drivers/spi/imx_cspi.c
++++ b/drivers/spi/imx_cspi.c
+@@ -1,5 +1,5 @@
+ /*
+- * (C) Copyright 2008-2010 Freescale Semiconductor, Inc.
++ * (C) Copyright 2008-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -116,6 +116,8 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
+ 	if (!imx_spi_slave)
+ 		return NULL;
+ 
++	memset(imx_spi_slave, 0, sizeof(struct imx_spi_dev_t));
++
+ 	imx_spi_slave->slave.bus = bus;
+ 	imx_spi_slave->slave.cs = cs;
+ 
+diff --git a/drivers/spi/imx_ecspi.c b/drivers/spi/imx_ecspi.c
+index 1e86cf1..2e26205 100644
+--- a/drivers/spi/imx_ecspi.c
++++ b/drivers/spi/imx_ecspi.c
+@@ -1,5 +1,5 @@
+ /*
+- * (C) Copyright 2008-2010 Freescale Semiconductor, Inc.
++ * (C) Copyright 2008-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -152,6 +152,8 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
+ 	if (!imx_spi_slave)
+ 		return NULL;
+ 
++	memset(imx_spi_slave, 0, sizeof(struct imx_spi_dev_t));
++
+ 	imx_spi_slave->slave.bus = bus;
+ 	imx_spi_slave->slave.cs = cs;
+ 
+-- 
+1.7.7.4
+

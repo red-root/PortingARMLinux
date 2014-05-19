@@ -1,0 +1,58 @@
+From b5b188c7f27d80b83f3ae79ee44c8ab80aa0d884 Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Mon, 22 Aug 2011 14:40:10 +0800
+Subject: [PATCH 334/678] ENGR00151255 mx53 QS: Enable VUSB_2V5
+
+Kernel stops at USB driver initialization if suspending,
+resuming and resetting the board.
+It's because VUSB_2V5 voltage is disabled after suspend.
+Need to re-enable it mannually into U-boot
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ board/freescale/mx53_loco/mx53_loco.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/board/freescale/mx53_loco/mx53_loco.c b/board/freescale/mx53_loco/mx53_loco.c
+index c88412e..7f6ded0 100644
+--- a/board/freescale/mx53_loco/mx53_loco.c
++++ b/board/freescale/mx53_loco/mx53_loco.c
+@@ -702,6 +702,13 @@ int check_recovery_cmd_file(void)
+ }
+ #endif
+ 
++/* restore VUSB 2V5 active after suspend */
++#define BUCKPERI_RESTORE_SW_STEP   (0x55)
++/* restore VUSB 2V5 power supply after suspend */
++#define SUPPLY_RESTORE_VPERISW_EN  (0x20)
++#define DA9052_ID1213_REG                  (35)
++#define DA9052_SUPPLY_REG                  (60)
++
+ int board_late_init(void)
+ {
+ 	uchar value;
+@@ -729,6 +736,7 @@ int board_late_init(void)
+ 			printf("%s:i2c_write:error\n", __func__);
+ 			return -1;
+ 		}
++
+ 		/* set up rev #1 for loco/ripley board */
+ 		setup_board_rev(1);
+ 		/* Switch to 1GHZ */
+@@ -747,6 +755,13 @@ int board_late_init(void)
+ 		i2c_read(0x48, 60, 1, &value, 1);
+ 		value |= 0x1;
+ 		i2c_write(0x48, 60, 1, &value, 1);
++		/* restore VUSB_2V5 when reset from suspend state */
++		value = BUCKPERI_RESTORE_SW_STEP;
++		i2c_write(0x48, DA9052_ID1213_REG, 1, &value, 1);
++		i2c_read(0x48, DA9052_SUPPLY_REG, 1, &value, 1);
++		value |= SUPPLY_RESTORE_VPERISW_EN;
++		i2c_write(0x48, DA9052_SUPPLY_REG, 1, &value, 1);
++
+ 		/* set up rev #0 for loco/da9053 board */
+ 		setup_board_rev(0);
+ 		/* Switch to 1GHZ */
+-- 
+1.7.7.4
+

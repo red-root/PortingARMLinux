@@ -1,0 +1,546 @@
+From 545fa5d8e9e6f6967f6ddedbd16b8eac46c42655 Mon Sep 17 00:00:00 2001
+From: b02247 <b02247@freescale.com>
+Date: Fri, 4 Jan 2013 17:57:31 +0800
+Subject: [PATCH 662/678] ENGR00239607 add nand config for android sabreauto
+
+Add nand config for android sabreauto
+
+Signed-off-by: b02247 <b02247@freescale.com>
+---
+ Makefile                                         |    5 ++
+ include/configs/mx6dl_sabreauto_android.h        |   78 +++++++++++++++++++++
+ include/configs/mx6dl_sabreauto_nand_android.h   |   77 +++++++++++++++++++++
+ include/configs/mx6dl_sabreauto_nand_mfg.h       |    4 +-
+ include/configs/mx6q_sabreauto_nand_android.h    |   79 ++++++++++++++++++++++
+ include/configs/mx6q_sabreauto_nand_mfg.h        |    4 +-
+ include/configs/mx6solo_sabreauto_android.h      |   78 +++++++++++++++++++++
+ include/configs/mx6solo_sabreauto_nand_android.h |   77 +++++++++++++++++++++
+ include/configs/mx6solo_sabreauto_nand_mfg.h     |    4 +-
+ lib_arm/bootm.c                                  |    9 +--
+ 10 files changed, 404 insertions(+), 11 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 4f19c32..17c21cd 100644
+--- a/Makefile
++++ b/Makefile
+@@ -3358,6 +3358,11 @@ mx6q_hdmidongle_nand_mfg_config   : unconfig
+ 	@$(MKCONFIG) $(@:_config=) arm arm_cortexa8 mx6q_hdmidongle freescale mx6
+ 
+ mx6q_sabreauto_android_config		\
++mx6q_sabreauto_nand_android_config		\
++mx6dl_sabreauto_android_config		\
++mx6dl_sabreauto_nand_android_config		\
++mx6solo_sabreauto_android_config		\
++mx6solo_sabreauto_nand_android_config		\
+ mx6q_sabreauto_weimnor_mfg_config	\
+ mx6q_sabreauto_weimnor_config		\
+ mx6q_sabreauto_nand_mfg_config		\
+diff --git a/include/configs/mx6dl_sabreauto_android.h b/include/configs/mx6dl_sabreauto_android.h
+new file mode 100644
+index 0000000..06b3a31
+--- /dev/null
++++ b/include/configs/mx6dl_sabreauto_android.h
+@@ -0,0 +1,78 @@
++
++/*
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ * Configuration settings for the MX6DL Sabre auto Freescale board.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef MX6DL_SABREAUTO_ANDROID_H
++#define MX6DL_SABREAUTO_ANDROID_H
++
++#include "mx6dl_sabreauto.h"
++
++#define CONFIG_USB_DEVICE
++#define CONFIG_IMX_UDC		       1
++#define CONFIG_FASTBOOT		       1
++#define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
++#define CONFIG_FASTBOOT_BCD_DEVICE     0x311
++#define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
++#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6dl Sabre Auto Device"
++#define CONFIG_FASTBOOT_INTERFACE_STR	 "Android fastboot"
++#define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
++#define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
++#define CONFIG_FASTBOOT_SATA_NO		 0
++
++/*  For system.img growing up more than 256MB, more buffer needs
++*   to receive the system.img*/
++#define CONFIG_FASTBOOT_TRANSFER_BUF	0x2c000000
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x14000000 /* 320M byte */
++
++
++#define CONFIG_CMD_BOOTI
++#define CONFIG_ANDROID_RECOVERY
++/* which mmc bus is your main storage ? */
++#define CONFIG_ANDROID_MAIN_MMC_BUS 2
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
++#define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 5
++#define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 2
++#define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
++
++
++#define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC NULL
++#define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
++	"booti mmc2 recovery"
++#define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
++#define CONFIG_INITRD_TAG
++
++#undef CONFIG_LOADADDR
++#undef CONFIG_RD_LOADADDR
++#undef CONFIG_EXTRA_ENV_SETTINGS
++
++#define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
++#define CONFIG_RD_LOADADDR      0x11000000
++#define	CONFIG_EXTRA_ENV_SETTINGS					\
++		"netdev=eth0\0"						\
++		"ethprime=FEC0\0"					\
++		"fastboot_dev=mmc2\0"					\
++		"bootcmd=booti mmc2\0"					\
++		"splashimage=0x30000000\0"				\
++		"splashpos=m,m\0"					\
++		"lvds_num=1\0"
++#endif
+diff --git a/include/configs/mx6dl_sabreauto_nand_android.h b/include/configs/mx6dl_sabreauto_nand_android.h
+new file mode 100644
+index 0000000..c653f36
+--- /dev/null
++++ b/include/configs/mx6dl_sabreauto_nand_android.h
+@@ -0,0 +1,77 @@
++
++/*
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ * Configuration settings for the MX6DL Sabre auto Freescale board.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef MX6DL_SABREAUTO_NAND_ANDROID_H
++#define MX6DL_SABREAUTO_NAND_ANDROID_H
++
++#include "mx6dl_sabreauto_nand.h"
++
++#define CONFIG_USB_DEVICE
++#define CONFIG_IMX_UDC		       1
++#define CONFIG_FASTBOOT		       1
++#define CONFIG_FASTBOOT_STORAGE_NAND
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
++#define CONFIG_FASTBOOT_BCD_DEVICE     0x311
++#define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
++#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6dl Sabre Auto Device"
++#define CONFIG_FASTBOOT_INTERFACE_STR	 "Android fastboot"
++#define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
++#define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
++#define CONFIG_FASTBOOT_SATA_NO		 0
++/*  For system.img growing up more than 256MB, more buffer needs
++*   to receive the system.img*/
++#define CONFIG_FASTBOOT_TRANSFER_BUF	0x2c000000
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x14000000 /* 320M byte */
++
++
++#define CONFIG_CMD_BOOTI
++#define CONFIG_ANDROID_RECOVERY
++/* which mmc bus is your main storage ? */
++#define CONFIG_ANDROID_MAIN_MMC_BUS 2
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
++#define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 5
++#define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 2
++#define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
++
++
++#define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC NULL
++#define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
++	"booti mmc2 recovery"
++#define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
++#define CONFIG_ANDROID_RECOVERY_BOOTCMD_NAND \
++	"nand read 0x12800000 0x2000000 0x600000;booti 0x12800000"
++#define CONFIG_ANDROID_RECOVERY_BOOTARGS_NAND NULL
++#define CONFIG_INITRD_TAG
++
++#undef CONFIG_LOADADDR
++#undef CONFIG_RD_LOADADDR
++#undef CONFIG_EXTRA_ENV_SETTINGS
++
++#define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
++#define CONFIG_RD_LOADADDR      0x11000000
++#define	CONFIG_EXTRA_ENV_SETTINGS					\
++		"netdev=eth0\0"						\
++		"ethprime=FEC0\0"					\
++		"fastboot_dev=mmc2\0"					\
++		"bootcmd=nand read 0x12800000 0x1000000 0x500000;booti 0x12800000\0"
++#endif
+diff --git a/include/configs/mx6dl_sabreauto_nand_mfg.h b/include/configs/mx6dl_sabreauto_nand_mfg.h
+index fe7d01e..f99cd85 100644
+--- a/include/configs/mx6dl_sabreauto_nand_mfg.h
++++ b/include/configs/mx6dl_sabreauto_nand_mfg.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Solo SABRE-AI Freescale board.
+  *
+@@ -116,7 +116,7 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc mtdparts=gpmi-nand:16m(boot),16m(kernel),128m(rootfs)"\
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc mtdparts=gpmi-nand:16m(boot),16m(kernel),128m(rootfs),-(user)"\
+ 				"arm_freq=800"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+diff --git a/include/configs/mx6q_sabreauto_nand_android.h b/include/configs/mx6q_sabreauto_nand_android.h
+new file mode 100644
+index 0000000..dbc22a9
+--- /dev/null
++++ b/include/configs/mx6q_sabreauto_nand_android.h
+@@ -0,0 +1,79 @@
++
++/*
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ * Configuration settings for the MX6Q Sabre auto Freescale board.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef MX6Q_SABREAUTO_NAND_ANDROID_H
++#define MX6Q_SABREAUTO_NAND_ANDROID_H
++
++#include "mx6q_sabreauto_nand.h"
++
++#define CONFIG_USB_DEVICE
++#define CONFIG_IMX_UDC		       1
++
++#define CONFIG_FASTBOOT		       1
++#define CONFIG_FASTBOOT_STORAGE_NAND
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
++#define CONFIG_FASTBOOT_BCD_DEVICE     0x311
++#define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
++#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q Sabre Auto Device"
++#define CONFIG_FASTBOOT_INTERFACE_STR	 "Android fastboot"
++#define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
++#define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
++#define CONFIG_FASTBOOT_SATA_NO		 0
++
++/*  For system.img growing up more than 256MB, more buffer needs
++*   to receive the system.img*/
++#define CONFIG_FASTBOOT_TRANSFER_BUF	0x2c000000
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x14000000 /* 320M byte */
++
++
++#define CONFIG_CMD_BOOTI
++#define CONFIG_ANDROID_RECOVERY
++/* which mmc bus is your main storage ? */
++#define CONFIG_ANDROID_MAIN_MMC_BUS 2
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
++#define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 5
++#define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 2
++#define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
++
++
++#define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC NULL
++#define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
++	"booti mmc2 recovery"
++#define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
++#define CONFIG_ANDROID_RECOVERY_BOOTCMD_NAND \
++	"nand read 0x12800000 0x2000000 0x600000;booti 0x12800000"
++#define CONFIG_ANDROID_RECOVERY_BOOTARGS_NAND NULL
++#define CONFIG_INITRD_TAG
++
++#undef CONFIG_LOADADDR
++#undef CONFIG_RD_LOADADDR
++#undef CONFIG_EXTRA_ENV_SETTINGS
++
++#define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
++#define CONFIG_RD_LOADADDR      0x11000000
++#define	CONFIG_EXTRA_ENV_SETTINGS					\
++		"netdev=eth0\0"						\
++		"ethprime=FEC0\0"					\
++		"fastboot_dev=mmc2\0"					\
++		"bootcmd=nand read 0x12800000 0x1000000 0x500000;booti 0x12800000\0"
++#endif
+diff --git a/include/configs/mx6q_sabreauto_nand_mfg.h b/include/configs/mx6q_sabreauto_nand_mfg.h
+index 93a94a9..573243b 100644
+--- a/include/configs/mx6q_sabreauto_nand_mfg.h
++++ b/include/configs/mx6q_sabreauto_nand_mfg.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2013 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Q SABRE-AI Freescale board.
+  *
+@@ -116,7 +116,7 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc mtdparts=gpmi-nand:16m(boot),16m(kernel),128m(rootfs)"
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc mtdparts=gpmi-nand:16m(boot),16m(kernel),128m(rootfs),-(user)"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6solo_sabreauto_android.h b/include/configs/mx6solo_sabreauto_android.h
+new file mode 100644
+index 0000000..21e1fd9
+--- /dev/null
++++ b/include/configs/mx6solo_sabreauto_android.h
+@@ -0,0 +1,78 @@
++
++/*
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ * Configuration settings for the MX6SOLO Sabre auto Freescale board.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef MX6SOLO_SABREAUTO_ANDROID_H
++#define MX6SOLO_SABREAUTO_ANDROID_H
++
++#include "mx6solo_sabreauto.h"
++
++#define CONFIG_USB_DEVICE
++#define CONFIG_IMX_UDC		       1
++#define CONFIG_FASTBOOT		       1
++#define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
++#define CONFIG_FASTBOOT_BCD_DEVICE     0x311
++#define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
++#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6solo Sabre Auto Device"
++#define CONFIG_FASTBOOT_INTERFACE_STR	 "Android fastboot"
++#define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
++#define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
++#define CONFIG_FASTBOOT_SATA_NO		 0
++
++/*  For system.img growing up more than 256MB, more buffer needs
++*   to receive the system.img*/
++#define CONFIG_FASTBOOT_TRANSFER_BUF	0x2c000000
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x14000000 /* 320M byte */
++
++
++#define CONFIG_CMD_BOOTI
++#define CONFIG_ANDROID_RECOVERY
++/* which mmc bus is your main storage ? */
++#define CONFIG_ANDROID_MAIN_MMC_BUS 2
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
++#define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 5
++#define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 2
++#define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
++
++
++#define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC NULL
++#define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
++	"booti mmc2 recovery"
++#define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
++#define CONFIG_INITRD_TAG
++
++#undef CONFIG_LOADADDR
++#undef CONFIG_RD_LOADADDR
++#undef CONFIG_EXTRA_ENV_SETTINGS
++
++#define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
++#define CONFIG_RD_LOADADDR      0x11000000
++#define	CONFIG_EXTRA_ENV_SETTINGS					\
++		"netdev=eth0\0"						\
++		"ethprime=FEC0\0"					\
++		"fastboot_dev=mmc2\0"					\
++		"bootcmd=booti mmc2\0"					\
++		"splashimage=0x30000000\0"				\
++		"splashpos=m,m\0"					\
++		"lvds_num=1\0"
++#endif
+diff --git a/include/configs/mx6solo_sabreauto_nand_android.h b/include/configs/mx6solo_sabreauto_nand_android.h
+new file mode 100644
+index 0000000..e5e05d4
+--- /dev/null
++++ b/include/configs/mx6solo_sabreauto_nand_android.h
+@@ -0,0 +1,77 @@
++
++/*
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ *
++ * Configuration settings for the MX6SOLO Sabre auto Freescale board.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef MX6SOLO_SABREAUTO_NAND_ANDROID_H
++#define MX6SOLO_SABREAUTO_NAND_ANDROID_H
++
++#include "mx6solo_sabreauto_nand.h"
++
++#define CONFIG_USB_DEVICE
++#define CONFIG_IMX_UDC		       1
++#define CONFIG_FASTBOOT		       1
++#define CONFIG_FASTBOOT_STORAGE_NAND
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
++#define CONFIG_FASTBOOT_BCD_DEVICE     0x311
++#define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
++#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6solo Sabre Auto Device"
++#define CONFIG_FASTBOOT_INTERFACE_STR	 "Android fastboot"
++#define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
++#define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
++#define CONFIG_FASTBOOT_SATA_NO		 0
++/*  For system.img growing up more than 256MB, more buffer needs
++*   to receive the system.img*/
++#define CONFIG_FASTBOOT_TRANSFER_BUF	0x2c000000
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x14000000 /* 320M byte */
++
++
++#define CONFIG_CMD_BOOTI
++#define CONFIG_ANDROID_RECOVERY
++/* which mmc bus is your main storage ? */
++#define CONFIG_ANDROID_MAIN_MMC_BUS 2
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
++#define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 5
++#define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 2
++#define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
++
++
++#define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC NULL
++#define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
++	"booti mmc2 recovery"
++#define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
++#define CONFIG_ANDROID_RECOVERY_BOOTCMD_NAND \
++	"nand read 0x12800000 0x2000000 0x600000;booti 0x12800000"
++#define CONFIG_ANDROID_RECOVERY_BOOTARGS_NAND NULL
++#define CONFIG_INITRD_TAG
++
++#undef CONFIG_LOADADDR
++#undef CONFIG_RD_LOADADDR
++#undef CONFIG_EXTRA_ENV_SETTINGS
++
++#define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
++#define CONFIG_RD_LOADADDR      0x11000000
++#define	CONFIG_EXTRA_ENV_SETTINGS					\
++		"netdev=eth0\0"						\
++		"ethprime=FEC0\0"					\
++		"fastboot_dev=mmc2\0"					\
++		"bootcmd=nand read 0x12800000 0x1000000 0x500000;booti 0x12800000\0"
++#endif
+diff --git a/include/configs/mx6solo_sabreauto_nand_mfg.h b/include/configs/mx6solo_sabreauto_nand_mfg.h
+index cc9477a..88ceaf5 100644
+--- a/include/configs/mx6solo_sabreauto_nand_mfg.h
++++ b/include/configs/mx6solo_sabreauto_nand_mfg.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Solo SABRE-AI Freescale board.
+  *
+@@ -117,7 +117,7 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc mtdparts=gpmi-nand:16m(boot),16m(kernel),128m(rootfs)"\
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc mtdparts=gpmi-nand:16m(boot),16m(kernel),128m(rootfs),-(user)"\
+ 				" nosmp arm_freq=800"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+diff --git a/lib_arm/bootm.c b/lib_arm/bootm.c
+index 5da3425..6b70367 100644
+--- a/lib_arm/bootm.c
++++ b/lib_arm/bootm.c
+@@ -4,7 +4,7 @@
+  * Marius Groeger <mgroeger@sysgo.de>
+  *
+  * Copyright (C) 2001  Erik Mouw (J.A.K.Mouw@its.tudelft.nl)
+- * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ * Copyright (C) 2013 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -147,10 +147,9 @@ void do_booti_linux (boot_img_hdr *hdr)
+ 		commandline = (char *)hdr->cmdline;
+ 
+ 	/* XXX: in production, you should always use boot.img 's cmdline !!! */
+-
+-	printf("kernel cmdline: \n\tuse %s command line:\n\t%s \n",
+-	       getenv("bootargs") ? "uboot" : "boot.img",
+-	       commandline);
++	printf("kernel cmdline: \n");
++	printf("\tuse %s ", getenv("bootargs") ? "uboot" : "boot.img");
++	printf("command line:\n\t%s \n", commandline);
+ #endif
+ 
+ 	theKernel = (void (*)(int, int, uint))(hdr->kernel_addr);
+-- 
+1.7.7.4
+

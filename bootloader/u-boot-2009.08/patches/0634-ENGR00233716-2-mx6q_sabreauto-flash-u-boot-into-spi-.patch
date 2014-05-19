@@ -1,0 +1,129 @@
+From 06e8a025d0d05414eff285a47a31eb8d8a548f68 Mon Sep 17 00:00:00 2001
+From: Adrian Alonso <aalonso@freescale.com>
+Date: Wed, 14 Nov 2012 20:08:28 -0600
+Subject: [PATCH 634/678] ENGR00233716-2: mx6q_sabreauto flash u-boot into
+ spi-nor fails to boot
+
+* Fix spi-nor boot failure
+* Fix unconfigured gpio pad setting when spi-nor or
+  weim-nor on steer control gpios
+* Group gpio access only when I2C is enabled and restore
+  route paths to avoid conflicts on shared pads
+
+Signed-off-by: Adrian Alonso <aalonso@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |   52 ++++++++++------------
+ 1 files changed, 24 insertions(+), 28 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index d074d8f..a85d172 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -405,32 +405,16 @@ static void setup_i2c(unsigned int module_base)
+ 
+ 		if (mx6_board_is_reva()) /* GPIO_16 for I2C3_SDA */
+ 			mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_16__I2C3_SDA);
+-		else {
++		else
+ 			mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_D18__I2C3_SDA);
+-			/* EIM_A24__GPIO_5_4 steer logic enable */
+-			mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_A24__GPIO_5_4);
+-			/* I2C steer reset */
+-			mxc_iomux_v3_setup_pad(MX6Q_PAD_SD2_DAT0__GPIO_1_15);
+-			gpio_direction_output(I2C_EXP_RST, 1);
+-			/* Enable I2C2 SDA route path */
+-			gpio_direction_output(I2C3_STEER, 1);
+-		}
+ #elif defined CONFIG_MX6DL
+ 		/* GPIO_3 for I2C3_SCL */
+ 		mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_3__I2C3_SCL);
+ 
+ 		if (mx6_board_is_reva()) /* GPIO_16 for I2C3_SDA */
+ 			mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_16__I2C3_SDA);
+-		else {
++		else
+ 			mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_D18__I2C3_SDA);
+-			/* EIM_A24__GPIO_5_4 steer logic enable */
+-			mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_A24__GPIO_5_4);
+-			/* I2C steer reset */
+-			mxc_iomux_v3_setup_pad(MX6DL_PAD_SD2_DAT0__GPIO_1_15);
+-			gpio_direction_output(I2C_EXP_RST, 1);
+-			/* Enable I2C3 SDA route path */
+-			gpio_direction_output(I2C3_STEER, 1);
+-		}
+ #endif
+ 		/* Enable i2c clock */
+ 		reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR2);
+@@ -531,10 +515,6 @@ void spi_io_init(struct imx_spi_dev_t *dev)
+ 		else if (dev->ss == 1)
+ 			mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_D19__ECSPI1_SS1);
+ #endif
+-		if (!mx6_board_is_reva()) {
+-			/* Enable spi-nor route path */
+-			gpio_set_value(I2C3_STEER, 0);
+-		}
+ 		break;
+ 	case ECSPI2_BASE_ADDR:
+ 	case ECSPI3_BASE_ADDR:
+@@ -769,11 +749,6 @@ static void setup_nor(void)
+ 	mxc_iomux_v3_setup_multiple_pads(nor_pads,
+ 			ARRAY_SIZE(nor_pads));
+ 
+-	if (!mx6_board_is_reva()) {
+-		/* Enable weim-nor route path */
+-		gpio_set_value(I2C3_STEER, 0);
+-	}
+-
+ 	weim_norflash_cs_setup();
+ }
+ #endif
+@@ -1016,6 +991,18 @@ void setup_splash_image(void)
+ }
+ #endif
+ 
++#if defined CONFIG_MX6Q
++iomux_v3_cfg_t gpio_pads[] = {
++	MX6Q_PAD_EIM_A24__GPIO_5_4,
++	MX6Q_PAD_SD2_DAT0__GPIO_1_15,
++};
++#elif defined CONFIG_MX6DL
++iomux_v3_cfg_t gpio_pads[] = {
++	MX6DL_PAD_EIM_A24__GPIO_5_4,
++	MX6DL_PAD_SD2_DAT0__GPIO_1_15,
++};
++#endif
++
+ int board_init(void)
+ {
+ 	mxc_iomux_v3_init((void *)IOMUXC_BASE_ADDR);
+@@ -1031,9 +1018,18 @@ int board_init(void)
+ 	setup_uart();
+ 
+ #ifdef CONFIG_I2C_MXC
++	if (!mx6_board_is_reva()) {
++		mxc_iomux_v3_setup_multiple_pads(gpio_pads,
++			ARRAY_SIZE(gpio_pads));
++		gpio_direction_output(I2C_EXP_RST, 1);
++		gpio_direction_output(I2C3_STEER, 1);
++	}
+ 	setup_i2c(CONFIG_SYS_I2C_PORT);
+ 	/* Enable lvds power */
+ 	setup_lvds_poweron();
++	/* restore path for weim/spi nor */
++	if (!mx6_board_is_reva())
++		gpio_direction_output(I2C3_STEER, 0);
+ #endif
+ #ifdef CONFIG_CMD_WEIMNOR
+ 	setup_nor();
+@@ -1187,7 +1183,7 @@ int checkboard(void)
+ 	default:
+ 		printf("unknown");
+ 	}
+-	printf(" ]\n");
++	printf("]\n");
+ 
+ 	printf("Boot Device: ");
+ 	switch (get_boot_device()) {
+-- 
+1.7.7.4
+

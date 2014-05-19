@@ -1,0 +1,64 @@
+From e16c1bcc77ce5814c865bf1724713d735aac22ae Mon Sep 17 00:00:00 2001
+From: Adrian Alonso <aalonso@freescale.com>
+Date: Fri, 30 Mar 2012 10:35:38 -0600
+Subject: [PATCH 502/678] ENGR00176537 mx6qsabreauto: i2c3_sda route setting
+
+* In RevB boards a steer logic circuit enables the
+  route path of I2C3_SDA signal and is controlled by
+  EIM_A24__GPIO_5_4 pad.
+* Configure GPIO_5_4 as as output and enable steer logic
+  circuit.
+
+Signed-off-by: Adrian Alonso <aalonso@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |   26 +++++++++++++++++++++-
+ 1 files changed, 24 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index 243fecb..ac8130e 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -332,16 +332,38 @@ static void setup_i2c(unsigned int module_base)
+ 
+ 		if (mx6_board_is_reva()) /* GPIO_16 for I2C3_SDA */
+ 			mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_16__I2C3_SDA);
+-		else
++		else {
+ 			mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_D18__I2C3_SDA);
++			/* EIM_A24__GPIO_5_4 steer logic enable */
++			mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_A24__GPIO_5_4);
++			reg = readl(GPIO5_BASE_ADDR + GPIO_GDIR);
++			reg |= (1 << 4);
++			/* Set GPIO_5_4 as output */
++			writel(reg, GPIO5_BASE_ADDR + GPIO_GDIR);
++			reg = readl(GPIO5_BASE_ADDR + GPIO_DR);
++			reg |= (1 << 4);
++			/* Enable I2C3 SDA route path */
++			writel(reg, GPIO5_BASE_ADDR + GPIO_DR);
++		}
+ #elif defined CONFIG_MX6DL
+ 		/* GPIO_3 for I2C3_SCL */
+ 		mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_3__I2C3_SCL);
+ 
+ 		if (mx6_board_is_reva()) /* GPIO_16 for I2C3_SDA */
+ 			mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_16__I2C3_SDA);
+-		else
++		else {
+ 			mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_D18__I2C3_SDA);
++			/* EIM_A24__GPIO_5_4 steer logic enable */
++			mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_A24__GPIO_5_4);
++			reg = readl(GPIO5_BASE_ADDR + GPIO_GDIR);
++			reg |= (1 << 4);
++			/* Set GPIO_5_4 as output */
++			writel(reg, GPIO5_BASE_ADDR + GPIO_GDIR);
++			reg = readl(GPIO5_BASE_ADDR + GPIO_DR);
++			reg |= (1 << 4);
++			/* Enable I2C3 SDA route path */
++			writel(reg, GPIO5_BASE_ADDR + GPIO_DR);
++		}
+ #endif
+ 		/* Enable i2c clock */
+ 		reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR2);
+-- 
+1.7.7.4
+

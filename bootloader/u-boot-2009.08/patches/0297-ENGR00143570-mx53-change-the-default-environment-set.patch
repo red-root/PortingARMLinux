@@ -1,0 +1,88 @@
+From 8cb28bb7c7031551672b00d75a272bd31709c9d0 Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Thu, 19 May 2011 22:50:42 +0800
+Subject: [PATCH 297/678] ENGR00143570 mx53: change the default environment
+ setting
+
+Change the default environment setting as sd boot for mx53
+loco, mx53 smd and mx53 ard boards.
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ include/configs/mx53_ard.h      |    5 +++--
+ include/configs/mx53_ard_ddr3.h |    5 +++--
+ include/configs/mx53_loco.h     |    7 ++++---
+ include/configs/mx53_smd.h      |    7 ++++---
+ 4 files changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/include/configs/mx53_ard.h b/include/configs/mx53_ard.h
+index 37e1c5e..da77536 100644
+--- a/include/configs/mx53_ard.h
++++ b/include/configs/mx53_ard.h
+@@ -133,8 +133,9 @@
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+ 			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+ 		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "     \
+-			"root=/dev/mmcblk0p2 rootwait\0"                \
+-		"bootcmd_mmc=run bootargs_base bootargs_mmc; bootm\0"   \
++			"root=/dev/mmcblk0p1 rootwait rw\0"                \
++		"bootcmd_mmc=run bootargs_base bootargs_mmc; "		\
++			"mmc read 0 ${loadaddr} 0x800 0x1800; bootm\0"   \
+ 		"bootcmd=run bootcmd_net\0"                             \
+ 
+ 
+diff --git a/include/configs/mx53_ard_ddr3.h b/include/configs/mx53_ard_ddr3.h
+index 3b391da..1ff1a20 100644
+--- a/include/configs/mx53_ard_ddr3.h
++++ b/include/configs/mx53_ard_ddr3.h
+@@ -133,8 +133,9 @@
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+ 			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+ 		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "     \
+-			"root=/dev/mmcblk0p2 rootwait\0"                \
+-		"bootcmd_mmc=run bootargs_base bootargs_mmc; bootm\0"   \
++			"root=/dev/mmcblk0p1 rootwait rw\0"                \
++		"bootcmd_mmc=run bootargs_base bootargs_mmc; "		\
++			"mmc read 0 ${loadaddr} 0x800 0x1800; bootm\0"   \
+ 		"bootcmd=run bootcmd_net\0"                             \
+ 
+ 
+diff --git a/include/configs/mx53_loco.h b/include/configs/mx53_loco.h
+index 57d4062..709ae82 100644
+--- a/include/configs/mx53_loco.h
++++ b/include/configs/mx53_loco.h
+@@ -125,9 +125,10 @@
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+ 			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+ 		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "	\
+-			"root=/dev/mmcblk0p2 rootwait\0"	\
+-		"bootcmd_mmc=run bootargs_base bootargs_mmc; bootm\0"	\
+-		"bootcmd=run bootcmd_net\0"	\
++			"root=/dev/mmcblk0p1 rootwait rw\0"		\
++		"bootcmd_mmc=run bootargs_base bootargs_mmc; "		\
++			"mmc read 0 ${loadaddr} 0x800 0x1800; bootm\0"	\
++		"bootcmd=run bootcmd_mmc\0"	\
+ 	\
+ 
+ 
+diff --git a/include/configs/mx53_smd.h b/include/configs/mx53_smd.h
+index 240b822..8c65fd7 100644
+--- a/include/configs/mx53_smd.h
++++ b/include/configs/mx53_smd.h
+@@ -128,9 +128,10 @@
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+ 			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+ 		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "	\
+-			"root=/dev/mmcblk0p2 rootwait\0"	\
+-		"bootcmd_mmc=run bootargs_base bootargs_mmc; bootm\0"	\
+-		"bootcmd=run bootcmd_net\0"	\
++			"root=/dev/mmcblk0p1 rootwait rw\0"		\
++		"bootcmd_mmc=run bootargs_base bootargs_mmc; "		\
++			"mmc read 0 ${loadaddr} 0x800 0x1800; bootm\0"	\
++		"bootcmd=run bootcmd_mmc\0"	\
+ 	\
+ 
+ 
+-- 
+1.7.7.4
+

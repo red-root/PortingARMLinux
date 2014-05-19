@@ -1,0 +1,115 @@
+From 31aa7991a5a22645babbc07fd161bb6f4c028270 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Tue, 26 Jun 2012 19:17:19 +0800
+Subject: [PATCH 545/678] ENGR00214947 MX6 UBOOT : default enable wait mode as
+ default parameters
+
+For historical reasons U-Boot set "enable_wait_mode=off" in default
+U-Boot parameter. Now wait mode is OK for these platforms so we
+remove these settings.
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ include/configs/mx6dl_arm2.h        |    2 +-
+ include/configs/mx6dl_arm2_lpddr2.h |    2 +-
+ include/configs/mx6dl_sabresd.h     |    1 -
+ include/configs/mx6dl_sabresd_mfg.h |    2 +-
+ include/configs/mx6q_sabrelite.h    |    3 +--
+ include/configs/mx6q_sabresd_mfg.h  |    2 +-
+ include/configs/mx6solo_sabreauto.h |    2 +-
+ 7 files changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index 3a80a04..d0081b9 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -121,7 +121,7 @@
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+ 		"bootargs_base=setenv bootargs console=ttymxc3,115200 "\
+-			"nosmp enable_wait_mode=off\0"     \
++			"nosmp\0"     \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6dl_arm2_lpddr2.h b/include/configs/mx6dl_arm2_lpddr2.h
+index a665dbc..94d1985 100644
+--- a/include/configs/mx6dl_arm2_lpddr2.h
++++ b/include/configs/mx6dl_arm2_lpddr2.h
+@@ -120,7 +120,7 @@
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+ 		"bootargs_base=setenv bootargs console=ttymxc3,115200 "\
+-			"nosmp enable_wait_mode=off\0"     \
++			"nosmp\0"     \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index 0cc8736..9f4fad1 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -121,7 +121,6 @@
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+ 		"bootargs_base=setenv bootargs console=ttymxc0,115200\0"\
+-			"enable_wait_mode=off\0"     \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6dl_sabresd_mfg.h b/include/configs/mx6dl_sabresd_mfg.h
+index 11e7189..ea45d50 100644
+--- a/include/configs/mx6dl_sabresd_mfg.h
++++ b/include/configs/mx6dl_sabresd_mfg.h
+@@ -115,7 +115,7 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc0,115200 rdinit=/linuxrc enable_wait_mode=off"
++#define CONFIG_BOOTARGS         "console=ttymxc0,115200 rdinit=/linuxrc"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index 7859a15..ad1953b 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -124,8 +124,7 @@
+ 		"bootargs_base=setenv bootargs console=ttymxc1,115200\0" \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs " \
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp " \
+-			"video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 " \
+-			"enable_wait_mode=off\0" \
++			"video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666\0" \
+ 		"bootcmd_net=dhcp; run bootargs_base bootargs_nfs;bootm\0" \
+ 		"bootargs_mmc=setenv bootargs ${bootargs} " \
+ 			"root=/dev/mmcblk0p1 rootwait rw " \
+diff --git a/include/configs/mx6q_sabresd_mfg.h b/include/configs/mx6q_sabresd_mfg.h
+index 9c2572e..1dcfa95 100644
+--- a/include/configs/mx6q_sabresd_mfg.h
++++ b/include/configs/mx6q_sabresd_mfg.h
+@@ -112,7 +112,7 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	0x10c00000
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc0,115200 rdinit=/linuxrc enable_wait_mode=off"
++#define CONFIG_BOOTARGS         "console=ttymxc0,115200 rdinit=/linuxrc"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6solo_sabreauto.h b/include/configs/mx6solo_sabreauto.h
+index db67768..1a90d68 100644
+--- a/include/configs/mx6solo_sabreauto.h
++++ b/include/configs/mx6solo_sabreauto.h
+@@ -121,7 +121,7 @@
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+ 		"bootargs_base=setenv bootargs console=ttymxc3,115200 "\
+-		"enable_wait_mode=off nosmp arm_freq=800\0"     \
++		"nosmp arm_freq=800\0"     \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+-- 
+1.7.7.4
+

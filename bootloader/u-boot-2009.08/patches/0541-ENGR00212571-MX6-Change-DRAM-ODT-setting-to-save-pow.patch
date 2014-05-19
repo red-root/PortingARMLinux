@@ -1,0 +1,141 @@
+From 82d93b3ceddd456892a99b6b45ceb661bb50e710 Mon Sep 17 00:00:00 2001
+From: Anson Huang <b20788@freescale.com>
+Date: Wed, 6 Jun 2012 17:47:12 +0800
+Subject: [PATCH 541/678] ENGR00212571 [MX6]Change DRAM ODT setting to save
+ power
+
+We can use weak ODT setting, it will save about 50% DDR
+power in runtime. Now we use 0x00007
+
+MMDC0_MPODTCTRL MMDC1_MPODTCTRL, (Ohm)
+
+Setting		DDR_ODT		imx_ODT		Max_overclocking
+
+0x22227		120		060		615MHz
+0x11117		120		120		604MHz
+0x00007		120		000		576MHz
+0x00000		000		000		556MHz
+
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ board/freescale/mx6q_arm2/flash_header.S      |   12 ++++++------
+ board/freescale/mx6q_sabreauto/flash_header.S |    8 ++++----
+ board/freescale/mx6q_sabrelite/flash_header.S |    6 +++---
+ board/freescale/mx6q_sabresd/flash_header.S   |    8 ++++----
+ 4 files changed, 17 insertions(+), 17 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/flash_header.S b/board/freescale/mx6q_arm2/flash_header.S
+index 02d0737..1eec5c4 100644
+--- a/board/freescale/mx6q_arm2/flash_header.S
++++ b/board/freescale/mx6q_arm2/flash_header.S
+@@ -188,8 +188,8 @@ MXC_DCD_ITEM(84, MMDC_P0_BASE_ADDR + 0x01c, 0x04008040)
+ MXC_DCD_ITEM(85, MMDC_P0_BASE_ADDR + 0x01c, 0x04008048)
+ # final DDR setup
+ MXC_DCD_ITEM(86, MMDC_P0_BASE_ADDR + 0x020, 0x00005800)
+-MXC_DCD_ITEM(87, MMDC_P0_BASE_ADDR + 0x818, 0x00022227)
+-MXC_DCD_ITEM(88, MMDC_P1_BASE_ADDR + 0x818, 0x00022227)
++MXC_DCD_ITEM(87, MMDC_P0_BASE_ADDR + 0x818, 0x00000007)
++MXC_DCD_ITEM(88, MMDC_P1_BASE_ADDR + 0x818, 0x00000007)
+ MXC_DCD_ITEM(89, MMDC_P0_BASE_ADDR + 0x004, 0x0002556d)
+ MXC_DCD_ITEM(90, MMDC_P1_BASE_ADDR + 0x004, 0x00011006)
+ MXC_DCD_ITEM(91, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+@@ -912,8 +912,8 @@ MXC_DCD_ITEM(69, MMDC_P0_BASE_ADDR + 0x01c, 0x04008048)
+ MXC_DCD_ITEM(70, MMDC_P0_BASE_ADDR + 0x800, 0xA1380003)
+ MXC_DCD_ITEM(71, MMDC_P1_BASE_ADDR + 0x800, 0xA1380003)
+ MXC_DCD_ITEM(72, MMDC_P0_BASE_ADDR + 0x020, 0x00005800)
+-MXC_DCD_ITEM(73, MMDC_P0_BASE_ADDR + 0x818, 0x00022227)
+-MXC_DCD_ITEM(74, MMDC_P1_BASE_ADDR + 0x818, 0x00022227)
++MXC_DCD_ITEM(73, MMDC_P0_BASE_ADDR + 0x818, 0x00000007)
++MXC_DCD_ITEM(74, MMDC_P1_BASE_ADDR + 0x818, 0x00000007)
+ 
+ MXC_DCD_ITEM(75, MMDC_P0_BASE_ADDR + 0x83c, 0x434B0350)
+ MXC_DCD_ITEM(76, MMDC_P0_BASE_ADDR + 0x840, 0x034C0359)
+@@ -1144,9 +1144,9 @@ plugin_start:
+     ldr r1, =0x00005800
+     str r1, [r0,#0x20]
+ 
+-    ldr r1, =0x00022227
++    ldr r1, =0x00000007
+     str r1, [r0,#0x818]
+-    ldr r1, =0x00022227
++    ldr r1, =0x00000007
+     str r1, [r2,#0x818]
+ 
+     ldr r1, =0x433f033f
+diff --git a/board/freescale/mx6q_sabreauto/flash_header.S b/board/freescale/mx6q_sabreauto/flash_header.S
+index c63ed7a..c8a149b 100644
+--- a/board/freescale/mx6q_sabreauto/flash_header.S
++++ b/board/freescale/mx6q_sabreauto/flash_header.S
+@@ -148,8 +148,8 @@ MXC_DCD_ITEM(72, MMDC_P0_BASE_ADDR + 0x01c, 0x00048031)
+ MXC_DCD_ITEM(73, MMDC_P0_BASE_ADDR + 0x01c, 0x07208030)
+ MXC_DCD_ITEM(74, MMDC_P0_BASE_ADDR + 0x01c, 0x04008040)
+ MXC_DCD_ITEM(75, MMDC_P0_BASE_ADDR + 0x020, 0x00005800)
+-MXC_DCD_ITEM(76, MMDC_P0_BASE_ADDR + 0x818, 0x00022227)
+-MXC_DCD_ITEM(77, MMDC_P1_BASE_ADDR + 0x818, 0x00022227)
++MXC_DCD_ITEM(76, MMDC_P0_BASE_ADDR + 0x818, 0x00000007)
++MXC_DCD_ITEM(77, MMDC_P1_BASE_ADDR + 0x818, 0x00000007)
+ MXC_DCD_ITEM(78, MMDC_P0_BASE_ADDR + 0x004, 0x0002556d)
+ MXC_DCD_ITEM(79, MMDC_P1_BASE_ADDR + 0x004, 0x00011006)
+ MXC_DCD_ITEM(80, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+@@ -423,8 +423,8 @@ MXC_DCD_ITEM(63, MMDC_P0_BASE_ADDR + 0x01c, 0x09408030)
+ MXC_DCD_ITEM(64, MMDC_P0_BASE_ADDR + 0x01c, 0x04008040)
+ MXC_DCD_ITEM(65, MMDC_P0_BASE_ADDR + 0x800, 0xA1380003)
+ MXC_DCD_ITEM(66, MMDC_P0_BASE_ADDR + 0x020, 0x00005800)
+-MXC_DCD_ITEM(67, MMDC_P0_BASE_ADDR + 0x818, 0x00022227)
+-MXC_DCD_ITEM(68, MMDC_P1_BASE_ADDR + 0x818, 0x00022227)
++MXC_DCD_ITEM(67, MMDC_P0_BASE_ADDR + 0x818, 0x00000007)
++MXC_DCD_ITEM(68, MMDC_P1_BASE_ADDR + 0x818, 0x00000007)
+ 
+ /* Calibration values based on ARD and 528MHz */
+ MXC_DCD_ITEM(69, MMDC_P0_BASE_ADDR + 0x83c, 0x434B0358)
+diff --git a/board/freescale/mx6q_sabrelite/flash_header.S b/board/freescale/mx6q_sabrelite/flash_header.S
+index 0fbbb86..c0ec85c 100644
+--- a/board/freescale/mx6q_sabrelite/flash_header.S
++++ b/board/freescale/mx6q_sabrelite/flash_header.S
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -146,8 +146,8 @@ MXC_DCD_ITEM(69, MMDC_P0_BASE_ADDR + 0x01c, 0x04008048)
+ MXC_DCD_ITEM(70, MMDC_P0_BASE_ADDR + 0x800, 0xA1380003)
+ MXC_DCD_ITEM(71, MMDC_P1_BASE_ADDR + 0x800, 0xA1380003)
+ MXC_DCD_ITEM(72, MMDC_P0_BASE_ADDR + 0x020, 0x00005800)
+-MXC_DCD_ITEM(73, MMDC_P0_BASE_ADDR + 0x818, 0x00022227)
+-MXC_DCD_ITEM(74, MMDC_P1_BASE_ADDR + 0x818, 0x00022227)
++MXC_DCD_ITEM(73, MMDC_P0_BASE_ADDR + 0x818, 0x00000007)
++MXC_DCD_ITEM(74, MMDC_P1_BASE_ADDR + 0x818, 0x00000007)
+ 
+ MXC_DCD_ITEM(75, MMDC_P0_BASE_ADDR + 0x83c, 0x434B0350)
+ MXC_DCD_ITEM(76, MMDC_P0_BASE_ADDR + 0x840, 0x034C0359)
+diff --git a/board/freescale/mx6q_sabresd/flash_header.S b/board/freescale/mx6q_sabresd/flash_header.S
+index 4a803fd..14b9df3 100644
+--- a/board/freescale/mx6q_sabresd/flash_header.S
++++ b/board/freescale/mx6q_sabresd/flash_header.S
+@@ -175,8 +175,8 @@ MXC_DCD_ITEM(84, MMDC_P0_BASE_ADDR + 0x01c, 0x04008040)
+ MXC_DCD_ITEM(85, MMDC_P0_BASE_ADDR + 0x01c, 0x04008048)
+ # final DDR setup
+ MXC_DCD_ITEM(86, MMDC_P0_BASE_ADDR + 0x020, 0x00005800)
+-MXC_DCD_ITEM(87, MMDC_P0_BASE_ADDR + 0x818, 0x00022227)
+-MXC_DCD_ITEM(88, MMDC_P1_BASE_ADDR + 0x818, 0x00022227)
++MXC_DCD_ITEM(87, MMDC_P0_BASE_ADDR + 0x818, 0x00000007)
++MXC_DCD_ITEM(88, MMDC_P1_BASE_ADDR + 0x818, 0x00000007)
+ MXC_DCD_ITEM(89, MMDC_P0_BASE_ADDR + 0x004, 0x0002556d)
+ MXC_DCD_ITEM(90, MMDC_P1_BASE_ADDR + 0x404, 0x00011006)
+ MXC_DCD_ITEM(91, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+@@ -281,8 +281,8 @@ MXC_DCD_ITEM(69, MMDC_P0_BASE_ADDR + 0x01c, 0x04008048)
+ MXC_DCD_ITEM(70, MMDC_P0_BASE_ADDR + 0x800, 0xA1380003)
+ MXC_DCD_ITEM(71, MMDC_P1_BASE_ADDR + 0x800, 0xA1380003)
+ MXC_DCD_ITEM(72, MMDC_P0_BASE_ADDR + 0x020, 0x00005800)
+-MXC_DCD_ITEM(73, MMDC_P0_BASE_ADDR + 0x818, 0x00022227)
+-MXC_DCD_ITEM(74, MMDC_P1_BASE_ADDR + 0x818, 0x00022227)
++MXC_DCD_ITEM(73, MMDC_P0_BASE_ADDR + 0x818, 0x00000007)
++MXC_DCD_ITEM(74, MMDC_P1_BASE_ADDR + 0x818, 0x00000007)
+ 
+ MXC_DCD_ITEM(75, MMDC_P0_BASE_ADDR + 0x83c, 0x434B0350)
+ MXC_DCD_ITEM(76, MMDC_P0_BASE_ADDR + 0x840, 0x034C0359)
+-- 
+1.7.7.4
+

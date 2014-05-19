@@ -1,0 +1,45 @@
+From b57421ea9aa78c878492ea6349e4e8ab93f3749b Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Tue, 27 Mar 2012 09:44:08 +0800
+Subject: [PATCH 495/678] ENGR00178024 mx6solo sabreauto: add nosmp
+ arm_freq=800 by default
+
+Add "nosmp arm_freq=800" options for mx6solo sabreauto board
+by default
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ include/configs/mx6solo_sabreauto.h     |    2 +-
+ include/configs/mx6solo_sabreauto_mfg.h |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/include/configs/mx6solo_sabreauto.h b/include/configs/mx6solo_sabreauto.h
+index 32a5320..999fb2a 100644
+--- a/include/configs/mx6solo_sabreauto.h
++++ b/include/configs/mx6solo_sabreauto.h
+@@ -121,7 +121,7 @@
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+ 		"bootargs_base=setenv bootargs console=ttymxc3,115200 "\
+-		"enable_wait_mode=off\0"     \
++		"enable_wait_mode=off nosmp arm_freq=800\0"     \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6solo_sabreauto_mfg.h b/include/configs/mx6solo_sabreauto_mfg.h
+index 0e29229..75dbe07 100644
+--- a/include/configs/mx6solo_sabreauto_mfg.h
++++ b/include/configs/mx6solo_sabreauto_mfg.h
+@@ -115,7 +115,8 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc"
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
++				"nosmp arm_freq=800"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+-- 
+1.7.7.4
+

@@ -1,0 +1,86 @@
+From e4ab626ad1067aa9c3491d8888c8d402bcdca547 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Fri, 19 Oct 2012 14:26:00 +0800
+Subject: [PATCH 619/678] ENGR00230391: Fix build fail issue of sata
+
+Fix build fail issue of sata.
+
+mx6q_arm2.c: In function 'sata_initialize':
+mx6q_arm2.c:261:6: error: 'sata_curr_device' undeclared (first use in
+		this function)
+mx6q_arm2.c:261:6: note: each undeclared identifier is reported only
+once for each function it appears in
+mx6q_arm2.c:299:2: warning: implicit declaration of function
+'__sata_initialize' [-Wimplicit-function-declaration]
+mx6q_arm2.c: In function 'setup_sata':
+mx6q_arm2.c:346:6: error: 'sata_curr_device' undeclared (first use in
+		this function)
+mx6q_arm2.c: At top level:
+mx6q_arm2.c:81:12: warning: 'system_rev' defined but not used
+[-Wunused-variable]
+make[1]: *** [mx6q_arm2.o] Error 1
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ board/freescale/mx6q_arm2/mx6q_arm2.c           |    3 ++-
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |    2 +-
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c     |    3 ++-
+ 3 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index 953a6c0..490cb68 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -81,11 +81,12 @@ DECLARE_GLOBAL_DATA_PTR;
+ static u32 system_rev;
+ static enum boot_device boot_dev;
+ 
++extern int sata_curr_device;
++
+ #ifdef CONFIG_VIDEO_MX5
+ extern unsigned char fsl_bmp_600x400[];
+ extern int fsl_bmp_600x400_size;
+ extern int g_ipu_hw_rev;
+-extern int sata_curr_device;
+ 
+ #if defined(CONFIG_BMP_8BPP)
+ unsigned short colormap[256];
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index aeaf908..d074d8f 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -77,12 +77,12 @@
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+ static enum boot_device boot_dev;
++extern int sata_curr_device;
+ 
+ #ifdef CONFIG_VIDEO_MX5
+ extern unsigned char fsl_bmp_600x400[];
+ extern int fsl_bmp_600x400_size;
+ extern int g_ipu_hw_rev;
+-extern int sata_curr_device;
+ 
+ #if defined(CONFIG_BMP_8BPP)
+ unsigned short colormap[256];
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 2a82329..f3ae259 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -92,11 +92,12 @@ static enum boot_device boot_dev;
+ #define USB_OTG_PWR IMX_GPIO_NR(3, 22)
+ #define USB_H1_POWER IMX_GPIO_NR(1, 29)
+ 
++extern int sata_curr_device;
++
+ #ifdef CONFIG_VIDEO_MX5
+ extern unsigned char fsl_bmp_reversed_600x400[];
+ extern int fsl_bmp_reversed_600x400_size;
+ extern int g_ipu_hw_rev;
+-extern int sata_curr_device;
+ 
+ #if defined(CONFIG_BMP_8BPP)
+ unsigned short colormap[256];
+-- 
+1.7.7.4
+

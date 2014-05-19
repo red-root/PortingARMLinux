@@ -1,0 +1,32 @@
+From eadeefdbe43d513dbc8e9ac22e7f892c69259b94 Mon Sep 17 00:00:00 2001
+From: Robby Cai <R63905@freescale.com>
+Date: Tue, 25 Oct 2011 20:47:14 +0800
+Subject: [PATCH 385/678] ENGR00161415: mc34708: set 1p5
+
+set charging current limit to 1p5
+
+Signed-off-by: Robby Cai <R63905@freescale.com>
+---
+ board/freescale/mx53_pcba/mx53_pcba.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx53_pcba/mx53_pcba.c b/board/freescale/mx53_pcba/mx53_pcba.c
+index 5ea1658..1214417 100644
+--- a/board/freescale/mx53_pcba/mx53_pcba.c
++++ b/board/freescale/mx53_pcba/mx53_pcba.c
+@@ -340,10 +340,10 @@ void setup_pmic_voltages(void)
+ 		if (i2c_write(0x8, 53, 1, buf, 3))
+ 			printf("%s:i2c_write 53:error\n", __func__);
+ 
+-		/* set both AUX current limit to 950mA */
++		/* set 1P5 */
+ 		if (i2c_read(0x8, 52, 1, &buf[0], 3))
+ 			printf("%s:i2c_read 52:error\n", __func__);
+-		buf[1] = (buf[1] & 0xc7) | 0x38;
++		buf[0] = buf[0] | 0x10;
+ 		if (i2c_write(0x8, 52, 1, buf, 3))
+ 			printf("%s:i2c_write 52:error\n", __func__);
+ 
+-- 
+1.7.7.4
+

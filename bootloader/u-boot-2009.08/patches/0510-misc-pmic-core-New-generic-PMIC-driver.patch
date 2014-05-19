@@ -1,0 +1,485 @@
+From 6672130e19be6dfc9c5c88a50910f023d7a44340 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=C5=81ukasz=20Majewski?= <l.majewski@samsung.com>
+Date: Thu, 6 Oct 2011 02:37:34 +0000
+Subject: [PATCH 510/678] misc:pmic:core New generic PMIC driver
+
+I2C or SPI PMIC devices can be accessed.
+Separate files: pmic_i2c.c and pmic_spi.c are responsible
+for handling transmission over I2C or SPI bus.
+
+New flags:
+CONFIG_PMIC - enable PMIC general device.
+CONFIG_PMIC_I2C/SPI - specify the interface to be used.
+
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Stefano Babic <sbabic@denx.de>
+---
+ drivers/misc/Makefile    |    4 +-
+ drivers/misc/pmic_core.c |  147 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/misc/pmic_i2c.c  |   92 +++++++++++++++++++++++++++++
+ drivers/misc/pmic_spi.c  |  109 ++++++++++++++++++++++++++++++++++
+ include/pmic.h           |   71 ++++++++++++++++++++++
+ 5 files changed, 422 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 0c88a69..c4797a5 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -34,7 +34,9 @@ COBJS-$(CONFIG_IMX_PWM) += imx_pwm.o
+ COBJS-$(CONFIG_NS87308) += ns87308.o
+ COBJS-$(CONFIG_STATUS_LED) += status_led.o
+ COBJS-$(CONFIG_TWL4030_LED) += twl4030_led.o
+-COBJS-$(CONFIG_FSL_PMIC) += fsl_pmic.o
++COBJS-$(CONFIG_PMIC) += pmic_core.o
++COBJS-$(CONFIG_PMIC_I2C) += pmic_i2c.o
++COBJS-$(CONFIG_PMIC_SPI) += pmic_spi.o
+ 
+ COBJS	:= $(COBJS-y)
+ SRCS	:= $(COBJS:.o=.c)
+diff --git a/drivers/misc/pmic_core.c b/drivers/misc/pmic_core.c
+new file mode 100644
+index 0000000..5d62a56
+--- /dev/null
++++ b/drivers/misc/pmic_core.c
+@@ -0,0 +1,147 @@
++/*
++ * Copyright (C) 2011 Samsung Electronics
++ * Lukasz Majewski <l.majewski@samsung.com>
++ *
++ * (C) Copyright 2010
++ * Stefano Babic, DENX Software Engineering, sbabic@denx.de
++ *
++ * (C) Copyright 2008-2009 Freescale Semiconductor, Inc.
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#include <common.h>
++#include <linux/types.h>
++#include <pmic.h>
++
++static struct pmic pmic;
++
++int check_reg(u32 reg)
++{
++	if (reg >= pmic.number_of_regs) {
++		printf("<reg num> = %d is invalid. Should be less than %d\n",
++		       reg, pmic.number_of_regs);
++		return -1;
++	}
++	return 0;
++}
++
++int pmic_set_output(struct pmic *p, u32 reg, int out, int on)
++{
++	u32 val;
++
++	if (pmic_reg_read(p, reg, &val))
++		return -1;
++
++	if (on)
++		val |= out;
++	else
++		val &= ~out;
++
++	if (pmic_reg_write(p, reg, val))
++		return -1;
++
++	return 0;
++}
++
++static void pmic_show_info(struct pmic *p)
++{
++	printf("PMIC: %s\n", p->name);
++}
++
++static void pmic_dump(struct pmic *p)
++{
++	int i, ret;
++	u32 val;
++
++	pmic_show_info(p);
++	for (i = 0; i < p->number_of_regs; i++) {
++		ret = pmic_reg_read(p, i, &val);
++		if (ret)
++			puts("PMIC: Registers dump failed\n");
++
++		if (!(i % 8))
++			printf("\n0x%02x: ", i);
++
++		printf("%08x ", val);
++	}
++	puts("\n");
++}
++
++struct pmic *get_pmic(void)
++{
++	return &pmic;
++}
++
++int do_pmic(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
++{
++	u32 ret, reg, val;
++	char *cmd;
++
++	struct pmic *p = &pmic;
++
++	/* at least two arguments please */
++	if (argc < 2)
++		return cmd_usage(cmdtp);
++
++	cmd = argv[1];
++	if (strcmp(cmd, "dump") == 0) {
++		pmic_dump(p);
++		return 0;
++	}
++
++	if (strcmp(cmd, "read") == 0) {
++		if (argc < 3)
++			return cmd_usage(cmdtp);
++
++		reg = simple_strtoul(argv[2], NULL, 16);
++
++		ret = pmic_reg_read(p, reg, &val);
++
++		if (ret)
++			puts("PMIC: Register read failed\n");
++
++		printf("\n0x%02x: 0x%08x\n", reg, val);
++
++		return 0;
++	}
++
++	if (strcmp(cmd, "write") == 0) {
++		if (argc < 4)
++			return cmd_usage(cmdtp);
++
++		reg = simple_strtoul(argv[2], NULL, 16);
++		val = simple_strtoul(argv[3], NULL, 16);
++
++		pmic_reg_write(p, reg, val);
++
++		return 0;
++	}
++
++	/* No subcommand found */
++	return 1;
++}
++
++U_BOOT_CMD(
++	pmic,	CONFIG_SYS_MAXARGS, 1, do_pmic,
++	"PMIC",
++	"dump - dump PMIC registers\n"
++	"pmic read <reg> - read register\n"
++	"pmic write <reg> <value> - write register"
++);
+diff --git a/drivers/misc/pmic_i2c.c b/drivers/misc/pmic_i2c.c
+new file mode 100644
+index 0000000..b82e899
+--- /dev/null
++++ b/drivers/misc/pmic_i2c.c
+@@ -0,0 +1,92 @@
++/*
++ * Copyright (C) 2011 Samsung Electronics
++ * Lukasz Majewski <l.majewski@samsung.com>
++ *
++ * (C) Copyright 2010
++ * Stefano Babic, DENX Software Engineering, sbabic@denx.de
++ *
++ * (C) Copyright 2008-2009 Freescale Semiconductor, Inc.
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#include <common.h>
++#include <linux/types.h>
++#include <pmic.h>
++#include <i2c.h>
++
++int pmic_reg_write(struct pmic *p, u32 reg, u32 val)
++{
++	unsigned char buf[4] = { 0 };
++
++	if (check_reg(reg))
++		return -1;
++
++	switch (pmic_i2c_tx_num) {
++	case 3:
++		buf[0] = (val >> 16) & 0xff;
++		buf[1] = (val >> 8) & 0xff;
++		buf[2] = val & 0xff;
++		break;
++	case 1:
++		buf[0] = val & 0xff;
++		break;
++	}
++
++	if (i2c_write(pmic_i2c_addr, reg, 1, buf, pmic_i2c_tx_num))
++		return -1;
++
++	return 0;
++}
++
++int pmic_reg_read(struct pmic *p, u32 reg, u32 *val)
++{
++	unsigned char buf[4] = { 0 };
++	u32 ret_val = 0;
++
++	if (check_reg(reg))
++		return -1;
++
++	if (i2c_read(pmic_i2c_addr, reg, 1, buf, pmic_i2c_tx_num))
++		return -1;
++
++	switch (pmic_i2c_tx_num) {
++	case 3:
++		ret_val = buf[0] << 16 | buf[1] << 8 | buf[2];
++		break;
++	case 1:
++		ret_val = buf[0];
++		break;
++	}
++	memcpy(val, &ret_val, sizeof(ret_val));
++
++	return 0;
++}
++
++int pmic_probe(struct pmic *p)
++{
++	i2c_set_bus_num(p->bus);
++	debug("PMIC:%s probed!\n", p->name);
++	if (i2c_probe(pmic_i2c_addr)) {
++		printf("Can't find PMIC:%s\n", p->name);
++		return -1;
++	}
++
++	return 0;
++}
+diff --git a/drivers/misc/pmic_spi.c b/drivers/misc/pmic_spi.c
+new file mode 100644
+index 0000000..ff35377
+--- /dev/null
++++ b/drivers/misc/pmic_spi.c
+@@ -0,0 +1,109 @@
++/*
++ * Copyright (C) 2011 Samsung Electronics
++ * Lukasz Majewski <l.majewski@samsung.com>
++ *
++ * (C) Copyright 2010
++ * Stefano Babic, DENX Software Engineering, sbabic@denx.de
++ *
++ * (C) Copyright 2008-2009 Freescale Semiconductor, Inc.
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#include <common.h>
++#include <linux/types.h>
++#include <pmic.h>
++#include <spi.h>
++
++static struct spi_slave *slave;
++
++void pmic_spi_free(struct spi_slave *slave)
++{
++	if (slave)
++		spi_free_slave(slave);
++}
++
++struct spi_slave *pmic_spi_probe(struct pmic *p)
++{
++	return spi_setup_slave(p->bus,
++		p->hw.spi.cs,
++		p->hw.spi.clk,
++		p->hw.spi.mode);
++}
++
++static u32 pmic_reg(struct pmic *p, u32 reg, u32 *val, u32 write)
++{
++	u32 pmic_tx, pmic_rx;
++	u32 tmp;
++
++	if (!slave) {
++		slave = pmic_spi_probe(p);
++
++		if (!slave)
++			return -1;
++	}
++
++	if (check_reg(reg))
++		return -1;
++
++	if (spi_claim_bus(slave))
++		return -1;
++
++	pmic_tx = p->hw.spi.prepare_tx(reg, val, write);
++
++	tmp = cpu_to_be32(pmic_tx);
++
++	if (spi_xfer(slave, pmic_spi_bitlen, &tmp, &pmic_rx,
++			pmic_spi_flags)) {
++		spi_release_bus(slave);
++		return -1;
++	}
++
++	if (write) {
++		pmic_tx = p->hw.spi.prepare_tx(0, NULL, write);
++		pmic_tx &= ~(1 << 31);
++		tmp = cpu_to_be32(pmic_tx);
++		if (spi_xfer(slave, pmic_spi_bitlen, &tmp, &pmic_rx,
++			pmic_spi_flags)) {
++			spi_release_bus(slave);
++			return -1;
++		}
++	}
++
++	spi_release_bus(slave);
++	*val = cpu_to_be32(pmic_rx);
++
++	return 0;
++}
++
++int pmic_reg_write(struct pmic *p, u32 reg, u32 val)
++{
++	if (pmic_reg(p, reg, &val, 1))
++		return -1;
++
++	return 0;
++}
++
++int pmic_reg_read(struct pmic *p, u32 reg, u32 *val)
++{
++	if (pmic_reg(p, reg, val, 0))
++		return -1;
++
++	return 0;
++}
+diff --git a/include/pmic.h b/include/pmic.h
+new file mode 100644
+index 0000000..52a1526
+--- /dev/null
++++ b/include/pmic.h
+@@ -0,0 +1,71 @@
++/*
++ *  Copyright (C) 2011 Samsung Electronics
++ *  Lukasz Majewski <l.majewski@samsung.com>
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef __CORE_PMIC_H_
++#define __CORE_PMIC_H_
++
++enum { PMIC_I2C, PMIC_SPI, };
++enum { I2C_PMIC, I2C_NUM, };
++enum { PMIC_READ, PMIC_WRITE, };
++
++struct p_i2c {
++	unsigned char addr;
++	unsigned char *buf;
++	unsigned char tx_num;
++};
++
++struct p_spi {
++	unsigned int cs;
++	unsigned int mode;
++	unsigned int bitlen;
++	unsigned int clk;
++	unsigned int flags;
++	u32 (*prepare_tx)(u32 reg, u32 *val, u32 write);
++};
++
++struct pmic {
++	const char *name;
++	unsigned char bus;
++	unsigned char interface;
++	unsigned char number_of_regs;
++	union hw {
++		struct p_i2c i2c;
++		struct p_spi spi;
++	} hw;
++};
++
++int pmic_init(void);
++int check_reg(u32 reg);
++struct pmic *get_pmic(void);
++int pmic_probe(struct pmic *p);
++int pmic_reg_read(struct pmic *p, u32 reg, u32 *val);
++int pmic_reg_write(struct pmic *p, u32 reg, u32 val);
++int pmic_set_output(struct pmic *p, u32 reg, int ldo, int on);
++
++#define pmic_i2c_addr (p->hw.i2c.addr)
++#define pmic_i2c_tx_num (p->hw.i2c.tx_num)
++
++#define pmic_spi_bitlen (p->hw.spi.bitlen)
++#define pmic_spi_flags (p->hw.spi.flags)
++
++#endif /* __CORE_PMIC_H_ */
+-- 
+1.7.7.4
+

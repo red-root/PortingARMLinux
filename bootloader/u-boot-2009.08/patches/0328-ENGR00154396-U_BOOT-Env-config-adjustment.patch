@@ -1,0 +1,839 @@
+From c7cf313a6396c700bef9b278bc3ff8b346a3a2c1 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Fri, 5 Aug 2011 16:50:20 +0800
+Subject: [PATCH 328/678] ENGR00154396: U_BOOT: Env config adjustment.
+
+Change env size to 8K and change gpmi nand env offset to 2M.
+This will reduce boot time and fix gpmi nand env problem.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ include/configs/mx35_3stack.h            |    6 +++---
+ include/configs/mx35_3stack_mmc.h        |    6 +++---
+ include/configs/mx50_arm2.h              |    6 +++---
+ include/configs/mx50_arm2_ddr2.h         |    6 +++---
+ include/configs/mx50_arm2_lpddr2.h       |    6 +++---
+ include/configs/mx50_rd3.h               |    6 +++---
+ include/configs/mx50_rd3_android.h       |    6 +++---
+ include/configs/mx50_rdp.h               |    6 +++---
+ include/configs/mx50_rdp_android.h       |    6 +++---
+ include/configs/mx51_3stack.h            |    6 +++---
+ include/configs/mx51_3stack_android.h    |    6 +++---
+ include/configs/mx51_bbg.h               |    4 ++--
+ include/configs/mx51_bbg_android.h       |    4 ++--
+ include/configs/mx53_ard.h               |    6 +++---
+ include/configs/mx53_ard_ddr3.h          |    6 +++---
+ include/configs/mx53_ard_ddr3_mfg.h      |    4 ++--
+ include/configs/mx53_ard_mfg.h           |    4 ++--
+ include/configs/mx53_arm2_ddr3.h         |    6 +++---
+ include/configs/mx53_arm2_ddr3_android.h |    6 +++---
+ include/configs/mx53_evk.h               |    6 +++---
+ include/configs/mx53_evk_android.h       |    6 +++---
+ include/configs/mx53_evk_mfg.h           |    4 ++--
+ include/configs/mx53_loco.h              |    6 +++---
+ include/configs/mx53_loco_mfg.h          |    4 ++--
+ include/configs/mx53_pcba_android.h      |    6 +++---
+ include/configs/mx53_pcba_android_mfg.h  |    4 ++--
+ include/configs/mx53_smd.h               |   18 +++++++++---------
+ include/configs/mx53_smd_android.h       |    6 +++---
+ include/configs/mx53_smd_mfg.h           |    4 ++--
+ 29 files changed, 85 insertions(+), 85 deletions(-)
+
+diff --git a/include/configs/mx35_3stack.h b/include/configs/mx35_3stack.h
+index 43715be..40bf5f8 100644
+--- a/include/configs/mx35_3stack.h
++++ b/include/configs/mx35_3stack.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2008-2010 Freescale Semiconductor, Inc.
++ * Copyright (C) 2008-2011 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX31ADS Freescale board.
+  *
+@@ -56,7 +56,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 512 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(1 * 1024 * 1024)
+ #define CONFIG_SYS_GBL_DATA_SIZE	128/* size in bytes reserved for initial data */
+ 
+ /*
+@@ -201,7 +201,7 @@
+ #define CONFIG_SYS_MONITOR_BASE	CONFIG_SYS_FLASH_BASE
+ #define CONFIG_SYS_MONITOR_LEN		(512 * 1024)	/* Reserve 256KiB */
+ 
+-#define CONFIG_ENV_SECT_SIZE	(128 * 1024)
++#define CONFIG_ENV_SECT_SIZE	(8 * 1024)
+ #define CONFIG_ENV_SIZE		CONFIG_ENV_SECT_SIZE
+ 
+ /* Address and size of Redundant Environment Sector	*/
+diff --git a/include/configs/mx35_3stack_mmc.h b/include/configs/mx35_3stack_mmc.h
+index 6104c09..727f926 100644
+--- a/include/configs/mx35_3stack_mmc.h
++++ b/include/configs/mx35_3stack_mmc.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2008-2010 Freescale Semiconductor, Inc.
++ * Copyright (C) 2008-2011 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX31ADS Freescale board.
+  *
+@@ -59,7 +59,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 512 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(1 * 1024 * 1024)
+ #define CONFIG_SYS_GBL_DATA_SIZE	128/* size in bytes reserved for initial data */
+ 
+ /*
+@@ -224,7 +224,7 @@
+ #define CONFIG_SYS_MONITOR_BASE	CONFIG_SYS_FLASH_BASE
+ #define CONFIG_SYS_MONITOR_LEN		(512 * 1024)	/* Reserve 256KiB */
+ 
+-#define CONFIG_ENV_SECT_SIZE	(128 * 1024)
++#define CONFIG_ENV_SECT_SIZE	(8 * 1024)
+ #define CONFIG_ENV_SIZE		CONFIG_ENV_SECT_SIZE
+ 
+ /* Address and size of Redundant Environment Sector	*/
+diff --git a/include/configs/mx50_arm2.h b/include/configs/mx50_arm2.h
+index d0266cc..c4895db 100644
+--- a/include/configs/mx50_arm2.h
++++ b/include/configs/mx50_arm2.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -314,12 +314,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx50_arm2_ddr2.h b/include/configs/mx50_arm2_ddr2.h
+index c5e8bce..f2fa25c 100644
+--- a/include/configs/mx50_arm2_ddr2.h
++++ b/include/configs/mx50_arm2_ddr2.h
+@@ -62,7 +62,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -308,12 +308,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx50_arm2_lpddr2.h b/include/configs/mx50_arm2_lpddr2.h
+index d1751df..5fa3ef4 100644
+--- a/include/configs/mx50_arm2_lpddr2.h
++++ b/include/configs/mx50_arm2_lpddr2.h
+@@ -62,7 +62,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -306,12 +306,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx50_rd3.h b/include/configs/mx50_rd3.h
+index 58229a1..904ddf7 100644
+--- a/include/configs/mx50_rd3.h
++++ b/include/configs/mx50_rd3.h
+@@ -64,7 +64,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -283,12 +283,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx50_rd3_android.h b/include/configs/mx50_rd3_android.h
+index 4599d49..9082a0e 100644
+--- a/include/configs/mx50_rd3_android.h
++++ b/include/configs/mx50_rd3_android.h
+@@ -64,7 +64,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -280,12 +280,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx50_rdp.h b/include/configs/mx50_rdp.h
+index fff16a9..f89850c 100644
+--- a/include/configs/mx50_rdp.h
++++ b/include/configs/mx50_rdp.h
+@@ -64,7 +64,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -283,12 +283,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx50_rdp_android.h b/include/configs/mx50_rdp_android.h
+index f3675dd..10ed526 100644
+--- a/include/configs/mx50_rdp_android.h
++++ b/include/configs/mx50_rdp_android.h
+@@ -64,7 +64,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -283,12 +283,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx51_3stack.h b/include/configs/mx51_3stack.h
+index 98dbcbd..6724120 100644
+--- a/include/configs/mx51_3stack.h
++++ b/include/configs/mx51_3stack.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2009-2010 Freescale Semiconductor, Inc.
++ * Copyright (C) 2009-2011 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX51-3Stack Freescale board.
+  *
+@@ -62,7 +62,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -247,7 +247,7 @@
+ #define CONFIG_FSL_ENV_IN_NAND
+ /* #define CONFIG_FSL_ENV_IN_NAND */
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE		CONFIG_ENV_SECT_SIZE
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+diff --git a/include/configs/mx51_3stack_android.h b/include/configs/mx51_3stack_android.h
+index 7339a24..8e0909d 100644
+--- a/include/configs/mx51_3stack_android.h
++++ b/include/configs/mx51_3stack_android.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2009-2010 Freescale Semiconductor, Inc.
++ * Copyright (C) 2009-2011 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX51-3Stack Freescale board.
+  *
+@@ -62,7 +62,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 4 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(5 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -297,7 +297,7 @@
+ /* #define CONFIG_FSL_ENV_IN_MMC */
+ #define CONFIG_FSL_ENV_IN_NAND
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+diff --git a/include/configs/mx51_bbg.h b/include/configs/mx51_bbg.h
+index 6b3a513..6115f24 100644
+--- a/include/configs/mx51_bbg.h
++++ b/include/configs/mx51_bbg.h
+@@ -61,7 +61,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -255,7 +255,7 @@
+ /* #define CONFIG_FSL_ENV_IN_SF */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_MMC)
+diff --git a/include/configs/mx51_bbg_android.h b/include/configs/mx51_bbg_android.h
+index 16e92b8..cfa8650 100644
+--- a/include/configs/mx51_bbg_android.h
++++ b/include/configs/mx51_bbg_android.h
+@@ -62,7 +62,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -304,7 +304,7 @@
+ #define CONFIG_FSL_ENV_IN_MMC
+ /* #define CONFIG_FSL_ENV_IN_NAND */
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+diff --git a/include/configs/mx53_ard.h b/include/configs/mx53_ard.h
+index da77536..74661c3 100644
+--- a/include/configs/mx53_ard.h
++++ b/include/configs/mx53_ard.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -263,12 +263,12 @@
+ #define CONFIG_FSL_ENV_IN_MMC
+ /* #define CONFIG_FSL_ENV_IN_SATA */
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx53_ard_ddr3.h b/include/configs/mx53_ard_ddr3.h
+index 1ff1a20..a3f348f 100644
+--- a/include/configs/mx53_ard_ddr3.h
++++ b/include/configs/mx53_ard_ddr3.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -266,12 +266,12 @@
+ #define CONFIG_FSL_ENV_IN_MMC
+ /* #define CONFIG_FSL_ENV_IN_SATA */
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx53_ard_ddr3_mfg.h b/include/configs/mx53_ard_ddr3_mfg.h
+index e579a4c..3a1148b 100755
+--- a/include/configs/mx53_ard_ddr3_mfg.h
++++ b/include/configs/mx53_ard_ddr3_mfg.h
+@@ -64,7 +64,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -222,7 +222,7 @@
+ #define CONFIG_SYS_NO_FLASH
+ 
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #define CONFIG_ENV_IS_NOWHERE
+diff --git a/include/configs/mx53_ard_mfg.h b/include/configs/mx53_ard_mfg.h
+index b8cfa90..11c0de7 100755
+--- a/include/configs/mx53_ard_mfg.h
++++ b/include/configs/mx53_ard_mfg.h
+@@ -64,7 +64,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -218,7 +218,7 @@
+ #define CONFIG_SYS_NO_FLASH
+ 
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #define CONFIG_ENV_IS_NOWHERE
+diff --git a/include/configs/mx53_arm2_ddr3.h b/include/configs/mx53_arm2_ddr3.h
+index 05d314a..a21f5ea 100644
+--- a/include/configs/mx53_arm2_ddr3.h
++++ b/include/configs/mx53_arm2_ddr3.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -244,12 +244,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx53_arm2_ddr3_android.h b/include/configs/mx53_arm2_ddr3_android.h
+index 265e032..30edc70 100644
+--- a/include/configs/mx53_arm2_ddr3_android.h
++++ b/include/configs/mx53_arm2_ddr3_android.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -271,12 +271,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx53_evk.h b/include/configs/mx53_evk.h
+index ef0331a..5db9643 100644
+--- a/include/configs/mx53_evk.h
++++ b/include/configs/mx53_evk.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -270,12 +270,12 @@
+ #define CONFIG_FSL_ENV_IN_MMC
+ /* #define CONFIG_FSL_ENV_IN_SATA */
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx53_evk_android.h b/include/configs/mx53_evk_android.h
+index bdb2a95..dbad007 100644
+--- a/include/configs/mx53_evk_android.h
++++ b/include/configs/mx53_evk_android.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -319,12 +319,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx53_evk_mfg.h b/include/configs/mx53_evk_mfg.h
+index e45a452..33f0a5e 100755
+--- a/include/configs/mx53_evk_mfg.h
++++ b/include/configs/mx53_evk_mfg.h
+@@ -64,7 +64,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -216,7 +216,7 @@
+ #define CONFIG_SYS_NO_FLASH
+ 
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #define CONFIG_ENV_IS_NOWHERE
+diff --git a/include/configs/mx53_loco.h b/include/configs/mx53_loco.h
+index 709ae82..e9cb29b 100644
+--- a/include/configs/mx53_loco.h
++++ b/include/configs/mx53_loco.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -254,12 +254,12 @@
+ #define CONFIG_FSL_ENV_IN_MMC
+ /* #define CONFIG_FSL_ENV_IN_SATA */
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx53_loco_mfg.h b/include/configs/mx53_loco_mfg.h
+index 9476a5f..b6ceb65 100644
+--- a/include/configs/mx53_loco_mfg.h
++++ b/include/configs/mx53_loco_mfg.h
+@@ -64,7 +64,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -236,7 +236,7 @@
+  */
+ #define CONFIG_SYS_NO_FLASH
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #define CONFIG_ENV_IS_NOWHERE
+diff --git a/include/configs/mx53_pcba_android.h b/include/configs/mx53_pcba_android.h
+index ce812b3..e880330 100644
+--- a/include/configs/mx53_pcba_android.h
++++ b/include/configs/mx53_pcba_android.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -293,12 +293,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx53_pcba_android_mfg.h b/include/configs/mx53_pcba_android_mfg.h
+index cc3b7a4..1a6330e 100644
+--- a/include/configs/mx53_pcba_android_mfg.h
++++ b/include/configs/mx53_pcba_android_mfg.h
+@@ -64,7 +64,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -228,7 +228,7 @@
+ 
+ #define CONFIG_ENV_IS_NOWHERE
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #endif				/* __CONFIG_H */
+diff --git a/include/configs/mx53_smd.h b/include/configs/mx53_smd.h
+index 8c65fd7..f19ea50 100644
+--- a/include/configs/mx53_smd.h
++++ b/include/configs/mx53_smd.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -234,12 +234,12 @@
+  * SATA Configs
+  */
+ #ifdef CONFIG_CMD_SATA
+-  #define CONFIG_DWC_AHSATA
+-  #define CONFIG_SYS_SATA_MAX_DEVICE      1
+-  #define CONFIG_DWC_AHSATA_PORT_ID       0
+-  #define CONFIG_DWC_AHSATA_BASE_ADDR     SATA_BASE_ADDR
+-  #define CONFIG_LBA48
+-  #define CONFIG_LIBATA
++	#define CONFIG_DWC_AHSATA
++	#define CONFIG_SYS_SATA_MAX_DEVICE      1
++	#define CONFIG_DWC_AHSATA_PORT_ID       0
++	#define CONFIG_DWC_AHSATA_BASE_ADDR     SATA_BASE_ADDR
++	#define CONFIG_LBA48
++	#define CONFIG_LIBATA
+ #endif
+ 
+ /*-----------------------------------------------------------------------
+@@ -270,12 +270,12 @@
+ /* #define CONFIG_FSL_ENV_IN_SATA */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index 5013cfb..b9d6d47 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -63,7 +63,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -302,12 +302,12 @@
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #if defined(CONFIG_FSL_ENV_IN_NAND)
+ 	#define CONFIG_ENV_IS_IN_NAND 1
+-	#define CONFIG_ENV_OFFSET	0x100000
++	#define CONFIG_ENV_OFFSET	0x200000
+ #elif defined(CONFIG_FSL_ENV_IN_MMC)
+ 	#define CONFIG_ENV_IS_IN_MMC	1
+ 	#define CONFIG_ENV_OFFSET	(768 * 1024)
+diff --git a/include/configs/mx53_smd_mfg.h b/include/configs/mx53_smd_mfg.h
+index 24137d9..8fe8811 100644
+--- a/include/configs/mx53_smd_mfg.h
++++ b/include/configs/mx53_smd_mfg.h
+@@ -64,7 +64,7 @@
+ /*
+  * Size of malloc() pool
+  */
+-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
++#define CONFIG_SYS_MALLOC_LEN		(3 * 1024 * 1024)
+ /* size in bytes reserved for initial data */
+ #define CONFIG_SYS_GBL_DATA_SIZE	128
+ 
+@@ -253,7 +253,7 @@
+  */
+ #define CONFIG_SYS_NO_FLASH
+ 
+-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
+ 
+ #define CONFIG_ENV_IS_NOWHERE
+-- 
+1.7.7.4
+

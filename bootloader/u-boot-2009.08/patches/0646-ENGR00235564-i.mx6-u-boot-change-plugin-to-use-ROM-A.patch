@@ -1,0 +1,120 @@
+From 2ff6f45780995b06faab268f6130d68565e96ba5 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Mon, 3 Dec 2012 18:47:47 +0800
+Subject: [PATCH 646/678] ENGR00235564: i.mx6 u-boot: change plugin to use ROM
+ API table for code jump
+
+The original plugin code uses hard coded assembly address for the code jump
+to "pu_irom_hwcnfg_setup", it can only works for specific chip version, for
+a new TO, the assembly address will change, and the plugin code simply fails.
+
+In fact there is an API entry table in a fixed ROM location, it contains the
+entry to the "pu_irom_hwcnfg_setup". This patch retrieve the jump address
+from this API table, thus avoid the limitation for current implementation.
+
+Apply to all plugin enabled platforms, MX6Q/DL ARM2, MX6SL ARM2/EVK
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ board/freescale/mx6q_arm2/flash_header.S  |   15 +++++++++------
+ board/freescale/mx6sl_arm2/flash_header.S |    9 ++++++---
+ board/freescale/mx6sl_evk/flash_header.S  |    9 ++++++---
+ 3 files changed, 21 insertions(+), 12 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/flash_header.S b/board/freescale/mx6q_arm2/flash_header.S
+index 3c1719b..4b6a403 100644
+--- a/board/freescale/mx6q_arm2/flash_header.S
++++ b/board/freescale/mx6q_arm2/flash_header.S
+@@ -928,6 +928,9 @@ MXC_DCD_ITEM(90, MMDC_P0_BASE_ADDR + 0x404, 0x00011006)
+ 
+ #else
+ 
++#define ROM_API_TABLE_BASE_ADDR		(0x000000C0)
++#define ROM_API_HWCNFG_SETUP_OFFSET	(0x08)
++
+ /*****************PLUGIN IN mode********************/
+ 
+ #ifdef CONFIG_MX6DL_LPDDR2
+@@ -1480,9 +1483,9 @@ plugin_start:
+  * pu_irom_hwcnfg_setup is in 0x1fb5  ERIC : < what is the address in Rigel >
+  */
+ before_calling_rom___pu_irom_hwcnfg_setup:
+-    mov r4, #0x1f00
+-    add r4, r4, #0xb5
+-    blx r4	/* This address might change in future ROM versions */
++    ldr r3, =ROM_API_TABLE_BASE_ADDR
++    ldr r4, [r3, #ROM_API_HWCNFG_SETUP_OFFSET]
++    blx r4
+ after_calling_rom___pu_irom_hwcnfg_setup:
+ 
+ /* To return to ROM from plugin, we need to fill in these argument.
+@@ -1771,9 +1774,9 @@ plugin_start:
+  * check the _pu_irom_api_table for the address
+  */
+ before_calling_rom___pu_irom_hwcnfg_setup:
+-    mov r4, #0x2000
+-    add r4, r4, #0xed
+-    blx r4	/* This address might change in future ROM versions */
++    ldr r3, =ROM_API_TABLE_BASE_ADDR
++    ldr r4, [r3, #ROM_API_HWCNFG_SETUP_OFFSET]
++    blx r4
+ after_calling_rom___pu_irom_hwcnfg_setup:
+ 
+ /* To return to ROM from plugin, we need to fill in these argument.
+diff --git a/board/freescale/mx6sl_arm2/flash_header.S b/board/freescale/mx6sl_arm2/flash_header.S
+index 4c2475e..c034beb 100644
+--- a/board/freescale/mx6sl_arm2/flash_header.S
++++ b/board/freescale/mx6sl_arm2/flash_header.S
+@@ -375,6 +375,9 @@ MXC_DCD_ITEM(72, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ 
+ #else
+ 
++#define ROM_API_TABLE_BASE_ADDR		(0x000000C0)
++#define ROM_API_HWCNFG_SETUP_OFFSET	(0x08)
++
+ .section ".text.flasheader", "x"
+ origin:
+ 	b	_start
+@@ -672,9 +675,9 @@ plugin_start:
+  * pu_irom_hwcnfg_setup is in 0x1f20
+  */
+ before_calling_rom___pu_irom_hwcnfg_setup:
+-    mov r4, #0x1f00
+-    add r4, r4, #0x21
+-    blx r4	/* This address might change in future ROM versions */
++    ldr r3, =ROM_API_TABLE_BASE_ADDR
++    ldr r4, [r3, #ROM_API_HWCNFG_SETUP_OFFSET]
++    blx r4
+ after_calling_rom___pu_irom_hwcnfg_setup:
+ 
+ /* To return to ROM from plugin, we need to fill in these argument.
+diff --git a/board/freescale/mx6sl_evk/flash_header.S b/board/freescale/mx6sl_evk/flash_header.S
+index 4c2475e..c034beb 100644
+--- a/board/freescale/mx6sl_evk/flash_header.S
++++ b/board/freescale/mx6sl_evk/flash_header.S
+@@ -375,6 +375,9 @@ MXC_DCD_ITEM(72, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ 
+ #else
+ 
++#define ROM_API_TABLE_BASE_ADDR		(0x000000C0)
++#define ROM_API_HWCNFG_SETUP_OFFSET	(0x08)
++
+ .section ".text.flasheader", "x"
+ origin:
+ 	b	_start
+@@ -672,9 +675,9 @@ plugin_start:
+  * pu_irom_hwcnfg_setup is in 0x1f20
+  */
+ before_calling_rom___pu_irom_hwcnfg_setup:
+-    mov r4, #0x1f00
+-    add r4, r4, #0x21
+-    blx r4	/* This address might change in future ROM versions */
++    ldr r3, =ROM_API_TABLE_BASE_ADDR
++    ldr r4, [r3, #ROM_API_HWCNFG_SETUP_OFFSET]
++    blx r4
+ after_calling_rom___pu_irom_hwcnfg_setup:
+ 
+ /* To return to ROM from plugin, we need to fill in these argument.
+-- 
+1.7.7.4
+

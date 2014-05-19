@@ -1,0 +1,535 @@
+From 31f0941821d315435348f7ee00ef79b94cf9daec Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Thu, 11 Oct 2012 17:10:00 +0800
+Subject: [PATCH 608/678] ENGR00228238 i.mx6/i.mx6dl: sabresd: add
+ solo-ddr32bit support
+
+This patch adds the solo-ddr32bit config support. The DDR script got from:
+http://compass.freescale.net/livelink/livelink/227589697/
+MX6DL_init_DDR3_400MHz_32bit_For_SD_1.0.inc.txt?func=doc.Fetch&nodeid=227589697
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ Makefile                                    |    1 +
+ board/freescale/mx6q_sabresd/flash_header.S |  127 ++++++++++-
+ include/configs/mx6solo_sabresd.h           |  352 +++++++++++++++++++++++++++
+ 3 files changed, 478 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 26a4791..07022fe 100644
+--- a/Makefile
++++ b/Makefile
+@@ -3322,6 +3322,7 @@ mx6q_arm2_iram_config	: unconfig
+ 		}
+ 	@$(MKCONFIG) $(@:_config=) arm arm_cortexa8 mx6q_arm2 freescale mx6
+ 
++mx6solo_sabresd__config			\
+ mx6dl_sabresd_config			\
+ mx6dl_sabresd_mfg_config		\
+ mx6dl_sabresd_android_config			\
+diff --git a/board/freescale/mx6q_sabresd/flash_header.S b/board/freescale/mx6q_sabresd/flash_header.S
+index 5025446..2064159 100644
+--- a/board/freescale/mx6q_sabresd/flash_header.S
++++ b/board/freescale/mx6q_sabresd/flash_header.S
+@@ -54,6 +54,129 @@ image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ plugin:           .word 0x0
+ 
+ #if defined CONFIG_MX6DL_DDR3
++#if defined CONFIG_DDR_32BIT
++dcd_hdr:          .word 0x406802D2 /* Tag=0xD2, Len=76*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x046402CC /* Tag=0xCC, Len=76*8 + 4, Param=0x04 */
++
++# IOMUXC_BASE_ADDR  = 0x20e0000
++# DDR IO TYPE
++MXC_DCD_ITEM(1, IOMUXC_BASE_ADDR + 0x774, 0x000c0000)
++MXC_DCD_ITEM(2, IOMUXC_BASE_ADDR + 0x754, 0x00000000)
++# Clock
++MXC_DCD_ITEM(3, IOMUXC_BASE_ADDR + 0x4ac, 0x00000030)
++MXC_DCD_ITEM(4, IOMUXC_BASE_ADDR + 0x4b0, 0x00000030)
++# Address
++MXC_DCD_ITEM(5, IOMUXC_BASE_ADDR + 0x464, 0x00000030)
++MXC_DCD_ITEM(6, IOMUXC_BASE_ADDR + 0x490, 0x00000030)
++MXC_DCD_ITEM(7, IOMUXC_BASE_ADDR + 0x74c, 0x00000030)
++# Control
++MXC_DCD_ITEM(8, IOMUXC_BASE_ADDR + 0x494, 0x00000030)
++MXC_DCD_ITEM(9, IOMUXC_BASE_ADDR + 0x4a4, 0x00003000)
++MXC_DCD_ITEM(10, IOMUXC_BASE_ADDR + 0x4a8, 0x00003000)
++MXC_DCD_ITEM(11, IOMUXC_BASE_ADDR + 0x4a0, 0x00000000)
++MXC_DCD_ITEM(12, IOMUXC_BASE_ADDR + 0x4b4, 0x00003030)
++MXC_DCD_ITEM(13, IOMUXC_BASE_ADDR + 0x4b8, 0x00003030)
++MXC_DCD_ITEM(14, IOMUXC_BASE_ADDR + 0x76c, 0x00000030)
++# Data Strobe: IOMUXC_SW_PAD_CTL_GRP_DDRMODE_CTL - DDR_INPUT=0, CMOS,
++# CMOS mode saves power, but have less timing margin in case of DDR
++# timing issue on your board you can try DDR_MODE:  [= 0x00020000]
++MXC_DCD_ITEM(15, IOMUXC_BASE_ADDR + 0x750, 0x00000000)
++
++MXC_DCD_ITEM(16, IOMUXC_BASE_ADDR + 0x4bc, 0x00000030)
++MXC_DCD_ITEM(17, IOMUXC_BASE_ADDR + 0x4c0, 0x00000030)
++MXC_DCD_ITEM(18, IOMUXC_BASE_ADDR + 0x4c4, 0x00000030)
++MXC_DCD_ITEM(19, IOMUXC_BASE_ADDR + 0x4c8, 0x00000030)
++MXC_DCD_ITEM(20, IOMUXC_BASE_ADDR + 0x4cc, 0x00000000)
++MXC_DCD_ITEM(21, IOMUXC_BASE_ADDR + 0x4d0, 0x00000000)
++MXC_DCD_ITEM(22, IOMUXC_BASE_ADDR + 0x4d4, 0x00000000)
++MXC_DCD_ITEM(23, IOMUXC_BASE_ADDR + 0x4d8, 0x00000000)
++# DATA:IOMUXC_SW_PAD_CTL_GRP_DDRMODE - DDR_INPUT=0, CMOS,
++# CMOS mode saves power, but have less timing margin in case of DDR
++# timing issue on your board you can try DDR_MODE:  [= 0x00020000]
++
++MXC_DCD_ITEM(24, IOMUXC_BASE_ADDR + 0x760, 0x00000000)
++
++MXC_DCD_ITEM(25, IOMUXC_BASE_ADDR + 0x764, 0x00000030)
++MXC_DCD_ITEM(26, IOMUXC_BASE_ADDR + 0x770, 0x00000030)
++MXC_DCD_ITEM(27, IOMUXC_BASE_ADDR + 0x778, 0x00000030)
++MXC_DCD_ITEM(28, IOMUXC_BASE_ADDR + 0x77c, 0x00000030)
++MXC_DCD_ITEM(29, IOMUXC_BASE_ADDR + 0x780, 0x00000000)
++MXC_DCD_ITEM(30, IOMUXC_BASE_ADDR + 0x784, 0x00000000)
++MXC_DCD_ITEM(31, IOMUXC_BASE_ADDR + 0x78c, 0x00000000)
++MXC_DCD_ITEM(32, IOMUXC_BASE_ADDR + 0x748, 0x00000000)
++
++MXC_DCD_ITEM(33, IOMUXC_BASE_ADDR + 0x470, 0x00000030)
++MXC_DCD_ITEM(34, IOMUXC_BASE_ADDR + 0x474, 0x00000030)
++MXC_DCD_ITEM(35, IOMUXC_BASE_ADDR + 0x478, 0x00000030)
++MXC_DCD_ITEM(36, IOMUXC_BASE_ADDR + 0x47c, 0x00000030)
++MXC_DCD_ITEM(37, IOMUXC_BASE_ADDR + 0x480, 0x00000000)
++MXC_DCD_ITEM(38, IOMUXC_BASE_ADDR + 0x484, 0x00000000)
++MXC_DCD_ITEM(39, IOMUXC_BASE_ADDR + 0x488, 0x00000000)
++MXC_DCD_ITEM(40, IOMUXC_BASE_ADDR + 0x48c, 0x00000000)
++
++# MMDC_P0_BASE_ADDR = 0x021b0000
++# MMDC_P1_BASE_ADDR = 0x021b4000
++# Calibrations
++# ZQ
++MXC_DCD_ITEM(41, MMDC_P0_BASE_ADDR + 0x800, 0xa1390003)
++MXC_DCD_ITEM(42, MMDC_P1_BASE_ADDR + 0x800, 0xa1390003)
++# write leveling
++MXC_DCD_ITEM(43, MMDC_P0_BASE_ADDR + 0x80c, 0x00450049)
++MXC_DCD_ITEM(44, MMDC_P0_BASE_ADDR + 0x810, 0x00390043)
++# DQS gating, read delay, write delay calibration values
++# based on calibration compare of 0x00ffff00
++MXC_DCD_ITEM(45, MMDC_P0_BASE_ADDR + 0x83c, 0x42240229)
++MXC_DCD_ITEM(46, MMDC_P0_BASE_ADDR + 0x840, 0x021a0219)
++MXC_DCD_ITEM(47, MMDC_P0_BASE_ADDR + 0x848, 0x4e4f5150)
++MXC_DCD_ITEM(48, MMDC_P0_BASE_ADDR + 0x850, 0x35363136)
++# read data bit delay
++MXC_DCD_ITEM(49, MMDC_P0_BASE_ADDR + 0x81c, 0x33333333)
++MXC_DCD_ITEM(50, MMDC_P0_BASE_ADDR + 0x820, 0x33333333)
++MXC_DCD_ITEM(51, MMDC_P0_BASE_ADDR + 0x824, 0x33333333)
++MXC_DCD_ITEM(52, MMDC_P0_BASE_ADDR + 0x828, 0x33333333)
++# Complete calibration by forced measurment
++MXC_DCD_ITEM(53, MMDC_P0_BASE_ADDR + 0x8b8, 0x00000800)
++MXC_DCD_ITEM(54, MMDC_P1_BASE_ADDR + 0x8b8, 0x00000800)
++# MMDC init:
++# in DDR3, 32-bit mode, only MMDC0 is initiated:
++MXC_DCD_ITEM(55, MMDC_P0_BASE_ADDR + 0x004, 0x0002002d)
++MXC_DCD_ITEM(56, MMDC_P0_BASE_ADDR + 0x008, 0x00333030)
++
++MXC_DCD_ITEM(57, MMDC_P0_BASE_ADDR + 0x00c, 0x40445323)
++MXC_DCD_ITEM(58, MMDC_P0_BASE_ADDR + 0x010, 0xb66e8c63)
++
++MXC_DCD_ITEM(59, MMDC_P0_BASE_ADDR + 0x014, 0x01ff00db)
++MXC_DCD_ITEM(60, MMDC_P0_BASE_ADDR + 0x018, 0x00001740)
++MXC_DCD_ITEM(61, MMDC_P0_BASE_ADDR + 0x01c, 0x00008000)
++MXC_DCD_ITEM(62, MMDC_P0_BASE_ADDR + 0x02c, 0x000026d2)
++MXC_DCD_ITEM(63, MMDC_P0_BASE_ADDR + 0x030, 0x00440e21)
++/* CS0_END - 0x2fffffff, 512M  */
++MXC_DCD_ITEM(64, MMDC_P0_BASE_ADDR + 0x040, 0x00000017)
++
++/* MMDC0_MAARCR ADOPT optimized priorities. Dyn jump disabled */
++MXC_DCD_ITEM(65, MMDC_P0_BASE_ADDR + 0x400, 0x11420000)
++
++/* MMDC0_MDCTL- row-14bits; col-10bits; burst length 8;32-bit data bus */
++MXC_DCD_ITEM(66, MMDC_P0_BASE_ADDR + 0x000, 0x83190000)
++
++# Initialize 2GB DDR3 - Micron MT41J128M
++# MR2
++MXC_DCD_ITEM(67, MMDC_P0_BASE_ADDR + 0x01c, 0x04008032)
++# MR3
++MXC_DCD_ITEM(68, MMDC_P0_BASE_ADDR + 0x01c, 0x00008033)
++# MR1
++MXC_DCD_ITEM(69, MMDC_P0_BASE_ADDR + 0x01c, 0x00428031)
++# MR0
++MXC_DCD_ITEM(70, MMDC_P0_BASE_ADDR + 0x01c, 0x07208030)
++# ZQ calibration
++MXC_DCD_ITEM(71, MMDC_P0_BASE_ADDR + 0x01c, 0x04008040)
++# final DDR setup
++MXC_DCD_ITEM(72, MMDC_P0_BASE_ADDR + 0x020, 0x00005800)
++MXC_DCD_ITEM(73, MMDC_P0_BASE_ADDR + 0x818, 0x00000007)
++MXC_DCD_ITEM(74, MMDC_P0_BASE_ADDR + 0x004, 0x0002556d)
++MXC_DCD_ITEM(75, MMDC_P0_BASE_ADDR + 0x404, 0x00011006)
++MXC_DCD_ITEM(76, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
++#else /* i.MX6DL 64BIT-DDR */
+ dcd_hdr:          .word 0x40E002D2 /* Tag=0xD2, Len=91*8 + 4 + 4, Ver=0x40 */
+ write_dcd_cmd:    .word 0x04DC02CC /* Tag=0xCC, Len=91*8 + 4, Param=0x04 */
+ 
+@@ -180,8 +303,8 @@ MXC_DCD_ITEM(88, MMDC_P1_BASE_ADDR + 0x818, 0x00000007)
+ MXC_DCD_ITEM(89, MMDC_P0_BASE_ADDR + 0x004, 0x0002556d)
+ MXC_DCD_ITEM(90, MMDC_P1_BASE_ADDR + 0x404, 0x00011006)
+ MXC_DCD_ITEM(91, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+-
+-#else
++#endif
++#else  /* i.MX6Q */
+ dcd_hdr:          .word 0x40D802D2 /* Tag=0xD2, Len=90*8 + 4 + 4, Ver=0x40 */
+ write_dcd_cmd:    .word 0x04D402CC /* Tag=0xCC, Len=90*8 + 4, Param=0x04 */
+ 
+diff --git a/include/configs/mx6solo_sabresd.h b/include/configs/mx6solo_sabresd.h
+new file mode 100644
+index 0000000..a317189
+--- /dev/null
++++ b/include/configs/mx6solo_sabresd.h
+@@ -0,0 +1,352 @@
++/*
++ * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ *
++ * Configuration settings for the MX6DL SabreSD Freescale board.
++ * The board is configured with SOLO and 32-bit DDR bus-width.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef __CONFIG_H
++#define __CONFIG_H
++
++#include <asm/arch/mx6.h>
++
++ /* High Level Configuration Options */
++#define CONFIG_ARMV7	/* This is armv7 Cortex-A9 CPU core */
++#define CONFIG_MXC
++#define CONFIG_MX6DL
++#define CONFIG_MX6DL_DDR3
++#define CONFIG_MX6DL_SABRESD
++#define CONFIG_DDR_32BIT /* for DDR 32bit */
++#define CONFIG_FLASH_HEADER
++#define CONFIG_FLASH_HEADER_OFFSET 0x400
++#define CONFIG_MX6_CLK32	   32768
++
++#define CONFIG_SKIP_RELOCATE_UBOOT
++
++#define CONFIG_ARCH_CPU_INIT
++#undef CONFIG_ARCH_MMU /* disable MMU first */
++#define CONFIG_L2_OFF  /* disable L2 cache first*/
++
++#define CONFIG_MX6_HCLK_FREQ	24000000
++
++#define CONFIG_DISPLAY_CPUINFO
++#define CONFIG_DISPLAY_BOARDINFO
++
++#define CONFIG_SYS_64BIT_VSPRINTF
++
++#define BOARD_LATE_INIT
++
++#define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
++#define CONFIG_REVISION_TAG
++#define CONFIG_SETUP_MEMORY_TAGS
++#define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
++/*
++ * Size of malloc() pool
++ */
++#define CONFIG_SYS_MALLOC_LEN		(2 * 1024 * 1024)
++/* size in bytes reserved for initial data */
++#define CONFIG_SYS_GBL_DATA_SIZE	128
++
++/*
++ * Hardware drivers
++ */
++#define CONFIG_MXC_UART
++#define CONFIG_UART_BASE_ADDR   UART1_BASE_ADDR
++
++/* allow to overwrite serial and ethaddr */
++#define CONFIG_ENV_OVERWRITE
++#define CONFIG_CONS_INDEX		1
++#define CONFIG_BAUDRATE			115200
++#define CONFIG_SYS_BAUDRATE_TABLE	{9600, 19200, 38400, 57600, 115200}
++
++/***********************************************************
++ * Command definition
++ ***********************************************************/
++
++#include <config_cmd_default.h>
++
++#define CONFIG_CMD_PING
++#define CONFIG_CMD_DHCP
++#define CONFIG_CMD_MII
++#define CONFIG_CMD_NET
++#define CONFIG_NET_RETRY_COUNT  100
++#define CONFIG_NET_MULTI 1
++#define CONFIG_BOOTP_SUBNETMASK
++#define CONFIG_BOOTP_GATEWAY
++#define CONFIG_BOOTP_DNS
++
++#define CONFIG_CMD_SPI
++#define CONFIG_CMD_I2C
++#define CONFIG_CMD_IMXOTP
++
++/* Enable below configure when supporting nand */
++#define CONFIG_CMD_SF
++#define CONFIG_CMD_MMC
++#define CONFIG_CMD_ENV
++#define CONFIG_CMD_REGUL
++
++#define CONFIG_CMD_CLOCK
++#define CONFIG_REF_CLK_FREQ CONFIG_MX6_HCLK_FREQ
++
++#undef CONFIG_CMD_IMLS
++
++#define CONFIG_CMD_IMX_DOWNLOAD_MODE
++
++#define CONFIG_BOOTDELAY 3
++
++#define CONFIG_PRIME	"FEC0"
++
++#define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
++#define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
++
++#define	CONFIG_EXTRA_ENV_SETTINGS					\
++	"netdev=eth0\0"							\
++	"ethprime=FEC0\0"						\
++	"uboot=u-boot.bin\0"						\
++	"kernel=uImage\0"						\
++	"nfsroot=/opt/eldk/arm\0"					\
++	"bootargs_base=setenv bootargs console=ttymxc0,115200 nosmp\0"	\
++	"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "	\
++		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"	\
++	"bootcmd_net=run bootargs_base bootargs_nfs; "			\
++		"tftpboot ${loadaddr} ${kernel}; bootm\0"		\
++	"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "		\
++		"root=/dev/mmcblk0p1 rootwait\0"			\
++	"bootcmd_mmc=run bootargs_base bootargs_mmc; "			\
++	"mmc dev 3; "							\
++	"mmc read ${loadaddr} 0x800 0x2000; bootm\0"			\
++	"bootcmd=run bootcmd_net\0"					\
++
++
++#define CONFIG_ARP_TIMEOUT		200UL
++
++/*
++ * Miscellaneous configurable options
++ */
++#define CONFIG_SYS_LONGHELP		/* undef to save memory */
++#define CONFIG_SYS_PROMPT		"MX6SDL SABRESD U-Boot > "
++#define CONFIG_AUTO_COMPLETE
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
++/* Print Buffer Size */
++#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
++#define CONFIG_SYS_MAXARGS		16	/* max number of command args */
++#define CONFIG_SYS_BARGSIZE CONFIG_SYS_CBSIZE   /* Boot Argument Buffer Size */
++
++#define CONFIG_SYS_MEMTEST_START	0x10000000	/* memtest works on */
++#define CONFIG_SYS_MEMTEST_END		0x10010000
++
++#undef	CONFIG_SYS_CLKS_IN_HZ		/* everything, incl board info, in Hz */
++
++#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
++
++#define CONFIG_SYS_HZ			1000
++
++#define CONFIG_CMDLINE_EDITING
++
++#define CONFIG_FEC0_IOBASE		ENET_BASE_ADDR
++#define CONFIG_FEC0_PINMUX		-1
++#define CONFIG_FEC0_MIIBASE		-1
++#define CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
++#define CONFIG_MXC_FEC
++#define CONFIG_FEC0_PHY_ADDR		1
++#define CONFIG_ETH_PRIME
++#define CONFIG_RMII
++#define CONFIG_CMD_MII
++#define CONFIG_CMD_DHCP
++#define CONFIG_CMD_PING
++#define CONFIG_IPADDR			192.168.1.103
++#define CONFIG_SERVERIP			192.168.1.101
++#define CONFIG_NETMASK			255.255.255.0
++
++/*
++ * OCOTP Configs
++ */
++#ifdef CONFIG_CMD_IMXOTP
++	#define CONFIG_IMX_OTP
++	#define IMX_OTP_BASE		OCOTP_BASE_ADDR
++	#define IMX_OTP_ADDR_MAX	0x7F
++	#define IMX_OTP_DATA_ERROR_VAL	0xBADABADA
++#endif
++
++/*
++ * I2C Configs
++ */
++#ifdef CONFIG_CMD_I2C
++	#define CONFIG_HARD_I2C
++	#define CONFIG_I2C_MXC			1
++	#define CONFIG_SYS_I2C_PORT             I2C2_BASE_ADDR
++	#define CONFIG_SYS_I2C_SPEED            100000
++	#define CONFIG_SYS_I2C_SLAVE            0x8
++	#define CONFIG_MX6_INTER_LDO_BYPASS	0
++#endif
++
++/*
++ * SPI Configs
++ */
++#ifdef CONFIG_CMD_SF
++	#define CONFIG_FSL_SF
++	#define CONFIG_SPI_FLASH_IMX_M25PXX
++	#define CONFIG_SPI_FLASH_CS		0
++	#define CONFIG_IMX_ECSPI
++	#define IMX_CSPI_VER_2_3		1
++	#define MAX_SPI_BYTES			(64 * 4)
++#endif
++
++/* Regulator Configs */
++#ifdef CONFIG_CMD_REGUL
++	#define CONFIG_ANATOP_REGULATOR
++	#define CONFIG_CORE_REGULATOR_NAME	"vdd1p1"
++	#define CONFIG_PERIPH_REGULATOR_NAME	"vdd1p1"
++#endif
++
++/*
++ * MMC Configs
++ */
++#ifdef CONFIG_CMD_MMC
++	#define CONFIG_MMC
++	#define CONFIG_GENERIC_MMC
++	#define CONFIG_IMX_MMC
++	#define CONFIG_SYS_FSL_USDHC_NUM        4
++	#define CONFIG_SYS_FSL_ESDHC_ADDR       0
++	#define CONFIG_SYS_MMC_ENV_DEV		2
++	#define CONFIG_DOS_PARTITION
++	#define CONFIG_CMD_FAT
++	#define CONFIG_CMD_EXT2
++
++	/* detect whether SD1, 2, 3, or 4 is boot device */
++	#define CONFIG_DYNAMIC_MMC_DEVNO
++
++	/* SD3 and SD4 are 8 bit */
++	#define CONFIG_MMC_8BIT_PORTS		0xC
++	/* Setup target delay in DDR mode for each SD port */
++	#define CONFIG_GET_DDR_TARGET_DELAY
++#endif
++
++/*
++ * GPMI Nand Configs
++ */
++/* #define CONFIG_CMD_NAND */
++
++#ifdef CONFIG_CMD_NAND
++	#define CONFIG_NAND_GPMI
++	#define CONFIG_GPMI_NFC_SWAP_BLOCK_MARK
++	#define CONFIG_GPMI_NFC_V2
++
++	#define CONFIG_GPMI_REG_BASE		GPMI_BASE_ADDR
++	#define CONFIG_BCH_REG_BASE		BCH_BASE_ADDR
++
++	#define NAND_MAX_CHIPS			8
++	#define CONFIG_SYS_NAND_BASE		0x40000000
++	#define CONFIG_SYS_MAX_NAND_DEVICE	1
++
++	/* NAND is the unique module invoke APBH-DMA */
++	#define CONFIG_APBH_DMA
++	#define CONFIG_APBH_DMA_V2
++	#define CONFIG_MXS_DMA_REG_BASE	ABPHDMA_BASE_ADDR
++#endif
++
++/*-----------------------------------------------------------------------
++ * Stack sizes
++ *
++ * The stack sizes are set up in start.S using the settings below
++ */
++#define CONFIG_STACKSIZE	(128 * 1024)	/* regular stack */
++
++/*-----------------------------------------------------------------------
++ * Physical Memory Map
++ */
++#define CONFIG_NR_DRAM_BANKS	1
++#define PHYS_SDRAM_1		CSD0_DDR_BASE_ADDR
++#define PHYS_SDRAM_1_SIZE	(512 * 1024 * 1024)
++#define iomem_valid_addr(addr, size) \
++	(addr >= PHYS_SDRAM_1 && addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE))
++
++/*-----------------------------------------------------------------------
++ * FLASH and environment organization
++ */
++#define CONFIG_SYS_NO_FLASH
++
++/* Monitor at beginning of flash */
++#define CONFIG_FSL_ENV_IN_MMC
++/* #define CONFIG_FSL_ENV_IN_NAND */
++
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
++#define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
++
++#if defined(CONFIG_FSL_ENV_IN_NAND)
++	#define CONFIG_ENV_IS_IN_NAND 1
++	#define CONFIG_ENV_OFFSET	0x100000
++#elif defined(CONFIG_FSL_ENV_IN_MMC)
++	#define CONFIG_ENV_IS_IN_MMC	1
++	#define CONFIG_ENV_OFFSET	(768 * 1024)
++#elif defined(CONFIG_FSL_ENV_IN_SF)
++	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
++	#define CONFIG_ENV_SPI_CS		1
++	#define CONFIG_ENV_OFFSET       (768 * 1024)
++#else
++	#define CONFIG_ENV_IS_NOWHERE	1
++#endif
++
++/* #define CONFIG_SPLASH_SCREEN */
++/* #define CONFIG_MXC_EPDC */
++
++/*
++ * SPLASH SCREEN Configs
++ */
++#define CONFIG_SPLASH_SCREEN
++#ifdef CONFIG_SPLASH_SCREEN
++	/*
++	 * Framebuffer and LCD
++	 */
++	#define CONFIG_LCD
++	#define CONFIG_FB_BASE				(TEXT_BASE + 0x300000)
++	#define CONFIG_SYS_CONSOLE_IS_IN_ENV
++#ifdef CONFIG_MXC_EPDC
++	#undef LCD_TEST_PATTERN
++	/* #define CONFIG_SPLASH_IS_IN_MMC			1 */
++	#define LCD_BPP					LCD_MONOCHROME
++	/* #define CONFIG_SPLASH_SCREEN_ALIGN		1 */
++
++	#define CONFIG_MXC_EPDC				1
++
++	#define CONFIG_WORKING_BUF_ADDR			(TEXT_BASE + 0x100000)
++	#define CONFIG_WAVEFORM_BUF_ADDR		(TEXT_BASE + 0x200000)
++	#define CONFIG_WAVEFORM_FILE_OFFSET		0x600000
++	#define CONFIG_WAVEFORM_FILE_SIZE		0xF0A00
++	#define CONFIG_WAVEFORM_FILE_IN_MMC
++
++#ifdef CONFIG_SPLASH_IS_IN_MMC
++	#define CONFIG_SPLASH_IMG_OFFSET		0x4c000
++	#define CONFIG_SPLASH_IMG_SIZE			0x19000
++#endif
++#else /* !CONFIG_MXC_EPDC */
++	#define CONFIG_IPU_V3H
++	#define CONFIG_VIDEO_MX5
++	#define CONFIG_IPU_CLKRATE			260000000
++	#define CONFIG_SYS_CONSOLE_ENV_OVERWRITE
++	#define CONFIG_SYS_CONSOLE_OVERWRITE_ROUTINE
++	#define LCD_BPP					LCD_COLOR16
++	#define CONFIG_CMD_BMP
++	#define CONFIG_BMP_8BPP
++	#define CONFIG_SPLASH_SCREEN_ALIGN
++	#define CONFIG_SYS_WHITE_ON_BLACK
++#endif
++#endif /* CONFIG_SPLASH_SCREEN */
++#endif				/* __CONFIG_H */
+-- 
+1.7.7.4
+

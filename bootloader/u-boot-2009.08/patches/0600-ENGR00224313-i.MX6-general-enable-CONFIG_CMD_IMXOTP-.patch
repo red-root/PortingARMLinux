@@ -1,0 +1,190 @@
+From 097643f5cb6449a53bbf479eddc3565f53619820 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Fri, 14 Sep 2012 14:28:46 +0800
+Subject: [PATCH 600/678] ENGR00224313:i.MX6 general:enable CONFIG_CMD_IMXOTP
+ to fix the build error
+
+Commit 7942886(ENGR00221503-2 imx6: add cpu serial number support)
+introduces dependency on "CONFIG_SERIAL_TAG" and "CONFIG_CMD_IMXOTP".
+On U-boot configuration header files which only defines the first one, build
+error will be met.
+
+--- build error message ---
+arm_cortexa8/mx6/libmx6.a(generic.o): In function `get_board_serial':
+arm_cortexa8/mx6/generic.c:1438: undefined reference to `imx_otp_read_one_u32'
+arm_cortexa8/mx6/generic.c:1439: undefined reference to `imx_otp_read_one_u32'
+---------------------------
+
+To fix it, add missing "CONFIG_CMD_IMXOTP" macro definition in the
+config head file.
+
+Configs affected are:
+---------------------------
+	mx6q_arm2_iram
+	mx6q_sabresd_iram
+	mx6dl_arm2_iram
+	mx6sl_arm2_iram
+	mx6sl_evk_iram
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ include/configs/mx6dl_arm2_iram.h   |   12 ++++++++++++
+ include/configs/mx6q_arm2_iram.h    |   12 ++++++++++++
+ include/configs/mx6q_sabresd_iram.h |   12 ++++++++++++
+ include/configs/mx6sl_arm2_iram.h   |   12 ++++++++++++
+ include/configs/mx6sl_evk_iram.h    |   12 ++++++++++++
+ 5 files changed, 60 insertions(+), 0 deletions(-)
+
+diff --git a/include/configs/mx6dl_arm2_iram.h b/include/configs/mx6dl_arm2_iram.h
+index 6f64273..4aa5e5f 100644
+--- a/include/configs/mx6dl_arm2_iram.h
++++ b/include/configs/mx6dl_arm2_iram.h
+@@ -84,6 +84,8 @@
+ #define CONFIG_CMD_CONSOLE	/* coninfo			*/
+ #define CONFIG_CMD_RUN		/* run command in env variable	*/
+ 
++#define CONFIG_CMD_IMXOTP
++
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_ENV
+ 
+@@ -136,6 +138,16 @@
+ 
+ #define CONFIG_CMDLINE_EDITING
+ 
++/*
++ * OCOTP Configs
++ */
++#ifdef CONFIG_CMD_IMXOTP
++	#define CONFIG_IMX_OTP
++	#define IMX_OTP_BASE		OCOTP_BASE_ADDR
++	#define IMX_OTP_ADDR_MAX	0x7F
++	#define IMX_OTP_DATA_ERROR_VAL	0xBADABADA
++#endif
++
+ /*-----------------------------------------------------------------------
+  * Stack sizes
+  *
+diff --git a/include/configs/mx6q_arm2_iram.h b/include/configs/mx6q_arm2_iram.h
+index a027b02..a9623df 100644
+--- a/include/configs/mx6q_arm2_iram.h
++++ b/include/configs/mx6q_arm2_iram.h
+@@ -82,6 +82,8 @@
+ #define CONFIG_CMD_CONSOLE	/* coninfo			*/
+ #define CONFIG_CMD_RUN		/* run command in env variable	*/
+ 
++#define CONFIG_CMD_IMXOTP
++
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_ENV
+ 
+@@ -134,6 +136,16 @@
+ 
+ #define CONFIG_CMDLINE_EDITING
+ 
++/*
++ * OCOTP Configs
++ */
++#ifdef CONFIG_CMD_IMXOTP
++	#define CONFIG_IMX_OTP
++	#define IMX_OTP_BASE		OCOTP_BASE_ADDR
++	#define IMX_OTP_ADDR_MAX	0x7F
++	#define IMX_OTP_DATA_ERROR_VAL	0xBADABADA
++#endif
++
+ /*-----------------------------------------------------------------------
+  * Stack sizes
+  *
+diff --git a/include/configs/mx6q_sabresd_iram.h b/include/configs/mx6q_sabresd_iram.h
+index f6eb671..0fc3b38 100644
+--- a/include/configs/mx6q_sabresd_iram.h
++++ b/include/configs/mx6q_sabresd_iram.h
+@@ -82,6 +82,8 @@
+ #define CONFIG_CMD_CONSOLE	/* coninfo			*/
+ #define CONFIG_CMD_RUN		/* run command in env variable	*/
+ 
++#define CONFIG_CMD_IMXOTP
++
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_ENV
+ 
+@@ -134,6 +136,16 @@
+ 
+ #define CONFIG_CMDLINE_EDITING
+ 
++/*
++ * OCOTP Configs
++ */
++#ifdef CONFIG_CMD_IMXOTP
++	#define CONFIG_IMX_OTP
++	#define IMX_OTP_BASE		OCOTP_BASE_ADDR
++	#define IMX_OTP_ADDR_MAX	0x7F
++	#define IMX_OTP_DATA_ERROR_VAL	0xBADABADA
++#endif
++
+ /*-----------------------------------------------------------------------
+  * Stack sizes
+  *
+diff --git a/include/configs/mx6sl_arm2_iram.h b/include/configs/mx6sl_arm2_iram.h
+index 4a39f5d..ff0637f 100644
+--- a/include/configs/mx6sl_arm2_iram.h
++++ b/include/configs/mx6sl_arm2_iram.h
+@@ -81,6 +81,8 @@
+ #define CONFIG_CMD_CONSOLE	/* coninfo			*/
+ #define CONFIG_CMD_RUN		/* run command in env variable	*/
+ 
++#define CONFIG_CMD_IMXOTP
++
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_ENV
+ 
+@@ -123,6 +125,16 @@
+ 
+ #define CONFIG_CMDLINE_EDITING
+ 
++/*
++ * OCOTP Configs
++ */
++#ifdef CONFIG_CMD_IMXOTP
++	#define CONFIG_IMX_OTP
++	#define IMX_OTP_BASE		OCOTP_BASE_ADDR
++	#define IMX_OTP_ADDR_MAX	0x7F
++	#define IMX_OTP_DATA_ERROR_VAL	0xBADABADA
++#endif
++
+ /*-----------------------------------------------------------------------
+  * Stack sizes
+  *
+diff --git a/include/configs/mx6sl_evk_iram.h b/include/configs/mx6sl_evk_iram.h
+index 5e087b9..34a23b0 100644
+--- a/include/configs/mx6sl_evk_iram.h
++++ b/include/configs/mx6sl_evk_iram.h
+@@ -81,6 +81,8 @@
+ #define CONFIG_CMD_CONSOLE	/* coninfo			*/
+ #define CONFIG_CMD_RUN		/* run command in env variable	*/
+ 
++#define CONFIG_CMD_IMXOTP
++
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_ENV
+ 
+@@ -123,6 +125,16 @@
+ 
+ #define CONFIG_CMDLINE_EDITING
+ 
++/*
++ * OCOTP Configs
++ */
++#ifdef CONFIG_CMD_IMXOTP
++	#define CONFIG_IMX_OTP
++	#define IMX_OTP_BASE		OCOTP_BASE_ADDR
++	#define IMX_OTP_ADDR_MAX	0x7F
++	#define IMX_OTP_DATA_ERROR_VAL	0xBADABADA
++#endif
++
+ /*-----------------------------------------------------------------------
+  * Stack sizes
+  *
+-- 
+1.7.7.4
+

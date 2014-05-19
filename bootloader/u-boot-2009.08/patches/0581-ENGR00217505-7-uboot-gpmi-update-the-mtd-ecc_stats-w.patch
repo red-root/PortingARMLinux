@@ -1,0 +1,44 @@
+From c2513f07acd37220829246613d7f43507ab9c840 Mon Sep 17 00:00:00 2001
+From: Huang Shijie <b32955@freescale.com>
+Date: Wed, 15 Aug 2012 10:47:52 +0800
+Subject: [PATCH 581/678] ENGR00217505-7 uboot: gpmi: update the
+ mtd->ecc_stats when reading page failed
+
+If tell the real correcting infomation to the upper layer of
+MTD, the torture thread of UBIFS will do the torture test in
+a very often frequency. This will eat up all the reservation blocks
+of the UBIFS.
+
+So tell the real correcting infomation only when the failure occured,
+or the corrected times nearly reached the ECC threshold.
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ drivers/mtd/nand/gpmi_nfc_mil.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mtd/nand/gpmi_nfc_mil.c b/drivers/mtd/nand/gpmi_nfc_mil.c
+index 0317c9d..3a172bf 100644
+--- a/drivers/mtd/nand/gpmi_nfc_mil.c
++++ b/drivers/mtd/nand/gpmi_nfc_mil.c
+@@ -405,9 +405,14 @@ static int gpmi_nfc_ecc_read_page(struct mtd_info *mtd,
+ 		corrected += *status;
+ 	}
+ 
+-	/* Propagate ECC status to the owning MTD. */
+-	mtd->ecc_stats.failed    += failed;
+-	mtd->ecc_stats.corrected += corrected;
++	/*
++	 * Propagate ECC status to the owning MTD only when failed or
++	 * corrected times nearly reaches our ECC correction threshold.
++	 */
++	if (failed || corrected >= (gpmi_info->ecc_strength - 1)) {
++		mtd->ecc_stats.failed    += failed;
++		mtd->ecc_stats.corrected += corrected;
++	}
+ 
+ 	/*
+ 	 * It's time to deliver the OOB bytes. See gpmi_nfc_ecc_read_oob() for
+-- 
+1.7.7.4
+

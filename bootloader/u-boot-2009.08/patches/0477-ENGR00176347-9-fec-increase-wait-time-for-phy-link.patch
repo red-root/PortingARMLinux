@@ -1,0 +1,109 @@
+From d3ea4d7258316ca68ff104087a5f1987b4829339 Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Sat, 10 Mar 2012 15:59:42 +0800
+Subject: [PATCH 477/678] ENGR00176347-9 fec : increase wait time for phy link
+
+- remove the excrescent code in enet_board_init function.
+- KSZ9021 phy auto-negotiation in mx6solo sabreauto RevA
+  is used to establish link with the remote hub or switch.
+  In general, the negotiation time is about 3-5 senconds
+  But connecting to Gbps hub, the time
+  is range from 8s to 15s. So, changing the MAX link waiting time
+  to 20s.
+  According to repetitious tests, solo ARD ethernet is ok in 100Mbps
+  environment. It is not stable in 1000Mbps mode.
+
+Signed-off-by: Fugang Duan <B38611@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |   17 -----------------
+ drivers/net/mxc_fec.c                           |   11 +++++++----
+ 2 files changed, 7 insertions(+), 21 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index 33f232a..2ec178e 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -97,21 +97,6 @@ static struct fb_videomode lvds_xga = {
+ vidinfo_t panel_info;
+ #endif
+ 
+-static void set_gpio_output_val(unsigned base, unsigned mask, unsigned val)
+-{
+-	unsigned reg = readl(base + GPIO_DR);
+-	if (val & 1)
+-		reg |= mask;	/* set high */
+-	else
+-		reg &= ~mask;	/* clear low */
+-	writel(reg, base + GPIO_DR);
+-
+-	reg = readl(base + GPIO_GDIR);
+-	reg |= mask;		/* configure GPIO line as output */
+-	writel(reg, base + GPIO_GDIR);
+-}
+-
+-
+ static inline void setup_boot_device(void)
+ {
+ 	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
+@@ -992,8 +977,6 @@ void enet_board_init(void)
+ {
+ 	mxc_iomux_v3_setup_multiple_pads(enet_pads,
+ 			ARRAY_SIZE(enet_pads));
+-	set_gpio_output_val(GPIO6_BASE_ADDR, (1 << 24), 1);
+-
+ }
+ 
+ int checkboard(void)
+diff --git a/drivers/net/mxc_fec.c b/drivers/net/mxc_fec.c
+index 345e476..636b606 100644
+--- a/drivers/net/mxc_fec.c
++++ b/drivers/net/mxc_fec.c
+@@ -350,7 +350,7 @@ static void setFecDuplexSpeed(volatile fec_t *fecp, unsigned char addr,
+ 	}
+ 
+ 	/*wait the cable link*/
+-	for (cnt = 0; cnt < 100; cnt++) {
++	for (cnt = 0; cnt < 200; cnt++) {
+ 		val = 0;
+ 		ret = __fec_mii_read(fecp, addr, PHY_BMSR, &val);
+ 		if (val & PHY_BMSR_LS)
+@@ -366,7 +366,7 @@ static void setFecDuplexSpeed(volatile fec_t *fecp, unsigned char addr,
+ 			printf("FEC: Link is Up %x\n", val);
+ 		} else {
+ 			printf("FEC: Link is down %x\n", val);
+-	}
++		}
+ /* for AR8031 PHY */
+ #if defined(CONFIG_MX6Q_ARM2) || defined(CONFIG_MX6Q_SABRESD)
+ 		ret = __fec_mii_read(fecp, addr, PHY_MIPSCR, &val);
+@@ -840,6 +840,7 @@ static void fec_mii_phy_init(struct eth_device *dev)
+ 	mx6_rgmii_rework(dev->name, info->phy_addr);
+ #endif
+ 	mxc_fec_phy_powerup(dev->name, info->phy_addr);
++#endif
+ 
+ }
+ 
+@@ -852,6 +853,8 @@ int fec_init(struct eth_device *dev, bd_t *bd)
+ 
+ 	fec_mii_phy_init(dev);
+ 
++#if defined(CONFIG_CMD_MII) || defined(CONFIG_MII) || \
++	defined(CONFIG_DISCOVER_PHY)
+ #ifdef CONFIG_DISCOVER_PHY
+ 	if (info->phy_addr < 0 || info->phy_addr > 0x1F)
+ 		info->phy_addr = mxc_fec_mii_discover_phy(dev);
+@@ -861,8 +864,8 @@ int fec_init(struct eth_device *dev, bd_t *bd)
+ #ifndef CONFIG_DISCOVER_PHY
+ 	setFecDuplexSpeed(fecp, (uchar)info->phy_addr,
+ 				(FECDUPLEX << 16) | FECSPEED);
+-#endif				/* ifndef CONFIG_SYS_DISCOVER_PHY */
+-#endif				/* CONFIG_CMD_MII || CONFIG_MII */
++#endif                         /* ifndef CONFIG_SYS_DISCOVER_PHY */
++#endif                         /* CONFIG_CMD_MII || CONFIG_MII */
+ 
+ 	/* We use strictly polling mode only */
+ 	fecp->eimr = 0;
+-- 
+1.7.7.4
+

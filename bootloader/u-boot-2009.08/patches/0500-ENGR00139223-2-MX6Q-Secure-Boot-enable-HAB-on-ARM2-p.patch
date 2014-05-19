@@ -1,0 +1,67 @@
+From afd98c03ab002723d589cd455fd13565921d4eae Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Fri, 30 Mar 2012 20:38:42 +0800
+Subject: [PATCH 500/678] ENGR00139223-2 [MX6Q] Secure Boot, enable HAB on
+ ARM2 platform (Stage 2)
+
+authenticate_image is called to verify uImage when excecuting "bootm", the
+uImage togehter with its CSF data should has been located in DDR.
+
+The new uImage layout is as the following:
+
++------------+  0x0 (0x10800000)    \
+|   Header   |                       |
++------------+  0x40                 |
+|            |                       |
+|            |                       |
+|            |                       |
+|            |                       |
+| Image Data |                       |
+.            |                       |
+.            |                        > Stuff to be authenticated ------+
+.            |                       |                                  |
+|            |                       |                                  |
+|            |                       |                                  |
++------------+                       |                                  |
+|            |                       |                                  |
+| Fill Data  |                       |                                  |
+|            |                       |                                  |
++------------+ 0x003F_DFE0           |                                  |
+|    IVT     |                       |                                  |
++------------+ 0x003F_E000          /                                   |
+|            |                                                          |
+|  CSF DATA  | <--------------------------------------------------------+
+|            |
++------------+
+|            |
+| Fill Data  |
+|            |
++------------+ 0x0040_0000
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ common/cmd_bootm.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/common/cmd_bootm.c b/common/cmd_bootm.c
+index 0b45847..c9b38b5 100644
+--- a/common/cmd_bootm.c
++++ b/common/cmd_bootm.c
+@@ -598,6 +598,14 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 	if (bootm_start(cmdtp, flag, argc, argv))
+ 		return 1;
+ 
++#ifdef CONFIG_SECURE_BOOT
++	extern uint32_t authenticate_image(ulong start);
++	if (authenticate_image(images.os.start) == 0) {
++		printf("Authenticate UImage Fail, Please check\n");
++		return 1;
++	}
++#endif
++
+ 	/*
+ 	 * We have reached the point of no return: we are going to
+ 	 * overwrite all exception vector code, so we cannot easily
+-- 
+1.7.7.4
+

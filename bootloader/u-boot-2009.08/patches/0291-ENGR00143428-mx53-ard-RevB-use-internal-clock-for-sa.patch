@@ -1,0 +1,53 @@
+From 6e1ca60b50a5b3b0c9a7a249ed49e244411b575f Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Sat, 14 May 2011 14:24:44 +0800
+Subject: [PATCH 291/678] ENGR00143428 mx53 ard RevB: use internal clock for
+ sata
+
+Switch to use SATA internal clock in mx53 ARD RevB board.
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ board/freescale/mx53_ard/mx53_ard.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
+
+diff --git a/board/freescale/mx53_ard/mx53_ard.c b/board/freescale/mx53_ard/mx53_ard.c
+index 925bd2a..1ece2a5 100755
+--- a/board/freescale/mx53_ard/mx53_ard.c
++++ b/board/freescale/mx53_ard/mx53_ard.c
+@@ -990,6 +990,21 @@ void setup_nfc(void)
+ }
+ #endif
+ 
++#if defined(CONFIG_DWC_AHSATA)
++static void setup_sata_device(void)
++{
++	/* only RevB board uses internal SATA clock */
++#if defined(CONFIG_MX53_ARD_DDR3)
++	u32 *tmp_base =
++		(u32 *)(IIM_BASE_ADDR + 0x180c);
++
++	/* Set USB_PHY1 clk, fuse bank4 row3 bit2 */
++	set_usb_phy1_clk();
++	writel((readl(tmp_base) & (~0x7)) | 0x4, tmp_base);
++#endif
++}
++#endif
++
+ int board_init(void)
+ {
+ #ifdef CONFIG_MFG
+@@ -1021,6 +1036,10 @@ int board_init(void)
+ 	weim_smc911x_iomux();
+ 	weim_cs1_settings();
+ 
++#if defined(CONFIG_DWC_AHSATA)
++	setup_sata_device();
++#endif
++
+ #ifdef CONFIG_VIDEO_MX5
+ 	panel_info_init();
+ 
+-- 
+1.7.7.4
+

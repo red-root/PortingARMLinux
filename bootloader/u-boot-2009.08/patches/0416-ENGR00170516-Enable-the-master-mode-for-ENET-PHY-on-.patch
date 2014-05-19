@@ -1,0 +1,31 @@
+From 8b48a2486bb3e116ab5ea31d20d7de51d799cdd7 Mon Sep 17 00:00:00 2001
+From: Mahesh Mahadevan <r9aadq@freescale.com>
+Date: Fri, 16 Dec 2011 09:13:10 -0600
+Subject: [PATCH 416/678] ENGR00170516 Enable the master mode for ENET PHY on
+ MX6 Sabrelite
+
+Fix the ENET PHY settings on MX6 Sabre-lite to enable Master mode
+
+Signed-off-by: Mahesh Mahadevan <r9aadq@freescale.com>
+---
+ board/freescale/mx6q_sabrelite/mx6q_sabrelite.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+index 1c9fb2d..f269a3e 100644
+--- a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
++++ b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+@@ -657,8 +657,8 @@ int mx6_rgmii_rework(char *devname, int phy_addr)
+ 	phy_write(devname, phy_addr, 0x9, 0x0c00);
+ #endif
+ 
+-	/* prefer master mode, 1000 Base-T capable */
+-	phy_write(devname, phy_addr, 0x9, 0x0f00);
++	/* enable master mode, 1000 Base-T capable */
++	phy_write(devname, phy_addr, 0x9, 0x1f00);
+ 
+ 	/* min rx data delay */
+ 	phy_write(devname, phy_addr, 0x0b, 0x8105);
+-- 
+1.7.7.4
+

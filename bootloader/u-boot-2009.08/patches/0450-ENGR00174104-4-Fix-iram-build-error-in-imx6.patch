@@ -1,0 +1,36 @@
+From eb479419488cdde24634257f6581de2d6ab3a2a9 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Fri, 10 Feb 2012 23:51:42 +0800
+Subject: [PATCH 450/678] ENGR00174104-4: Fix iram build error in imx6
+
+Fix a build error when part.c is built in iram u-boot building.
+
+part.c:94: error: redefinition of 'get_dev'
+/home/r65388/uboot-imx-v2009.08/uboot-imx/include/part.h:117: error:
+previous definition of 'get_dev' was here
+make[1]: *** [part.o] Error 1
+make[1]: Leaving directory
+`/home/r65388/uboot-imx-v2009.08/uboot-imx/disk'
+make: *** [disk/libdisk.a] Error 2
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ disk/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/disk/Makefile b/disk/Makefile
+index 128db77..f186625 100644
+--- a/disk/Makefile
++++ b/disk/Makefile
+@@ -27,7 +27,7 @@ include $(TOPDIR)/config.mk
+ 
+ LIB	= $(obj)libdisk.a
+ 
+-COBJS-y += part.o
++COBJS-$(CONFIG_PARTITIONS) += part.o
+ COBJS-$(CONFIG_MAC_PARTITION)   += part_mac.o
+ COBJS-$(CONFIG_DOS_PARTITION)   += part_dos.o
+ COBJS-$(CONFIG_ISO_PARTITION)   += part_iso.o
+-- 
+1.7.7.4
+

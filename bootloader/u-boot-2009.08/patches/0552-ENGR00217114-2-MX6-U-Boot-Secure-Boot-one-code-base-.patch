@@ -1,0 +1,45 @@
+From d131ae8ece323e55bf7adace21dbf5d614de3438 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Fri, 13 Jul 2012 15:30:57 +0800
+Subject: [PATCH 552/678] ENGR00217114-2 MX6 U-Boot, Secure Boot, one code
+ base for MX6Q/DL/SL
+
+Move the uImage authentication to an earlier phase, in this way prevent
+DDR content changed by OS load code, causing authentication failure.
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ common/cmd_bootm.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/common/cmd_bootm.c b/common/cmd_bootm.c
+index 33f1012..618579e 100644
+--- a/common/cmd_bootm.c
++++ b/common/cmd_bootm.c
+@@ -595,17 +595,18 @@ int do_bootm (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 			return do_bootm_subcommand(cmdtp, flag, argc, argv);
+ 	}
+ 
+-	if (bootm_start(cmdtp, flag, argc, argv))
+-		return 1;
+-
+ #ifdef CONFIG_SECURE_BOOT
+-	extern uint32_t authenticate_image(ulong start);
+-	if (authenticate_image(images.os.start) == 0) {
++	extern uint32_t authenticate_image(void);
++	if (authenticate_image() == 0) {
+ 		printf("Authenticate UImage Fail, Please check\n");
+ 		return 1;
+ 	}
++
+ #endif
+ 
++	if (bootm_start(cmdtp, flag, argc, argv))
++		return 1;
++
+ 	/*
+ 	 * We have reached the point of no return: we are going to
+ 	 * overwrite all exception vector code, so we cannot easily
+-- 
+1.7.7.4
+

@@ -1,0 +1,56 @@
+From d3020f5dfa80f3c106aea7ec030dd5081416aac7 Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Wed, 11 Apr 2012 19:35:13 +0800
+Subject: [PATCH 505/678] ENGR00179437-2 u-boot: mx6q: iomux: code clean up
+
+Remove the dead definiton which never used by iomux-v3 framework
+And move the SION bit definiton to arch-mx6/iomux-v3.h for sharing
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ include/asm-arm/arch-mx6/iomux-v3.h |    1 +
+ include/asm-arm/arch-mx6/mx6_pins.h |   16 ----------------
+ 2 files changed, 1 insertions(+), 16 deletions(-)
+
+diff --git a/include/asm-arm/arch-mx6/iomux-v3.h b/include/asm-arm/arch-mx6/iomux-v3.h
+index b67a31f..49487fb 100644
+--- a/include/asm-arm/arch-mx6/iomux-v3.h
++++ b/include/asm-arm/arch-mx6/iomux-v3.h
+@@ -93,6 +93,7 @@ typedef u64 iomux_v3_cfg_t;
+ 
+ #define NO_PAD_I		0
+ #define NO_MUX_I		0
++#define IOMUX_CONFIG_SION	(0x1 << 4)
+ 
+ #define PAD_CTL_PUS_100K_DOWN	(0 << 14)
+ #define PAD_CTL_PUS_47K_UP	(1 << 14)
+diff --git a/include/asm-arm/arch-mx6/mx6_pins.h b/include/asm-arm/arch-mx6/mx6_pins.h
+index a7a2041..bfbf721 100644
+--- a/include/asm-arm/arch-mx6/mx6_pins.h
++++ b/include/asm-arm/arch-mx6/mx6_pins.h
+@@ -24,22 +24,6 @@
+ 
+ #include <asm/arch/iomux-v3.h>
+ 
+-/*
+- * various IOMUX alternate output functions (1-7)
+- */
+-typedef enum iomux_config {
+-	IOMUX_CONFIG_ALT0,
+-	IOMUX_CONFIG_ALT1,
+-	IOMUX_CONFIG_ALT2,
+-	IOMUX_CONFIG_ALT3,
+-	IOMUX_CONFIG_ALT4,
+-	IOMUX_CONFIG_ALT5,
+-	IOMUX_CONFIG_ALT6,
+-	IOMUX_CONFIG_ALT7,
+-	IOMUX_CONFIG_GPIO,	/* added to help user use GPIO mode */
+-	IOMUX_CONFIG_SION = 0x1 << 4,	/* LOOPBACK:MUX SION bit */
+-} iomux_pin_cfg_t;
+-
+ #define MX6Q_UART_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_PUE |	\
+ 		PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED | \
+ 		PAD_CTL_DSE_40ohm | PAD_CTL_SRE_FAST | PAD_CTL_HYS)
+-- 
+1.7.7.4
+

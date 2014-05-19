@@ -1,0 +1,171 @@
+From 72695af9573912a03e1e9683edf7ba19724ff163 Mon Sep 17 00:00:00 2001
+From: Adrian Alonso <aalonso@freescale.com>
+Date: Tue, 20 Nov 2012 18:44:15 -0600
+Subject: [PATCH 640/678] ENGR00234353-1: mx6_sabreauto fix weim-nor boot
+
+* Fix weim-nor boot failure
+* Group weim-nor conflict modules
+  If not defined CONFIG_CMD_WEIMNOR
+  enable SPI-NOR and I2C (default)
+  else enable weim-nor
+* Remove FLASH_SIZE macro, size is query by
+  CFI driver
+* Enable flash empty information
+
+Signed-off-by: Adrian Alonso <aalonso@freescale.com>
+---
+ include/configs/mx6dl_sabreauto.h   |   15 +++++++++------
+ include/configs/mx6q_sabreauto.h    |   18 +++++++++---------
+ include/configs/mx6solo_sabreauto.h |   15 +++++++++------
+ 3 files changed, 27 insertions(+), 21 deletions(-)
+
+diff --git a/include/configs/mx6dl_sabreauto.h b/include/configs/mx6dl_sabreauto.h
+index 8b447c7..2f6c963 100644
+--- a/include/configs/mx6dl_sabreauto.h
++++ b/include/configs/mx6dl_sabreauto.h
+@@ -91,8 +91,6 @@
+ #define CONFIG_BOOTP_GATEWAY
+ #define CONFIG_BOOTP_DNS
+ 
+-#define CONFIG_CMD_SPI
+-#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
+ /*Uncomment if wish to view Parallel NOR as device.
+  *If you want to use it as Boot device you need
+@@ -100,8 +98,13 @@
+  */
+ /*#define CONFIG_CMD_WEIMNOR*/
+ 
+-/* Enable below configure when supporting nand */
++
++#ifndef CONFIG_CMD_WEIMNOR
++#define CONFIG_CMD_SPI
++#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_SF
++#endif
++
+ #define CONFIG_CMD_MMC
+ #define CONFIG_CMD_ENV
+ #define CONFIG_CMD_REGUL
+@@ -221,13 +224,13 @@
+ 	#define CONFIG_SYS_FLASH_CFI			/* use the Common Flash Interface */
+ 	#define CONFIG_FLASH_CFI_DRIVER			/* use the CFI driver */
+ 	#define CONFIG_SYS_FLASH_BASE		0x08000000	/* start of FLASH   */
+-	#define CONFIG_SYS_FLASH_SIZE		0x08000000	/* max flash size in bytes */
+-	#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
++	#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE 1
+ 	#define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_16BIT
+ 	#define CONFIG_SYS_FLASH_BANKS_LIST	{CONFIG_SYS_FLASH_BASE}
+ 	#define CONFIG_SYS_MAX_FLASH_BANKS	1		/* number of banks */
+ 	#define CONFIG_SYS_MAX_FLASH_SECT	256		/* max sectors per device */
+-	#define CONFIG_SYS_FLASH_PROTECTION
++	#define CONFIG_SYS_FLASH_PROTECTION 1
++	#define CONFIG_SYS_FLASH_EMPTY_INFO
+ #endif
+ 
+ /* Regulator Configs */
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index a04529e..195b7e8 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -90,8 +90,6 @@
+ #define CONFIG_BOOTP_GATEWAY
+ #define CONFIG_BOOTP_DNS
+ 
+-#define CONFIG_CMD_SPI
+-#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
+ /*Uncomment if wish to view Parallel NOR as device.
+  *If you want to use it as Boot device you need
+@@ -99,8 +97,13 @@
+  */
+ /*#define CONFIG_CMD_WEIMNOR*/
+ 
+-/* Enable below configure when supporting nand */
++
++#ifndef CONFIG_CMD_WEIMNOR
++#define CONFIG_CMD_SPI
++#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_SF
++#endif
++
+ #define CONFIG_CMD_MMC
+ #define CONFIG_CMD_ENV
+ #define CONFIG_CMD_REGUL
+@@ -201,8 +204,6 @@
+ 	#define CONFIG_SYS_I2C_SLAVE            0x30
+ #endif
+ 
+-
+-
+ /*
+  * SPI Configs
+  * SPI NOR AND WEIM NOR share PINs, so cannot be enabled both at sametime
+@@ -223,16 +224,15 @@
+ 	#define CONFIG_SYS_FLASH_CFI			/* use the Common Flash Interface */
+ 	#define CONFIG_FLASH_CFI_DRIVER			/* use the CFI driver */
+ 	#define CONFIG_SYS_FLASH_BASE		0x08000000	/* start of FLASH   */
+-	#define CONFIG_SYS_FLASH_SIZE		0x08000000	/* max flash size in bytes */
+-	#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
++	#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE 1
+ 	#define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_16BIT
+ 	#define CONFIG_SYS_FLASH_BANKS_LIST	{CONFIG_SYS_FLASH_BASE}
+ 	#define CONFIG_SYS_MAX_FLASH_BANKS	1		/* number of banks */
+ 	#define CONFIG_SYS_MAX_FLASH_SECT	256		/* max sectors per device */
+-	#define CONFIG_SYS_FLASH_PROTECTION
++	#define CONFIG_SYS_FLASH_PROTECTION 1
++	#define CONFIG_SYS_FLASH_EMPTY_INFO
+ #endif
+ 
+-
+ /* Regulator Configs */
+ #ifdef CONFIG_CMD_REGUL
+ 	#define CONFIG_ANATOP_REGULATOR
+diff --git a/include/configs/mx6solo_sabreauto.h b/include/configs/mx6solo_sabreauto.h
+index 57e5ee7..ee00385 100644
+--- a/include/configs/mx6solo_sabreauto.h
++++ b/include/configs/mx6solo_sabreauto.h
+@@ -92,8 +92,6 @@
+ #define CONFIG_BOOTP_GATEWAY
+ #define CONFIG_BOOTP_DNS
+ 
+-#define CONFIG_CMD_SPI
+-#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
+ /*Uncomment if wish to view Parallel NOR as device.
+  *If you want to use it as Boot device you need
+@@ -101,8 +99,13 @@
+  */
+ /*#define CONFIG_CMD_WEIMNOR*/
+ 
+-/* Enable below configure when supporting nand */
++
++#ifndef CONFIG_CMD_WEIMNOR
++#define CONFIG_CMD_SPI
++#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_SF
++#endif
++
+ #define CONFIG_CMD_MMC
+ #define CONFIG_CMD_ENV
+ #define CONFIG_CMD_REGUL
+@@ -222,13 +225,13 @@
+ 	#define CONFIG_SYS_FLASH_CFI			/* use the Common Flash Interface */
+ 	#define CONFIG_FLASH_CFI_DRIVER			/* use the CFI driver */
+ 	#define CONFIG_SYS_FLASH_BASE		0x08000000	/* start of FLASH   */
+-	#define CONFIG_SYS_FLASH_SIZE		0x08000000	/* max flash size in bytes */
+-	#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
++	#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE 1
+ 	#define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_16BIT
+ 	#define CONFIG_SYS_FLASH_BANKS_LIST	{CONFIG_SYS_FLASH_BASE}
+ 	#define CONFIG_SYS_MAX_FLASH_BANKS	1		/* number of banks */
+ 	#define CONFIG_SYS_MAX_FLASH_SECT	256		/* max sectors per device */
+-	#define CONFIG_SYS_FLASH_PROTECTION
++	#define CONFIG_SYS_FLASH_PROTECTION 1
++	#define CONFIG_SYS_FLASH_EMPTY_INFO
+ #endif
+ 
+ /* Regulator Configs */
+-- 
+1.7.7.4
+

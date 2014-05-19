@@ -1,0 +1,102 @@
+From 34e34f3ccb62a3fc51ba102c5cd87f4bcb625f4d Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Wed, 21 Dec 2011 16:46:15 +0800
+Subject: [PATCH 422/678] ENGR00170768 Android: Fix fastboot can't used on
+ MX6Q SL MMC1 device.
+
+Fix fastboot can't used on mmc1 device on android.
+
+caused by the mmc part number use strtoul but it need the partition number < 0 .
+So this caused such error.
+
+Fixed by change strtoul to strtol.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ common/cmd_mmc.c            |    2 +-
+ drivers/fastboot/fastboot.c |   14 ++++++++++++--
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/common/cmd_mmc.c b/common/cmd_mmc.c
+index f1431d3..fb818f2 100644
+--- a/common/cmd_mmc.c
++++ b/common/cmd_mmc.c
+@@ -285,7 +285,7 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 			dev = simple_strtoul(argv[2], NULL, 10);
+ 		else if (argc == 4) {
+ 			dev = (int)simple_strtoul(argv[2], NULL, 10);
+-			part = (int)simple_strtoul(argv[3], NULL, 10);
++			part = (int)simple_strtol(argv[3], NULL, 10);
+ 			if (part > PART_ACCESS_MASK) {
+ 				printf("#part_num shouldn't be larger"
+ 					" than %d\n", PART_ACCESS_MASK);
+diff --git a/drivers/fastboot/fastboot.c b/drivers/fastboot/fastboot.c
+index dd5205d..e405a76 100644
+--- a/drivers/fastboot/fastboot.c
++++ b/drivers/fastboot/fastboot.c
+@@ -283,7 +283,10 @@ int fastboot_init(struct cmd_fastboot_interface *interface)
+ #ifdef CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+ static int fastboot_init_mmc_sata_ptable(void)
+ {
+-	int i, sata_device_no, boot_partition = 0;
++	int i, sata_device_no;
++	int boot_partition = -1, user_partition = -1;
++	/* mmc boot partition: -1 means no partition, 0 user part., 1 boot part.
++	 * default is no partition, for emmc default user part, except emmc*/
+ 	struct mmc *mmc;
+ 	block_dev_desc_t *dev_desc;
+ 	disk_partition_t info;
+@@ -330,8 +333,10 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 		}
+ 
+ 		/* multiple boot paritions for eMMC 4.3 later */
+-		if (mmc->part_config != MMCPART_NOAVAILABLE)
++		if (mmc->part_config != MMCPART_NOAVAILABLE) {
+ 			boot_partition = 1;
++			user_partition = 0;
++		}
+ 	}
+ 
+ 	memset((char *)ptable, 0,
+@@ -340,6 +345,7 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 	strcpy(ptable[PTN_MBR_INDEX].name, "mbr");
+ 	ptable[PTN_MBR_INDEX].start = ANDROID_MBR_OFFSET / dev_desc->blksz;
+ 	ptable[PTN_MBR_INDEX].length = ANDROID_MBR_SIZE / dev_desc->blksz;
++	ptable[PTN_MBR_INDEX].partition_id = user_partition;
+ 	/* Bootloader */
+ 	strcpy(ptable[PTN_BOOTLOADER_INDEX].name, "bootloader");
+ 	ptable[PTN_BOOTLOADER_INDEX].start =
+@@ -353,12 +359,14 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 				ANDROID_KERNEL_OFFSET / dev_desc->blksz;
+ 	ptable[PTN_KERNEL_INDEX].length =
+ 				ANDROID_KERNEL_SIZE / dev_desc->blksz;
++	ptable[PTN_KERNEL_INDEX].partition_id = user_partition;
+ 	/* uramdisk */
+ 	strcpy(ptable[PTN_URAMDISK_INDEX].name, "uramdisk");
+ 	ptable[PTN_URAMDISK_INDEX].start =
+ 				ANDROID_URAMDISK_OFFSET / dev_desc->blksz;
+ 	ptable[PTN_URAMDISK_INDEX].length =
+ 				ANDROID_URAMDISK_SIZE / dev_desc->blksz;
++	ptable[PTN_URAMDISK_INDEX].partition_id = user_partition;
+ 
+ 	/* system partition */
+ 	strcpy(ptable[PTN_SYSTEM_INDEX].name, "system");
+@@ -369,6 +377,7 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 	else {
+ 		ptable[PTN_SYSTEM_INDEX].start = info.start;
+ 		ptable[PTN_SYSTEM_INDEX].length = info.size;
++		ptable[PTN_SYSTEM_INDEX].partition_id = user_partition;
+ 	}
+ 	/* recovery partition */
+ 	strcpy(ptable[PTN_RECOVERY_INDEX].name, "recovery");
+@@ -379,6 +388,7 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 	else {
+ 		ptable[PTN_RECOVERY_INDEX].start = info.start;
+ 		ptable[PTN_RECOVERY_INDEX].length = info.size;
++		ptable[PTN_RECOVERY_INDEX].partition_id = user_partition;
+ 	}
+ 
+ 	for (i = 0; i <= PTN_RECOVERY_INDEX; i++)
+-- 
+1.7.7.4
+

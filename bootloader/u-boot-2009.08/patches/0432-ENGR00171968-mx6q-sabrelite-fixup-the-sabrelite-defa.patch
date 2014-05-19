@@ -1,0 +1,29 @@
+From 630bee9f3f76f5f6724d7b4ce10dd3239ee28553 Mon Sep 17 00:00:00 2001
+From: Xinyu Chen <b03824@freescale.com>
+Date: Fri, 13 Jan 2012 14:22:38 +0800
+Subject: [PATCH 432/678] ENGR00171968 mx6q sabrelite: fixup the sabrelite
+ default bootargs typo
+
+change default console to ttymxc1
+
+Signed-off-by: Xinyu Chen <xinyu.chen@freescale.com>
+---
+ include/configs/mx6q_sabrelite_android.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6q_sabrelite_android.h b/include/configs/mx6q_sabrelite_android.h
+index c9e1f73..8d5526e 100644
+--- a/include/configs/mx6q_sabrelite_android.h
++++ b/include/configs/mx6q_sabrelite_android.h
+@@ -148,7 +148,7 @@
+ 		"ethprime=FEC0\0"					\
+ 		"ethaddr=00:04:9f:00:ea:d3\0"		\
+ 		"bootfile=uImage\0"	\
+-		"bootargs=console=ttymxc0,115200 init=/init rw " \
++		"bootargs=console=ttymxc1,115200 init=/init rw " \
+ 		"video=mxcfb0 fbmem=10M vmalloc=400M enable_wait_mode=off\0" \
+ 		"bootcmd_SD=mmc dev 1;"		\
+ 			"mmc read ${loadaddr} 0x800 0x2000;" \
+-- 
+1.7.7.4
+

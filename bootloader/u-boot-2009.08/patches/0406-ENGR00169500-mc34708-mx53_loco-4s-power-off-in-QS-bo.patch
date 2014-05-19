@@ -1,0 +1,28 @@
+From c9384fca46bf0fcf8f14f76e218e010f2d17263c Mon Sep 17 00:00:00 2001
+From: Robin Gong <B38343@freescale.com>
+Date: Tue, 6 Dec 2011 09:32:42 +0800
+Subject: [PATCH 406/678] ENGR00169500 mc34708 mx53_loco: 4s power off in QS
+ board
+
+Implement the power off function when push the PWR key for 4s
+
+Signed-off-by: Robin Gong <B38343@freescale.com>
+---
+ board/freescale/mx53_loco/mx53_loco.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/board/freescale/mx53_loco/mx53_loco.c b/board/freescale/mx53_loco/mx53_loco.c
+index c4ed4d7..5f97328 100644
+--- a/board/freescale/mx53_loco/mx53_loco.c
++++ b/board/freescale/mx53_loco/mx53_loco.c
+@@ -1163,6 +1163,7 @@ int board_late_init(void)
+ 			printf("%s:i2c_read:error\n", __func__);
+ 			return -1;
+ 		}
++		buf[2] |= 0x2;
+ 		buf[1] |= 0x1;
+ 		buf[1] &= ~0x2;
+ 		if (i2c_write(0x8, 15, 1, buf, 3)) {
+-- 
+1.7.7.4
+

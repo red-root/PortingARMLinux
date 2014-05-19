@@ -1,0 +1,149 @@
+From d774b97d4b04f1fdb0810c1a9a8a70f74318a9d6 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Thu, 2 Feb 2012 18:46:34 +0800
+Subject: [PATCH 437/678] ENGR00173659 MX6Q_UART Change Phyisical to Virtural
+ Port Mapping
+
+For ARM2 and Sabreauto, change TTY0 to TTY3 (which is physical UART4)
+For SabreSD, Change TTY3 to TTY0 (which is physical UART1)
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ include/configs/mx6q_arm2.h           |    2 +-
+ include/configs/mx6q_arm2_iram.h      |    4 ++--
+ include/configs/mx6q_arm2_lpddr2.h    |    4 ++--
+ include/configs/mx6q_arm2_lpddr2pop.h |    4 ++--
+ include/configs/mx6q_arm2_mfg.h       |    4 ++--
+ include/configs/mx6q_sabreauto.h      |    4 ++--
+ include/configs/mx6q_sabresd.h        |    2 +-
+ 7 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index cf466de..9f26b55 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -118,7 +118,7 @@
+ 		"uboot=u-boot.bin\0"			\
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+-		"bootargs_base=setenv bootargs console=ttymxc0,115200\0"\
++		"bootargs_base=setenv bootargs console=ttymxc3,115200\0"\
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6q_arm2_iram.h b/include/configs/mx6q_arm2_iram.h
+index f3375d1..d60d628 100644
+--- a/include/configs/mx6q_arm2_iram.h
++++ b/include/configs/mx6q_arm2_iram.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Q Armadillo2 Freescale board.
+  *
+@@ -95,7 +95,7 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc0,115200 "\
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 "\
+ 				"rdinit=/linuxrc"
+ 
+ #define CONFIG_BOOTCOMMAND      "bootm"
+diff --git a/include/configs/mx6q_arm2_lpddr2.h b/include/configs/mx6q_arm2_lpddr2.h
+index a9979e9..a515e7f 100644
+--- a/include/configs/mx6q_arm2_lpddr2.h
++++ b/include/configs/mx6q_arm2_lpddr2.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Q Armadillo2 Freescale board.
+  *
+@@ -115,7 +115,7 @@
+ 		"uboot=u-boot.bin\0"			\
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+-		"bootargs_base=setenv bootargs console=ttymxc0,115200\0"\
++		"bootargs_base=setenv bootargs console=ttymxc3,115200\0"\
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6q_arm2_lpddr2pop.h b/include/configs/mx6q_arm2_lpddr2pop.h
+index d1d14ae..e7e800e 100755
+--- a/include/configs/mx6q_arm2_lpddr2pop.h
++++ b/include/configs/mx6q_arm2_lpddr2pop.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Q Armadillo2 Freescale board.
+  *
+@@ -120,7 +120,7 @@
+ 		"uboot=u-boot.bin\0"			\
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+-		"bootargs_base=setenv bootargs console=ttymxc0,115200\0"\
++		"bootargs_base=setenv bootargs console=ttymxc3,115200\0"\
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6q_arm2_mfg.h b/include/configs/mx6q_arm2_mfg.h
+index c3b2b54..6890832 100644
+--- a/include/configs/mx6q_arm2_mfg.h
++++ b/include/configs/mx6q_arm2_mfg.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Q Armadillo2 Freescale board.
+  *
+@@ -109,7 +109,7 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+-#define CONFIG_BOOTARGS         "console=ttymxc0,115200 rdinit=/linuxrc"
++#define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+ 		"netdev=eth0\0"						\
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index 41ea54a..601e757 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX6Q Armadillo2 Freescale board.
+  *
+@@ -118,7 +118,7 @@
+ 		"uboot=u-boot.bin\0"			\
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+-		"bootargs_base=setenv bootargs console=ttymxc0,115200\0"\
++		"bootargs_base=setenv bootargs console=ttymxc3,115200\0"\
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index 021d20f..f253f93 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -118,7 +118,7 @@
+ 		"uboot=u-boot.bin\0"			\
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+-		"bootargs_base=setenv bootargs console=ttymxc3,115200\0"\
++		"bootargs_base=setenv bootargs console=ttymxc0,115200\0"\
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+-- 
+1.7.7.4
+

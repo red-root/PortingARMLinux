@@ -1,0 +1,43 @@
+From fa125315785c2069dd7b85a51bcfd1c9a78db97b Mon Sep 17 00:00:00 2001
+From: Liu Ying <Ying.Liu@freescale.com>
+Date: Tue, 11 Sep 2012 16:22:47 +0800
+Subject: [PATCH 606/678] ENGR00223797-2 MX6Q/DL CPU:Do not disable IPU
+ display channel
+
+This patch changes to keep IPU display channel being running
+rather than disable IPU display channel when we leave uboot
+stage and go to kernel stage. This may support smooth
+tranistion from Uboot splash screen to kernel stage.
+
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+ cpu/arm_cortexa8/cpu.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/cpu.c b/cpu/arm_cortexa8/cpu.c
+index 58cb529..b56507a 100644
+--- a/cpu/arm_cortexa8/cpu.c
++++ b/cpu/arm_cortexa8/cpu.c
+@@ -35,7 +35,8 @@
+ 
+ #include <common.h>
+ #include <command.h>
+-#ifdef CONFIG_VIDEO_MX5
++#if defined(CONFIG_VIDEO_MX5) && (defined(CONFIG_MX53) || \
++				  defined(CONFIG_MX51_BBG))
+ #include <ipu.h>
+ #endif
+ #include <asm/system.h>
+@@ -142,7 +143,8 @@ int cleanup_before_linux(void)
+ 	clear_mfgmode_mem();
+ #endif
+ 
+-#ifdef CONFIG_VIDEO_MX5
++#if defined(CONFIG_VIDEO_MX5) && (defined(CONFIG_MX53) || \
++				  defined(CONFIG_MX51_BBG))
+ 	ipu_disable_channel(MEM_BG_SYNC);
+ 	ipu_uninit_channel(MEM_BG_SYNC);
+ #endif
+-- 
+1.7.7.4
+

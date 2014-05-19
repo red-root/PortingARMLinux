@@ -1,0 +1,152 @@
+From d2245970c5b566b347a92f4eb4987747af3b8b07 Mon Sep 17 00:00:00 2001
+From: Adrian Alonso <aalonso@freescale.com>
+Date: Tue, 20 Nov 2012 18:51:56 -0600
+Subject: [PATCH 641/678] ENGR00234353-2: mx6q_sabreauto_weimnor fix redundant
+ env offset
+
+* Fix redundant enviroment offset
+* Disable I2C support as they share pads
+* Enable flash empty information
+* weim-nor partition layout
+  +-----------------+ 0x08000000
+  +      u-boot     +
+  +-----------------+ 0x08040000 (256k)
+  +    u-boot env   +
+  +-----------------+ 0x08060000 (128k)
+  + u-boot redundat +
+  +-----------------+ 0x08080000 (128k)
+  +     Kernel      +
+  +-----------------+ 0x08480000 (4M)
+  +     Rootfs      +
+  +-----------------+ (~27M)
+
+Signed-off-by: Adrian Alonso <aalonso@freescale.com>
+---
+ include/configs/mx6dl_sabreauto_weimnor.h   |    5 +++--
+ include/configs/mx6q_sabreauto_weimnor.h    |    5 +++--
+ include/configs/mx6solo_sabreauto_weimnor.h |    5 +++--
+ 3 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/include/configs/mx6dl_sabreauto_weimnor.h b/include/configs/mx6dl_sabreauto_weimnor.h
+index 2838b14..86ebc33 100644
+--- a/include/configs/mx6dl_sabreauto_weimnor.h
++++ b/include/configs/mx6dl_sabreauto_weimnor.h
+@@ -31,6 +31,7 @@
+ #define CONFIG_MX6DL_DDR3
+ #define CONFIG_MX6Q_SABREAUTO
+ #define CONFIG_FLASH_HEADER
++#define CONFIG_FLASH_HEADER_OFFSET 0x1000
+ #define CONFIG_MX6_CLK32	   32768
+ 
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+@@ -90,11 +91,9 @@
+ #define CONFIG_BOOTP_GATEWAY
+ #define CONFIG_BOOTP_DNS
+ 
+-#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
+ /* Must define. Otherwise emi_slow_clk would be dead */
+ #define CONFIG_CMD_WEIMNOR
+-#define CONFIG_FLASH_HEADER_OFFSET 0x1000
+ 
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_MMC
+@@ -297,6 +296,7 @@
+ 
+ #define CONFIG_ENV_SECT_SIZE   0x00020000   /*128KiB sector size */
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
++#define CONFIG_ENV_OFFSET       CONFIG_SYS_MONITOR_LEN
+ 
+ /* Address and size of Redundant Environment Sector     */
+ #define CONFIG_ENV_OFFSET_REDUND        (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
+@@ -311,6 +311,7 @@
+ #define CONFIG_FLASH_CFI_DRIVER         1/* Use drivers/cfi_flash.c */
+ #define CONFIG_SYS_FLASH_USE_BUFFER_WRITE 1/* Use buffered writes*/
+ #define CONFIG_SYS_FLASH_PROTECTION     1/* Use hardware sector protection */
++#define CONFIG_SYS_FLASH_EMPTY_INFO
+ 
+ /* Monitor at beginning of flash */
+ /* #define CONFIG_FSL_ENV_IN_MMC*/
+diff --git a/include/configs/mx6q_sabreauto_weimnor.h b/include/configs/mx6q_sabreauto_weimnor.h
+index 7879d1c..a543f6a 100644
+--- a/include/configs/mx6q_sabreauto_weimnor.h
++++ b/include/configs/mx6q_sabreauto_weimnor.h
+@@ -30,6 +30,7 @@
+ #define CONFIG_MX6Q
+ #define CONFIG_MX6Q_SABREAUTO
+ #define CONFIG_FLASH_HEADER
++#define CONFIG_FLASH_HEADER_OFFSET 0x1000
+ #define CONFIG_MX6_CLK32	   32768
+ 
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+@@ -89,11 +90,9 @@
+ #define CONFIG_BOOTP_GATEWAY
+ #define CONFIG_BOOTP_DNS
+ 
+-#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
+ /* Must define. Otherwise emi_slow_clk would be dead */
+ #define CONFIG_CMD_WEIMNOR
+-#define CONFIG_FLASH_HEADER_OFFSET 0x1000
+ 
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_MMC
+@@ -309,6 +308,7 @@
+ 
+ #define CONFIG_ENV_SECT_SIZE   0x00020000   /*128KiB sector size */
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
++#define CONFIG_ENV_OFFSET       CONFIG_SYS_MONITOR_LEN
+ 
+ /* Address and size of Redundant Environment Sector     */
+ #define CONFIG_ENV_OFFSET_REDUND        (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
+@@ -323,6 +323,7 @@
+ #define CONFIG_FLASH_CFI_DRIVER         1/* Use drivers/cfi_flash.c */
+ #define CONFIG_SYS_FLASH_USE_BUFFER_WRITE 1/* Use buffered writes*/
+ #define CONFIG_SYS_FLASH_PROTECTION     1/* Use hardware sector protection */
++#define CONFIG_SYS_FLASH_EMPTY_INFO
+ 
+ /* Monitor at beginning of flash */
+ /* #define CONFIG_FSL_ENV_IN_MMC*/
+diff --git a/include/configs/mx6solo_sabreauto_weimnor.h b/include/configs/mx6solo_sabreauto_weimnor.h
+index bc3b70d..8f19f10 100644
+--- a/include/configs/mx6solo_sabreauto_weimnor.h
++++ b/include/configs/mx6solo_sabreauto_weimnor.h
+@@ -32,6 +32,7 @@
+ #define CONFIG_DDR_32BIT
+ #define CONFIG_MX6Q_SABREAUTO
+ #define CONFIG_FLASH_HEADER
++#define CONFIG_FLASH_HEADER_OFFSET 0x1000
+ #define CONFIG_MX6_CLK32	   32768
+ 
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+@@ -91,11 +92,9 @@
+ #define CONFIG_BOOTP_GATEWAY
+ #define CONFIG_BOOTP_DNS
+ 
+-#define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
+ /* Must define. Otherwise emi_slow_clk would be dead */
+ #define CONFIG_CMD_WEIMNOR
+-#define CONFIG_FLASH_HEADER_OFFSET 0x1000
+ 
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_MMC
+@@ -298,6 +297,7 @@
+ 
+ #define CONFIG_ENV_SECT_SIZE   0x00020000   /*128KiB sector size */
+ #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
++#define CONFIG_ENV_OFFSET       CONFIG_SYS_MONITOR_LEN
+ 
+ /* Address and size of Redundant Environment Sector     */
+ #define CONFIG_ENV_OFFSET_REDUND        (CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE)
+@@ -312,6 +312,7 @@
+ #define CONFIG_FLASH_CFI_DRIVER         1/* Use drivers/cfi_flash.c */
+ #define CONFIG_SYS_FLASH_USE_BUFFER_WRITE 1/* Use buffered writes*/
+ #define CONFIG_SYS_FLASH_PROTECTION     1/* Use hardware sector protection */
++#define CONFIG_SYS_FLASH_EMPTY_INFO
+ 
+ /* Monitor at beginning of flash */
+ /* #define CONFIG_FSL_ENV_IN_MMC*/
+-- 
+1.7.7.4
+

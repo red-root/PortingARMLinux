@@ -1,0 +1,31 @@
+From 3b6fe9f99af0e411b0fc891848f79147d761b475 Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Fri, 2 Mar 2012 19:15:19 +0800
+Subject: [PATCH 465/678] ENGR00175981-2 mx53 smd android: fix build error
+
+Fix the following build error when building mx53_smd_android
+config:
+mx53_smd_android.h:175: error: expected identifier or xx
+before string constant
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ include/configs/mx53_smd_android.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index 61bac34..0101169 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -171,7 +171,7 @@
+ 		"rd_loadaddr=0x70D00000\0"		\
+ 		"bootargs=console=ttymxc0 init=/init " \
+ 		"androidboot.console=ttymxc0 video=mxcdi1fb:RGB666,XGA " \
+-		"ldb=di1 di1_primary pmem=32M,64M fbmem=5M gpu_memory=64M\0"
++		"ldb=di1 di1_primary pmem=32M,64M fbmem=5M gpu_memory=64M\0" \
+ 		"bootcmd_SD=mmc dev 1 0;"		\
+ 			"mmc read ${loadaddr} 0x800 0x2000;" \
+ 			"mmc read ${rd_loadaddr} 0x3000 0x300\0" \
+-- 
+1.7.7.4
+

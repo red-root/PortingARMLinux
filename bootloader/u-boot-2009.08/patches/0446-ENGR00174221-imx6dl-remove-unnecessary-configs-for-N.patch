@@ -1,0 +1,32 @@
+From 6931f342e13ce26370499803de13f8b12be905bc Mon Sep 17 00:00:00 2001
+From: Allen Xu <allen.xu@freescale.com>
+Date: Fri, 10 Feb 2012 15:33:21 +0800
+Subject: [PATCH 446/678] ENGR00174221 imx6dl remove unnecessary configs for
+ NAND
+
+CONFIG_DOS_PARTITION, CONFIG_CMD_FAT, CONFIG_CMD_EXT2 are only for
+MMC and SATA, remove from NAND config segment
+
+Signed-off-by: Allen Xu <allen.xu@freescale.com>
+---
+ include/configs/mx6dl_arm2.h |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index ed8974e..48b9066 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -245,10 +245,6 @@
+ 	#define CONFIG_SYS_NAND_BASE		0x40000000
+ 	#define CONFIG_SYS_MAX_NAND_DEVICE	1
+ 
+-	#define CONFIG_DOS_PARTITION	1
+-	#define CONFIG_CMD_FAT		1
+-	#define CONFIG_CMD_EXT2		1
+-
+ 	/* NAND is the unique module invoke APBH-DMA */
+ 	#define CONFIG_APBH_DMA
+ 	#define CONFIG_APBH_DMA_V2
+-- 
+1.7.7.4
+

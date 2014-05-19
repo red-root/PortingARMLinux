@@ -1,0 +1,369 @@
+From a9f787edee4e83d74573add7537cbff91e66b004 Mon Sep 17 00:00:00 2001
+From: Prabhu Sundararaj <b36876@freescale.com>
+Date: Mon, 9 Apr 2012 16:21:02 -0500
+Subject: [PATCH 507/678] ENGR00179013 : MX6Solo/Quad : SABREAUTO: Add
+ Parallel NOR Support
+
+-Added u-boot config CONFIG_CMD_WEIMNOR for MX6Solo/Quad SABREAUTO to
+support WEIM NOR.
+- CONFIG_FLASH_HEADER_OFFSET is 0x1000 for WEIM NOR.
+-SPI NOR and WEIM NOR has pin conflicts, either one can be enabled.
+- mx6q_sabreauto_config, mx6solo_sabreauto_config configured default
+for SPI NOR.
+-In order to enable  the read/write commands and to boot from WEIM NOR,
+need to enable the CONFIG_CMD_WEIMNOR. This will disable SPI-NOR
+
+Signed-off-by: Prabhu Sundararaj <b36876@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/lowlevel_init.S  |    6 +-
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |  125 ++++++++++++++++++++++-
+ include/configs/mx6q_sabreauto.h                |   32 +++++-
+ include/configs/mx6solo_sabreauto.h             |   27 +++++-
+ 4 files changed, 179 insertions(+), 11 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/lowlevel_init.S b/board/freescale/mx6q_sabreauto/lowlevel_init.S
+index 882f62a..b725b66 100644
+--- a/board/freescale/mx6q_sabreauto/lowlevel_init.S
++++ b/board/freescale/mx6q_sabreauto/lowlevel_init.S
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -143,7 +143,11 @@ d_inv_loop:
+ 	str r1, [r0, #CLKCTL_CCGR4]
+ 	ldr r1, =0xF0000C3
+ 	str r1, [r0, #CLKCTL_CCGR5]
++#ifdef CONFIG_CMD_WEIMNOR
++	ldr r1, =0xFFC
++#else
+ 	ldr r1, =0x3FC
++#endif
+ 	str r1, [r0, #CLKCTL_CCGR6]
+ .endm
+ 
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index ac8130e..8c761c1 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -395,9 +395,9 @@ void setup_lvds_poweron(void)
+ #endif
+ #endif
+ 
+-#ifdef CONFIG_IMX_ECSPI
+ s32 spi_get_cfg(struct imx_spi_dev_t *dev)
+ {
++#ifdef CONFIG_IMX_ECSPI
+ 	switch (dev->slave.cs) {
+ 	case 0:
+ 		/* SPI-NOR */
+@@ -420,12 +420,13 @@ s32 spi_get_cfg(struct imx_spi_dev_t *dev)
+ 	default:
+ 		printf("Invalid Bus ID!\n");
+ 	}
+-
++#endif
+ 	return 0;
+ }
+ 
+ void spi_io_init(struct imx_spi_dev_t *dev)
+ {
++#ifdef CONFIG_IMX_ECSPI
+ 	u32 reg;
+ 
+ 	switch (dev->base) {
+@@ -473,8 +474,8 @@ void spi_io_init(struct imx_spi_dev_t *dev)
+ 	default:
+ 		break;
+ 	}
+-}
+ #endif
++}
+ 
+ #ifdef CONFIG_NAND_GPMI
+ #if defined CONFIG_MX6Q
+@@ -586,8 +587,123 @@ int get_mmc_env_devno(void)
+ 
+ }
+ #endif
++#ifdef CONFIG_CMD_WEIMNOR
+ 
+ #if defined CONFIG_MX6Q
++iomux_v3_cfg_t nor_pads[] = {
++	MX6Q_PAD_EIM_D16__WEIM_WEIM_D_16,
++	MX6Q_PAD_EIM_D17__WEIM_WEIM_D_17,
++	MX6Q_PAD_EIM_D18__WEIM_WEIM_D_18,
++	MX6Q_PAD_EIM_D19__WEIM_WEIM_D_19,
++	MX6Q_PAD_EIM_D20__WEIM_WEIM_D_20,
++	MX6Q_PAD_EIM_D21__WEIM_WEIM_D_21,
++	MX6Q_PAD_EIM_D22__WEIM_WEIM_D_22,
++	MX6Q_PAD_EIM_D23__WEIM_WEIM_D_23,
++	MX6Q_PAD_EIM_D24__WEIM_WEIM_D_24,
++	MX6Q_PAD_EIM_D25__WEIM_WEIM_D_25,
++	MX6Q_PAD_EIM_D26__WEIM_WEIM_D_26,
++	MX6Q_PAD_EIM_D27__WEIM_WEIM_D_27,
++	MX6Q_PAD_EIM_D28__WEIM_WEIM_D_28,
++	MX6Q_PAD_EIM_D29__WEIM_WEIM_D_29,
++	MX6Q_PAD_EIM_D30__WEIM_WEIM_D_30,
++	MX6Q_PAD_EIM_D31__WEIM_WEIM_D_31,
++	MX6Q_PAD_EIM_DA0__WEIM_WEIM_DA_A_0,
++	MX6Q_PAD_EIM_DA1__WEIM_WEIM_DA_A_1,
++	MX6Q_PAD_EIM_DA2__WEIM_WEIM_DA_A_2,
++	MX6Q_PAD_EIM_DA3__WEIM_WEIM_DA_A_3,
++	MX6Q_PAD_EIM_DA4__WEIM_WEIM_DA_A_4,
++	MX6Q_PAD_EIM_DA5__WEIM_WEIM_DA_A_5,
++	MX6Q_PAD_EIM_DA6__WEIM_WEIM_DA_A_6,
++	MX6Q_PAD_EIM_DA7__WEIM_WEIM_DA_A_7,
++	MX6Q_PAD_EIM_DA8__WEIM_WEIM_DA_A_8,
++	MX6Q_PAD_EIM_DA9__WEIM_WEIM_DA_A_9,
++	MX6Q_PAD_EIM_DA10__WEIM_WEIM_DA_A_10,
++	MX6Q_PAD_EIM_DA11__WEIM_WEIM_DA_A_11,
++	MX6Q_PAD_EIM_DA12__WEIM_WEIM_DA_A_12,
++	MX6Q_PAD_EIM_DA13__WEIM_WEIM_DA_A_13,
++	MX6Q_PAD_EIM_DA14__WEIM_WEIM_DA_A_14,
++	MX6Q_PAD_EIM_DA15__WEIM_WEIM_DA_A_15,
++	MX6Q_PAD_EIM_A16__WEIM_WEIM_A_16,
++	MX6Q_PAD_EIM_A17__WEIM_WEIM_A_17,
++	MX6Q_PAD_EIM_A18__WEIM_WEIM_A_18,
++	MX6Q_PAD_EIM_A19__WEIM_WEIM_A_19,
++	MX6Q_PAD_EIM_A20__WEIM_WEIM_A_20,
++	MX6Q_PAD_EIM_A21__WEIM_WEIM_A_21,
++	MX6Q_PAD_EIM_A22__WEIM_WEIM_A_22,
++	MX6Q_PAD_EIM_A23__WEIM_WEIM_A_23,
++	MX6Q_PAD_EIM_A24__WEIM_WEIM_A_24,
++	MX6Q_PAD_EIM_OE__WEIM_WEIM_OE,
++	MX6Q_PAD_EIM_RW__WEIM_WEIM_RW,
++	MX6Q_PAD_EIM_CS0__WEIM_WEIM_CS_0
++};
++#elif defined CONFIG_MX6DL
++iomux_v3_cfg_t nor_pads[] = {
++	MX6DL_PAD_EIM_D16__WEIM_WEIM_D_16,
++	MX6DL_PAD_EIM_D17__WEIM_WEIM_D_17,
++	MX6DL_PAD_EIM_D18__WEIM_WEIM_D_18,
++	MX6DL_PAD_EIM_D19__WEIM_WEIM_D_19,
++	MX6DL_PAD_EIM_D20__WEIM_WEIM_D_20,
++	MX6DL_PAD_EIM_D21__WEIM_WEIM_D_21,
++	MX6DL_PAD_EIM_D22__WEIM_WEIM_D_22,
++	MX6DL_PAD_EIM_D23__WEIM_WEIM_D_23,
++	MX6DL_PAD_EIM_D24__WEIM_WEIM_D_24,
++	MX6DL_PAD_EIM_D25__WEIM_WEIM_D_25,
++	MX6DL_PAD_EIM_D26__WEIM_WEIM_D_26,
++	MX6DL_PAD_EIM_D27__WEIM_WEIM_D_27,
++	MX6DL_PAD_EIM_D28__WEIM_WEIM_D_28,
++	MX6DL_PAD_EIM_D29__WEIM_WEIM_D_29,
++	MX6DL_PAD_EIM_D30__WEIM_WEIM_D_30,
++	MX6DL_PAD_EIM_D31__WEIM_WEIM_D_31,
++	MX6DL_PAD_EIM_DA0__WEIM_WEIM_DA_A_0,
++	MX6DL_PAD_EIM_DA1__WEIM_WEIM_DA_A_1,
++	MX6DL_PAD_EIM_DA2__WEIM_WEIM_DA_A_2,
++	MX6DL_PAD_EIM_DA3__WEIM_WEIM_DA_A_3,
++	MX6DL_PAD_EIM_DA4__WEIM_WEIM_DA_A_4,
++	MX6DL_PAD_EIM_DA5__WEIM_WEIM_DA_A_5,
++	MX6DL_PAD_EIM_DA6__WEIM_WEIM_DA_A_6,
++	MX6DL_PAD_EIM_DA7__WEIM_WEIM_DA_A_7,
++	MX6DL_PAD_EIM_DA8__WEIM_WEIM_DA_A_8,
++	MX6DL_PAD_EIM_DA9__WEIM_WEIM_DA_A_9,
++	MX6DL_PAD_EIM_DA10__WEIM_WEIM_DA_A_10,
++	MX6DL_PAD_EIM_DA11__WEIM_WEIM_DA_A_11,
++	MX6DL_PAD_EIM_DA12__WEIM_WEIM_DA_A_12,
++	MX6DL_PAD_EIM_DA13__WEIM_WEIM_DA_A_13,
++	MX6DL_PAD_EIM_DA14__WEIM_WEIM_DA_A_14,
++	MX6DL_PAD_EIM_DA15__WEIM_WEIM_DA_A_15,
++	MX6DL_PAD_EIM_A16__WEIM_WEIM_A_16,
++	MX6DL_PAD_EIM_A17__WEIM_WEIM_A_17,
++	MX6DL_PAD_EIM_A18__WEIM_WEIM_A_18,
++	MX6DL_PAD_EIM_A19__WEIM_WEIM_A_19,
++	MX6DL_PAD_EIM_A20__WEIM_WEIM_A_20,
++	MX6DL_PAD_EIM_A21__WEIM_WEIM_A_21,
++	MX6DL_PAD_EIM_A22__WEIM_WEIM_A_22,
++	MX6DL_PAD_EIM_A23__WEIM_WEIM_A_23,
++	MX6DL_PAD_EIM_A24__WEIM_WEIM_A_24,
++	MX6DL_PAD_EIM_OE__WEIM_WEIM_OE,
++	MX6DL_PAD_EIM_RW__WEIM_WEIM_RW,
++	MX6DL_PAD_EIM_CS0__WEIM_WEIM_CS_0
++};
++#endif
++
++static void weim_norflash_cs_setup(void)
++{
++    writel(0x00000120, WEIM_BASE_ADDR + 0x090);
++    writel(0x00620181, WEIM_BASE_ADDR + 0x000);
++    writel(0x00000001, WEIM_BASE_ADDR + 0x004);
++    writel(0x0f020000, WEIM_BASE_ADDR + 0x008);
++    writel(0x0000b000, WEIM_BASE_ADDR + 0x00c);
++    writel(0x0804a240, WEIM_BASE_ADDR + 0x010);
++}
++
++static void setup_nor(void)
++{
++
++	mxc_iomux_v3_setup_multiple_pads(nor_pads,
++			ARRAY_SIZE(nor_pads));
++	weim_norflash_cs_setup();
++}
++#endif
++#if defined CONFIG_MX6Q
+ iomux_v3_cfg_t usdhc1_pads[] = {
+ 	MX6Q_PAD_SD1_CLK__USDHC1_CLK,
+ 	MX6Q_PAD_SD1_CMD__USDHC1_CMD,
+@@ -840,6 +956,9 @@ int board_init(void)
+ 
+ 	setup_uart();
+ 
++#ifdef CONFIG_CMD_WEIMNOR
++	setup_nor();
++#endif
+ #ifdef CONFIG_DWC_AHSATA
+ 	setup_sata();
+ #endif
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index e304b5a..0a5f291 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+- * Configuration settings for the MX6Q Armadillo2 Freescale board.
++ * Configuration settings for the MX6Q SABRE-AI Freescale board.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -30,7 +30,6 @@
+ #define CONFIG_MX6Q
+ #define CONFIG_MX6Q_SABREAUTO
+ #define CONFIG_FLASH_HEADER
+-#define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+ 
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+@@ -91,6 +90,7 @@
+ #define CONFIG_CMD_SPI
+ #define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
++/*#define CONFIG_CMD_WEIMNOR*/ 	/*To boot from WEIM NOR. This will disable SPI NOR BOOT */
+ 
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_SF
+@@ -194,8 +194,11 @@
+ 	#define CONFIG_SYS_I2C_SLAVE            0x30
+ #endif
+ 
++
++
+ /*
+  * SPI Configs
++ * SPI NOR AND WEIM NOR share PINs, so cannot be enabled both at sametime
+  */
+ #ifdef CONFIG_CMD_SF
+ 	#define CONFIG_FSL_SF		1
+@@ -206,6 +209,26 @@
+ 	#define MAX_SPI_BYTES		(64 * 4)
+ #endif
+ 
++/*
++ * WEIM NOR Config
++ */
++#ifdef CONFIG_CMD_WEIMNOR
++	#define CONFIG_SYS_FLASH_CFI			/* use the Common Flash Interface */
++	#define CONFIG_FLASH_CFI_DRIVER			/* use the CFI driver */
++	#define CONFIG_SYS_FLASH_BASE		0x08000000	/* start of FLASH   */
++	#define CONFIG_SYS_FLASH_SIZE		0x08000000	/* max flash size in bytes */
++	#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
++	#define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_16BIT
++	#define CONFIG_SYS_FLASH_BANKS_LIST	{CONFIG_SYS_FLASH_BASE}
++	#define CONFIG_SYS_MAX_FLASH_BANKS	1		/* number of banks */
++	#define CONFIG_SYS_MAX_FLASH_SECT	256		/* max sectors per device */
++	#define CONFIG_SYS_FLASH_PROTECTION
++	#define CONFIG_FLASH_HEADER_OFFSET 0x1000
++#else
++	#define CONFIG_FLASH_HEADER_OFFSET 0x400
++#endif
++
++
+ /* Regulator Configs */
+ #ifdef CONFIG_CMD_REGUL
+ 	#define CONFIG_ANATOP_REGULATOR
+@@ -294,8 +317,9 @@
+ /*-----------------------------------------------------------------------
+  * FLASH and environment organization
+  */
+-#define CONFIG_SYS_NO_FLASH
+-
++#ifndef CONFIG_CMD_WEIMNOR
++	#define CONFIG_SYS_NO_FLASH
++#endif
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ /* #define CONFIG_FSL_ENV_IN_NAND */
+diff --git a/include/configs/mx6solo_sabreauto.h b/include/configs/mx6solo_sabreauto.h
+index 999fb2a..eadb69e 100644
+--- a/include/configs/mx6solo_sabreauto.h
++++ b/include/configs/mx6solo_sabreauto.h
+@@ -32,7 +32,6 @@
+ #define CONFIG_DDR_32BIT
+ #define CONFIG_MX6Q_SABREAUTO
+ #define CONFIG_FLASH_HEADER
+-#define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+ 
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+@@ -93,6 +92,7 @@
+ #define CONFIG_CMD_SPI
+ #define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
++#define CONFIG_CMD_WEIMNOR 	/*To boot from WEIM NOR. This will disable SPI NOR BOOT */
+ 
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_SF
+@@ -197,6 +197,7 @@
+ 
+ /*
+  * SPI Configs
++ * SPI NOR AND WEIM NOR share PINs, so cannot be enabled both at sametime
+  */
+ #ifdef CONFIG_CMD_SF
+ 	#define CONFIG_FSL_SF		1
+@@ -207,6 +208,25 @@
+ 	#define MAX_SPI_BYTES		(64 * 4)
+ #endif
+ 
++/*
++ * WEIM NOR Config
++ */
++#ifdef CONFIG_CMD_WEIMNOR
++	#define CONFIG_SYS_FLASH_CFI			/* use the Common Flash Interface */
++	#define CONFIG_FLASH_CFI_DRIVER			/* use the CFI driver */
++	#define CONFIG_SYS_FLASH_BASE		0x08000000	/* start of FLASH   */
++	#define CONFIG_SYS_FLASH_SIZE		0x08000000	/* max flash size in bytes */
++	#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
++	#define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_16BIT
++	#define CONFIG_SYS_FLASH_BANKS_LIST	{CONFIG_SYS_FLASH_BASE}
++	#define CONFIG_SYS_MAX_FLASH_BANKS	1		/* number of banks */
++	#define CONFIG_SYS_MAX_FLASH_SECT	256		/* max sectors per device */
++	#define CONFIG_SYS_FLASH_PROTECTION
++	#define CONFIG_FLASH_HEADER_OFFSET 0x1000
++#else
++	#define CONFIG_FLASH_HEADER_OFFSET 0x400
++#endif
++
+ /* Regulator Configs */
+ #ifdef CONFIG_CMD_REGUL
+ 	#define CONFIG_ANATOP_REGULATOR
+@@ -283,8 +303,9 @@
+ /*-----------------------------------------------------------------------
+  * FLASH and environment organization
+  */
+-#define CONFIG_SYS_NO_FLASH
+-
++#ifndef CONFIG_CMD_WEIMNOR
++	#define CONFIG_SYS_NO_FLASH
++#endif
+ /* Monitor at beginning of flash */
+ #define CONFIG_FSL_ENV_IN_MMC
+ /* #define CONFIG_FSL_ENV_IN_NAND */
+-- 
+1.7.7.4
+

@@ -1,0 +1,42 @@
+From 9faa736fe5a1c3265d3888c2329abc6312e94213 Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Fri, 30 Mar 2012 19:22:49 +0800
+Subject: [PATCH 498/678] ENGR00176837-4 - FEC:enable some macro define for
+ all chip
+
+- Enable below macro define for all chip. Firstly, the marcos
+  will be used in later version for later i.MX. Secondly, fix
+  the build error in the former i.MX series chip before i.MX6.
+	#define PHY_MIPSCR_LINK_UP      (0x1 << 10)
+	#define PHY_MIPSCR_SPEED_MASK   (0x3 << 14)
+	#define PHY_MIPSCR_1000M        (0x2 << 14)
+	#define PHY_MIPSCR_100M         (0x1 << 14)
+	#define PHY_MIPSCR_FULL_DUPLEX  (0x1 << 13)
+
+Signed-off-by: Fugang Duan  <B38611@freescale.com>
+---
+ drivers/net/mxc_fec.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/mxc_fec.c b/drivers/net/mxc_fec.c
+index 76c6d5c..212abb7 100644
+--- a/drivers/net/mxc_fec.c
++++ b/drivers/net/mxc_fec.c
+@@ -78,13 +78,13 @@
+ 
+ #if defined(CONFIG_MX6Q) || defined(CONFIG_MX6DL)
+ extern int mx6_rgmii_rework(char *devname, int phy_addr);
++#endif
+ 
+ #define PHY_MIPSCR_LINK_UP	(0x1 << 10)
+ #define PHY_MIPSCR_SPEED_MASK	(0x3 << 14)
+ #define PHY_MIPSCR_1000M	(0x2 << 14)
+ #define PHY_MIPSCR_100M		(0x1 << 14)
+ #define PHY_MIPSCR_FULL_DUPLEX	(0x1 << 13)
+-#endif
+ 
+ #ifndef CONFIG_SYS_CACHELINE_SIZE
+ #define CONFIG_SYS_CACHELINE_SIZE 32
+-- 
+1.7.7.4
+

@@ -1,0 +1,30 @@
+From 3c73a4c87c29cfb7af4cfdc5b457892d24b89a27 Mon Sep 17 00:00:00 2001
+From: Anson Huang <b20788@freescale.com>
+Date: Fri, 29 Mar 2013 11:54:43 -0400
+Subject: [PATCH 673/678] ENGR00256543 mx6: Update equation for thermal sensor
+ on i.MX6DL
+
+Use universal equation and 25C's calibration data to
+get thermal sensor's ratio on i.MX6DL.
+
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/generic.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 880374d..253b5e0 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -896,7 +896,7 @@ static inline int read_cpu_temperature(void)
+ 	 * data not used, we use universal equation to get thermal
+ 	 * sensor's ratio.
+ 	 */
+-#if (defined(CONFIG_MX6Q) && !defined(USE_CALIBRATION))
++#if (!defined(CONFIG_MX6SL) && !defined(USE_CALIBRATION))
+ 	/*
+ 	 * The universal equation for thermal sensor
+ 	 * is slope = 0.4297157 - (0.0015976 * 25C fuse),
+-- 
+1.7.7.4
+

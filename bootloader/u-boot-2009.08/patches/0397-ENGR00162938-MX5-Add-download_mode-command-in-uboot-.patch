@@ -1,0 +1,141 @@
+From 08b5c56351ea218583483f69b0c19c53a836c3c4 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Wed, 23 Nov 2011 13:49:37 +0800
+Subject: [PATCH 397/678] ENGR00162938 MX5: Add download_mode command in uboot
+ to enter MFG download mode.
+
+Add download_mode command in uboot to enter MFG dowload mode ,
+you can try download mode command in uboot and enter download mode.
+it first set srtc register, then before enter linux,
+it will clear these register to prevent the up comming watchdog
+reset will enter mfgtool mode.
+
+only add mx53 now.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ cpu/arm_cortexa8/cpu.c             |    4 ++++
+ cpu/arm_cortexa8/mx53/generic.c    |   35 +++++++++++++++++++++++++++++++++++
+ include/asm-arm/arch-mx53/mx53.h   |    3 +++
+ include/configs/mx53_smd.h         |    3 +++
+ include/configs/mx53_smd_android.h |    4 ++++
+ 5 files changed, 49 insertions(+), 0 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/cpu.c b/cpu/arm_cortexa8/cpu.c
+index ac7ac13..a7a6fb7 100644
+--- a/cpu/arm_cortexa8/cpu.c
++++ b/cpu/arm_cortexa8/cpu.c
+@@ -136,6 +136,10 @@ int cleanup_before_linux(void)
+ {
+ 	unsigned int i;
+ 
++#ifdef CONFIG_CMD_IMX_DOWNLOAD_MODE
++	clear_mfgmode_mem();
++#endif
++
+ #ifdef CONFIG_VIDEO_MX5
+ 	ipu_disable_channel(MEM_BG_SYNC);
+ 	ipu_uninit_channel(MEM_BG_SYNC);
+diff --git a/cpu/arm_cortexa8/mx53/generic.c b/cpu/arm_cortexa8/mx53/generic.c
+index d54bf2c..e53a720 100644
+--- a/cpu/arm_cortexa8/mx53/generic.c
++++ b/cpu/arm_cortexa8/mx53/generic.c
+@@ -1131,3 +1131,38 @@ void ipu_clk_disable(void)
+ 	reg |= (0x1 << 18);
+ 	writel(reg, CCM_BASE_ADDR + CLKCTL_CLPCR);
+ }
++
++#ifdef CONFIG_CMD_IMX_DOWNLOAD_MODE
++
++/* this function should call before enter linux, otherwise, you
++ * watchdog reset will enter mfg download mode again, clear this bit
++ * to prevent this behavior */
++void clear_mfgmode_mem(void)
++{
++	u32 reg;
++	reg = readl(SRTC_BASE_ADDR + SRTC_LPGR);
++	reg &= ~0x12000000;
++	writel(reg, SRTC_BASE_ADDR + SRTC_LPGR);
++}
++
++void do_switch_mfgmode(void)
++{
++	u32 reg;
++	reg = readl(SRTC_BASE_ADDR + SRTC_LPGR);
++	/* After set bit 28 of LPGR register of SRTC to 1, Set bit
++	 * [25:0] to specified value according to format of SBMR,
++	 * after trigger a watchdog reset, ROM will read Bit 28 and
++	 * then copy bit [25:0] of LPGR to SBMR, then ROM can enter
++	 * serial download mode.*/
++	reg |= 0x12000000;
++	writel(reg, SRTC_BASE_ADDR + SRTC_LPGR);
++	/* this watchdog reset will let chip enter mfgtool download
++	 * mode. */
++	do_reset(NULL, 0, 0, NULL);
++}
++
++U_BOOT_CMD(
++	download_mode, 1, 1, do_switch_mfgmode,
++	"download_mode - enter i.MX serial/usb download mode\n",
++	"");
++#endif
+diff --git a/include/asm-arm/arch-mx53/mx53.h b/include/asm-arm/arch-mx53/mx53.h
+index f186601..49718db 100644
+--- a/include/asm-arm/arch-mx53/mx53.h
++++ b/include/asm-arm/arch-mx53/mx53.h
+@@ -359,6 +359,8 @@
+ 
+ #define PLATFORM_ICGC           0x14
+ 
++#define SRTC_LPGR		0x1c
++
+ /* Assuming 24MHz input clock with doubler ON */
+ /*                            MFI         PDF */
+ #define DP_OP_1000	((10 << 4) + ((1 - 1) << 0))
+@@ -466,6 +468,7 @@ enum mxc_peri_clocks {
+ 	MXC_SPI2_CLK,
+ };
+ 
++extern void clear_mfgmode_mem(void);
+ extern unsigned int mxc_get_clock(enum mxc_clock clk);
+ extern unsigned int get_board_rev(void);
+ extern int is_soc_rev(int rev);
+diff --git a/include/configs/mx53_smd.h b/include/configs/mx53_smd.h
+index 2ed27ab..01d4b2e 100644
+--- a/include/configs/mx53_smd.h
++++ b/include/configs/mx53_smd.h
+@@ -79,6 +79,9 @@
+ #define CONFIG_BAUDRATE			115200
+ #define CONFIG_SYS_BAUDRATE_TABLE	{9600, 19200, 38400, 57600, 115200}
+ 
++/* download mode command */
++#define CONFIG_IMX_DOWNLOAD_CMD
++
+ /***********************************************************
+  * Command definition
+  ***********************************************************/
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index f043c77..a851b2a 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -118,6 +118,7 @@
+ #define CONFIG_BAUDRATE			115200
+ #define CONFIG_SYS_BAUDRATE_TABLE	{9600, 19200, 38400, 57600, 115200}
+ 
++
+ /***********************************************************
+  * Command definition
+  ***********************************************************/
+@@ -148,6 +149,9 @@
+ #define CONFIG_CMD_SATA
+ #undef CONFIG_CMD_IMLS
+ 
++/* download mode command */
++#define CONFIG_CMD_IMX_DOWNLOAD_MODE
++
+ #define CONFIG_BOOTDELAY	3
+ 
+ #define CONFIG_PRIME	"FEC0"
+-- 
+1.7.7.4
+

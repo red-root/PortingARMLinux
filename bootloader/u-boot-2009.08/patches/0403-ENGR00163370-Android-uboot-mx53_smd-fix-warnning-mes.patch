@@ -1,0 +1,38 @@
+From 127f1cf74be5bdb9eaf18b097aa8605d72ce71f7 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Tue, 29 Nov 2011 16:09:38 +0800
+Subject: [PATCH 403/678] ENGR00163370 Android: uboot: mx53_smd fix warnning
+ message
+
+Fix minor error when adding recovery related code.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ board/freescale/mx53_smd/mx53_smd.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx53_smd/mx53_smd.c b/board/freescale/mx53_smd/mx53_smd.c
+index f40147a..660dfc2 100644
+--- a/board/freescale/mx53_smd/mx53_smd.c
++++ b/board/freescale/mx53_smd/mx53_smd.c
+@@ -1112,7 +1112,7 @@ int check_recovery_cmd_file(void)
+ 
+ 				if (!ext2fs_mount(part_length)) {
+ 					printf("** Bad ext2 partition or "
+-					       "disk - mmc i:%d **\n",
++					       "disk - mmc %d:%d **\n",
+ 					       i, CONFIG_ANDROID_CACHE_PARTITION_MMC);
+ 					ext2fs_close();
+ 					continue;
+@@ -1141,7 +1141,7 @@ int check_recovery_cmd_file(void)
+ 	 * @TODO: Need At least Two key, but in SMD board,
+ 	 * only can use one Volume key. */
+ 	mxc_request_iomux(MX53_PIN_ATA_DATA14, IOMUX_CONFIG_ALT1);
+-	readl(GPIO2_BASE_ADDR + GPIO_GDIR);
++	reg = readl(GPIO2_BASE_ADDR + GPIO_GDIR);
+ 	reg &= ~(1<<14);
+ 	writel(reg, GPIO2_BASE_ADDR + GPIO_GDIR);
+ 	reg = readl(GPIO2_BASE_ADDR + GPIO_PSR);
+-- 
+1.7.7.4
+

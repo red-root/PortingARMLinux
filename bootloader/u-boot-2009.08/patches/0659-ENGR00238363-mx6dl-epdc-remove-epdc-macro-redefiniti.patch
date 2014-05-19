@@ -1,0 +1,44 @@
+From d0e1fff03a24d2dbbc6bc61a65bdd37f6c241b82 Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Thu, 27 Dec 2012 11:48:54 +0800
+Subject: [PATCH 659/678] ENGR00238363: mx6dl: epdc: remove epdc macro
+ redefinition in config file
+
+Remove mx6dl_arm2 and mx6dl_sabresd config file epdc macro
+redefinition to avoid build warning.
+
+Signed-off-by: Fugang Duan  <B38611@freescale.com>
+---
+ include/configs/mx6dl_arm2.h    |    2 --
+ include/configs/mx6dl_sabresd.h |    2 --
+ 2 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index fc44c51..7f897ab 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -323,8 +323,6 @@
+ 	#define LCD_BPP					LCD_MONOCHROME
+ 	/* #define CONFIG_SPLASH_SCREEN_ALIGN		1 */
+ 
+-	#define CONFIG_MXC_EPDC				1
+-
+ 	#define CONFIG_WORKING_BUF_ADDR			(TEXT_BASE + 0x100000)
+ 	#define CONFIG_WAVEFORM_BUF_ADDR		(TEXT_BASE + 0x200000)
+ 	#define CONFIG_WAVEFORM_FILE_OFFSET		0x600000
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index a496453..70ed3db 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -327,8 +327,6 @@
+ 	#define LCD_BPP					LCD_MONOCHROME
+ 	/* #define CONFIG_SPLASH_SCREEN_ALIGN		1 */
+ 
+-	#define CONFIG_MXC_EPDC				1
+-
+ 	#define CONFIG_WORKING_BUF_ADDR			(TEXT_BASE + 0x100000)
+ 	#define CONFIG_WAVEFORM_BUF_ADDR		(TEXT_BASE + 0x200000)
+ 	#define CONFIG_WAVEFORM_FILE_OFFSET		0x600000
+-- 
+1.7.7.4
+

@@ -1,0 +1,134 @@
+From 265932797ce1006ce0cb14960e70f7670ab73b25 Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Mon, 16 May 2011 17:12:32 +0800
+Subject: [PATCH 293/678] ENGR00143457: Don't let ROM copy .bss section
+
+Don't need let ROM copy the .bss section since it
+will all be zeroed by u-boot at start up, thus it
+can speed up the boot up time.
+
+Need add CONFIG_FLASH_HEADER_OFFSET to the size since
+ROM will copy from the beginning of the MMC card.
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ board/freescale/mx53_ard/flash_header.S  |    2 +-
+ board/freescale/mx53_ard/u-boot.lds      |    1 +
+ board/freescale/mx53_evk/flash_header.S  |    4 ++--
+ board/freescale/mx53_evk/u-boot.lds      |    1 +
+ board/freescale/mx53_loco/flash_header.S |    2 +-
+ board/freescale/mx53_loco/u-boot.lds     |    1 +
+ board/freescale/mx53_smd/flash_header.S  |    2 +-
+ board/freescale/mx53_smd/u-boot.lds      |    1 +
+ 8 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/board/freescale/mx53_ard/flash_header.S b/board/freescale/mx53_ard/flash_header.S
+index 4db120d..d7130c1 100644
+--- a/board/freescale/mx53_ard/flash_header.S
++++ b/board/freescale/mx53_ard/flash_header.S
+@@ -49,7 +49,7 @@ app_code_csf:     .word 0x0
+ reserv2:          .word 0x0
+ 
+ boot_data:        .word 0x77800000
+-image_len:        .word _end - TEXT_BASE
++image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ plugin:           .word 0x0
+ 
+ /* TO1.0/TO2.0 DDR2 scripts for EVK, ARD and ARM2 CPU2 board */
+diff --git a/board/freescale/mx53_ard/u-boot.lds b/board/freescale/mx53_ard/u-boot.lds
+index acb2e28..2615a9d 100644
+--- a/board/freescale/mx53_ard/u-boot.lds
++++ b/board/freescale/mx53_ard/u-boot.lds
+@@ -67,6 +67,7 @@ SECTIONS
+ 	__u_boot_cmd_end = .;
+ 
+ 	. = ALIGN(4);
++	_end_of_copy = .; /* end_of ROM copy code here */
+ 	__bss_start = .;
+ 	.bss : { *(.bss) }
+ 	_end = .;
+diff --git a/board/freescale/mx53_evk/flash_header.S b/board/freescale/mx53_evk/flash_header.S
+index 8496789..fcbf111 100644
+--- a/board/freescale/mx53_evk/flash_header.S
++++ b/board/freescale/mx53_evk/flash_header.S
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -49,7 +49,7 @@ app_code_csf:     .word 0x0
+ reserv2:          .word 0x0
+ 
+ boot_data:        .word 0x77800000
+-image_len:        .word _end - TEXT_BASE
++image_len:        .word _end_of_copy - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ plugin:           .word 0x0
+ 
+ /* TO1.0/TO2.0 DDR2 scripts for EVK, ARD and ARM2 CPU2 board */
+diff --git a/board/freescale/mx53_evk/u-boot.lds b/board/freescale/mx53_evk/u-boot.lds
+index fe5f4eb..46f4be2 100644
+--- a/board/freescale/mx53_evk/u-boot.lds
++++ b/board/freescale/mx53_evk/u-boot.lds
+@@ -67,6 +67,7 @@ SECTIONS
+ 	__u_boot_cmd_end = .;
+ 
+ 	. = ALIGN(4);
++	_end_of_copy = .; /* end_of ROM copy code here */
+ 	__bss_start = .;
+ 	.bss : { *(.bss) }
+ 	_end = .;
+diff --git a/board/freescale/mx53_loco/flash_header.S b/board/freescale/mx53_loco/flash_header.S
+index 0ca3b85..b451edc 100644
+--- a/board/freescale/mx53_loco/flash_header.S
++++ b/board/freescale/mx53_loco/flash_header.S
+@@ -49,7 +49,7 @@ app_code_csf:     .word 0x0
+ reserv2:          .word 0x0
+ 
+ boot_data:        .word 0x77800000
+-image_len:        .word _end - TEXT_BASE
++image_len:        .word _end_of_copy - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ plugin:           .word 0x0
+ 
+ dcd_hdr:          .word 0x40A001D2 /* Tag=0xD2, Len=51*8 + 4 + 4, Ver=0x40 */
+diff --git a/board/freescale/mx53_loco/u-boot.lds b/board/freescale/mx53_loco/u-boot.lds
+index 4db8ab1..514f92b 100644
+--- a/board/freescale/mx53_loco/u-boot.lds
++++ b/board/freescale/mx53_loco/u-boot.lds
+@@ -61,6 +61,7 @@ SECTIONS
+ 	__u_boot_cmd_end = .;
+ 
+ 	. = ALIGN(4);
++	_end_of_copy = .; /* end_of ROM copy code here */
+ 	__bss_start = .;
+ 	.bss : { *(.bss) }
+ 	_end = .;
+diff --git a/board/freescale/mx53_smd/flash_header.S b/board/freescale/mx53_smd/flash_header.S
+index 0ca3b85..b451edc 100644
+--- a/board/freescale/mx53_smd/flash_header.S
++++ b/board/freescale/mx53_smd/flash_header.S
+@@ -49,7 +49,7 @@ app_code_csf:     .word 0x0
+ reserv2:          .word 0x0
+ 
+ boot_data:        .word 0x77800000
+-image_len:        .word _end - TEXT_BASE
++image_len:        .word _end_of_copy - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ plugin:           .word 0x0
+ 
+ dcd_hdr:          .word 0x40A001D2 /* Tag=0xD2, Len=51*8 + 4 + 4, Ver=0x40 */
+diff --git a/board/freescale/mx53_smd/u-boot.lds b/board/freescale/mx53_smd/u-boot.lds
+index 560878e..c6cb751 100644
+--- a/board/freescale/mx53_smd/u-boot.lds
++++ b/board/freescale/mx53_smd/u-boot.lds
+@@ -67,6 +67,7 @@ SECTIONS
+ 	__u_boot_cmd_end = .;
+ 
+ 	. = ALIGN(4);
++	_end_of_copy = .; /* end_of ROM copy code here */
+ 	__bss_start = .;
+ 	.bss : { *(.bss) }
+ 	_end = .;
+-- 
+1.7.7.4
+

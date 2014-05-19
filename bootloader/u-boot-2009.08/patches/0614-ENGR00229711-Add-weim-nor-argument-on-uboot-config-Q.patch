@@ -1,0 +1,45 @@
+From 2130d083c3d231f7a417fe120bf15de0237ac391 Mon Sep 17 00:00:00 2001
+From: Alejandro Sierra <b18039@freescale.com>
+Date: Mon, 15 Oct 2012 17:21:37 -0500
+Subject: [PATCH 614/678] ENGR00229711 Add weim-nor argument on uboot config
+ Quad/DL
+
+Missing argument "weim-nor" on uboot configuration
+to boot from NOR.
+Quad/DL
+
+Signed-off-by: Alejandro Sierra <b18039@freescale.com>
+---
+ include/configs/mx6dl_sabreauto_weimnor.h |    2 +-
+ include/configs/mx6q_sabreauto_weimnor.h  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/configs/mx6dl_sabreauto_weimnor.h b/include/configs/mx6dl_sabreauto_weimnor.h
+index cb00a64..d9e12dc 100644
+--- a/include/configs/mx6dl_sabreauto_weimnor.h
++++ b/include/configs/mx6dl_sabreauto_weimnor.h
+@@ -133,7 +133,7 @@
+ 		"mmc read ${loadaddr} 0x800 0x2000; bootm\0"	\
+ 		"bootcmd=run bootcmd_nor\0"                             \
+ 		"bootargs_nor=setenv bootargs ${bootargs} root=/dev/nfs	"\
+-			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
++			"ip=dhcp weim-nor nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_nor=run bootargs_base bootargs_nor;	"\
+ 			"cp.l 0x8080000 ${loadaddr} 0x400000; bootm\0"
+ 
+diff --git a/include/configs/mx6q_sabreauto_weimnor.h b/include/configs/mx6q_sabreauto_weimnor.h
+index 725d9ac..a3db3a1 100644
+--- a/include/configs/mx6q_sabreauto_weimnor.h
++++ b/include/configs/mx6q_sabreauto_weimnor.h
+@@ -132,7 +132,7 @@
+ 		"mmc read ${loadaddr} 0x800 0x2000; bootm\0"	\
+ 		"bootcmd=run bootcmd_nor\0"                             \
+ 		"bootargs_nor=setenv bootargs ${bootargs} root=/dev/nfs	"\
+-			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
++			"ip=dhcp weim-nor nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_nor=run bootargs_base bootargs_nor;	"\
+ 			"cp.l 0x8080000 ${loadaddr} 0x400000; bootm\0"
+ 
+-- 
+1.7.7.4
+

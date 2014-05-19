@@ -1,0 +1,35 @@
+From 51aa554b0655fb10cb7904071e7bb141042390b2 Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Thu, 24 Nov 2011 13:06:48 +0800
+Subject: [PATCH 398/678] ENGR00162937 - FEC: Fix FEC cannot load kernel
+ accroding tftp.
+
+- Issue description:
+  Fec can not get ip address to download kernel if insert the
+  cable after powering up the board more than 20 seconds.
+- Patch:
+  Restart init FEC interface when net cannot get packets. The
+  cause maybe cabel are unplugin or FEC are not ready.
+
+Signed-off-by: Fugang Duan  <B38611@freescale.com>
+---
+ net/net.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/net/net.c b/net/net.c
+index d1cc9b2..f572c92 100644
+--- a/net/net.c
++++ b/net/net.c
+@@ -509,6 +509,9 @@ restart:
+ 			x = timeHandler;
+ 			timeHandler = (thand_f *)0;
+ 			(*x)();
++
++			/*get packets timeout, restart net interface*/
++			NetStartAgain();
+ 		}
+ 
+ 
+-- 
+1.7.7.4
+

@@ -1,0 +1,86 @@
+From 68307322602da8c53866ab265dec86ca92cf10e5 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Wed, 12 Oct 2011 11:13:24 +0800
+Subject: [PATCH 361/678] ENGR00159740 Android: Fastboot: enlarge max image
+ size to 148MB
+
+enlarge max image size to 148MB from 128MB. since android become bigger.
+ so 128M not enough.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ include/configs/mx50_rd3_android.h |    2 +-
+ include/configs/mx50_rdp_android.h |    2 +-
+ include/configs/mx51_bbg_android.h |    2 +-
+ include/configs/mx53_evk_android.h |    2 +-
+ include/configs/mx53_smd_android.h |    2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/include/configs/mx50_rd3_android.h b/include/configs/mx50_rd3_android.h
+index 95dcb6e..6268bf6 100644
+--- a/include/configs/mx50_rd3_android.h
++++ b/include/configs/mx50_rd3_android.h
+@@ -316,7 +316,7 @@
+ #define CONFIG_FASTBOOT_SERIAL_NUM      "12345"
+ #define CONFIG_FASTBOOT_SATA_NO          0
+ #define CONFIG_FASTBOOT_TRANSFER_BUF    0x80000000
+-#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x8000000 /* 128M byte */
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x9400000 /* 148M byte */
+ 
+ #define CONFIG_ANDROID_RECOVERY
+ #define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC \
+diff --git a/include/configs/mx50_rdp_android.h b/include/configs/mx50_rdp_android.h
+index 804742f..e39d9a3 100644
+--- a/include/configs/mx50_rdp_android.h
++++ b/include/configs/mx50_rdp_android.h
+@@ -318,7 +318,7 @@
+ #define CONFIG_FASTBOOT_SERIAL_NUM      "12345"
+ #define CONFIG_FASTBOOT_SATA_NO          0
+ #define CONFIG_FASTBOOT_TRANSFER_BUF    0x80000000
+-#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x8000000 /* 128M byte */
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x9400000 /* 148M byte */
+ 
+ #define CONFIG_ANDROID_RECOVERY
+ #define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC \
+diff --git a/include/configs/mx51_bbg_android.h b/include/configs/mx51_bbg_android.h
+index 09c454c..d91529d 100644
+--- a/include/configs/mx51_bbg_android.h
++++ b/include/configs/mx51_bbg_android.h
+@@ -101,7 +101,7 @@
+ #define CONFIG_FASTBOOT_INTERFACE_STR    "Android fastboot"
+ #define CONFIG_FASTBOOT_SERIAL_NUM	 "12345"
+ #define CONFIG_FASTBOOT_TRANSFER_BUF	 0xA0000000
+-#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x8000000 /* 128M byte */
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x9400000 /* 148M byte */
+ 
+ #define CONFIG_ANDROID_RECOVERY
+ #define CONFIG_POWER_KEY	KEY_F3
+diff --git a/include/configs/mx53_evk_android.h b/include/configs/mx53_evk_android.h
+index f329e6d..e29b37f 100644
+--- a/include/configs/mx53_evk_android.h
++++ b/include/configs/mx53_evk_android.h
+@@ -91,7 +91,7 @@
+ #define CONFIG_FASTBOOT_INTERFACE_STR    "Android fastboot"
+ #define CONFIG_FASTBOOT_SERIAL_NUM      "12345"
+ #define CONFIG_FASTBOOT_TRANSFER_BUF    0x80000000
+-#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x8000000 /* 128M byte */
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x9400000 /* 148M byte */
+ 
+ #define CONFIG_ANDROID_RECOVERY
+ 
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index d7b0fe9..f043c77 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -92,7 +92,7 @@
+ #define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
+ #define CONFIG_FASTBOOT_SATA_NO		 0
+ #define CONFIG_FASTBOOT_TRANSFER_BUF	0x80000000
+-#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x8000000 /* 128M byte */
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x9400000 /* 148M byte */
+ 
+ #define CONFIG_ANDROID_RECOVERY
+ 
+-- 
+1.7.7.4
+

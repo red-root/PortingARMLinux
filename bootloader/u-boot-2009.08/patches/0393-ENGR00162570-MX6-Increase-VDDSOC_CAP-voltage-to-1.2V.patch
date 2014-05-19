@@ -1,0 +1,42 @@
+From 09412797bb8613721ef39d092bb1ae2b0c326132 Mon Sep 17 00:00:00 2001
+From: Ranjani Vaidyanathan <ra5478@freescale.com>
+Date: Thu, 17 Nov 2011 16:57:52 -0600
+Subject: [PATCH 393/678] ENGR00162570: MX6-Increase VDDSOC_CAP voltage to
+ 1.2V
+
+Set the VDDSOC LDO to increase the VDDSOC cap to 1.2V.
+This is required for correct functioning of GPU and when the
+ARM LDO is set to 1.225V (when ARM core is at 1GHz).
+
+Signed-off-by: Ranjani Vaidyanathan <ra5478@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/generic.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 019a3f3..6af07d0 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -774,12 +774,19 @@ int cpu_eth_init(bd_t *bis)
+ #if defined(CONFIG_ARCH_CPU_INIT)
+ int arch_cpu_init(void)
+ {
++	int val;
+ 	icache_enable();
+ 	dcache_enable();
+ 
+ #ifndef CONFIG_L2_OFF
+ 	l2_cache_enable();
+ #endif
++	/* Increase the VDDSOC to 1.2V */
++	val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
++	val &= ~BM_ANADIG_REG_CORE_REG2_TRG;
++	val |= BF_ANADIG_REG_CORE_REG2_TRG(0x5);
++	REG_SET(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
++
+ 	return 0;
+ }
+ #endif
+-- 
+1.7.7.4
+

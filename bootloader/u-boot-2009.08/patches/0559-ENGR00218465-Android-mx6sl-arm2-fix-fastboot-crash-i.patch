@@ -1,0 +1,87 @@
+From 2e0fba106dd5c1a9f62d95f3ccdccb33eb4a3828 Mon Sep 17 00:00:00 2001
+From: LiGang <b41990@freescale.com>
+Date: Fri, 27 Jul 2012 13:41:20 +0800
+Subject: [PATCH 559/678] ENGR00218465 Android: mx6sl-arm2: fix fastboot crash
+ issue
+
+Fix fastboot crash issue on fastmx6sl-arm2 board.
+Enlarge fastboot buffer size to 320MB for mx6 arm2 board, mx6 sabresd
+board, thus fastboot could flash system.img up to 320MB
+
+Signed-off-by: LiGang <b41990@freescale.com>
+---
+ include/configs/mx6dl_sabresd_android.h |    8 ++++++--
+ include/configs/mx6q_sabresd_android.h  |    7 +++++--
+ include/configs/mx6sl_arm2_android.h    |   12 ++++++++----
+ 3 files changed, 19 insertions(+), 8 deletions(-)
+
+diff --git a/include/configs/mx6dl_sabresd_android.h b/include/configs/mx6dl_sabresd_android.h
+index 1b34c21..c66d274 100644
+--- a/include/configs/mx6dl_sabresd_android.h
++++ b/include/configs/mx6dl_sabresd_android.h
+@@ -38,8 +38,12 @@
+ #define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
+ #define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
+ #define CONFIG_FASTBOOT_SATA_NO		 0
+-#define CONFIG_FASTBOOT_TRANSFER_BUF	0x30000000
+-#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x10000000 /* 256M byte */
++
++/*  For system.img growing up more than 256MB, more buffer needs
++*   to receive the system.img*/
++#define CONFIG_FASTBOOT_TRANSFER_BUF	0x2c000000
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x14000000 /* 320M byte */
++
+ 
+ #define CONFIG_CMD_BOOTI
+ #define CONFIG_ANDROID_RECOVERY
+diff --git a/include/configs/mx6q_sabresd_android.h b/include/configs/mx6q_sabresd_android.h
+index 0996de5..7976818 100644
+--- a/include/configs/mx6q_sabresd_android.h
++++ b/include/configs/mx6q_sabresd_android.h
+@@ -37,8 +37,11 @@
+ #define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
+ #define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
+ #define CONFIG_FASTBOOT_SATA_NO		 0
+-#define CONFIG_FASTBOOT_TRANSFER_BUF	0x30000000
+-#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x10000000 /* 256M byte */
++
++/*  For system.img growing up more than 256MB, more buffer needs
++*   to receive the system.img*/
++#define CONFIG_FASTBOOT_TRANSFER_BUF	0x2c000000
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x14000000 /* 320M byte */
+ 
+ #define CONFIG_CMD_BOOTI
+ #define CONFIG_ANDROID_RECOVERY
+diff --git a/include/configs/mx6sl_arm2_android.h b/include/configs/mx6sl_arm2_android.h
+index 5afb8ac..0e25277 100644
+--- a/include/configs/mx6sl_arm2_android.h
++++ b/include/configs/mx6sl_arm2_android.h
+@@ -24,7 +24,6 @@
+ 
+ #include <configs/mx6sl_arm2.h>
+ 
+-#if 0
+ #define CONFIG_USB_DEVICE
+ #define CONFIG_IMX_UDC		       1
+ #define CONFIG_FASTBOOT		       1
+@@ -38,9 +37,14 @@
+ #define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
+ #define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
+ #define CONFIG_FASTBOOT_SATA_NO		 0
+-#define CONFIG_FASTBOOT_TRANSFER_BUF	0x30000000
+-#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x10000000 /* 256M byte */
+-#endif
++
++/*  mx6sl ddr address starts from 0x80000000, not like mx6dl and mx6q
++*   which start from 0x10000000
++*   For system.img growing up more than 256MB, more buffer needs
++*   to receive the system.img*/
++#define CONFIG_FASTBOOT_TRANSFER_BUF    0x8c000000
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x14000000 /* 320M byte */
++
+ 
+ #define CONFIG_CMD_BOOTI
+ #define CONFIG_ANDROID_RECOVERY
+-- 
+1.7.7.4
+

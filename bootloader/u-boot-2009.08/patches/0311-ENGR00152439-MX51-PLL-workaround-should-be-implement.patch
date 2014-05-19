@@ -1,0 +1,56 @@
+From c2ee955784881a2f3ac4c0cc234ba23d83205cb1 Mon Sep 17 00:00:00 2001
+From: Ranjani Vaidyanathan <ra5478@freescale.com>
+Date: Fri, 1 Jul 2011 10:09:04 -0500
+Subject: [PATCH 311/678] ENGR00152439: MX51: PLL workaround should be
+ implemented only for PLL1
+
+Make sure the PLL workaround is done only for PLL1.
+
+Signed-off-by: Ranjani Vaidyanathan <ra5478@freescale.com>
+---
+ board/freescale/mx51_bbg/lowlevel_init.S |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx51_bbg/lowlevel_init.S b/board/freescale/mx51_bbg/lowlevel_init.S
+index 700395b..431955d 100644
+--- a/board/freescale/mx51_bbg/lowlevel_init.S
++++ b/board/freescale/mx51_bbg/lowlevel_init.S
+@@ -119,11 +119,15 @@
+ .macro setup_pll pll, freq
+ 	ldr r2, =\pll
+ 
++	ldr r1, =PLL1_BASE_ADDR
++	cmp r1, r2
++	bne    5f
++
+ 	ldr r1, [r2, #PLL_DP_CONFIG]
+ 	bic r1, r1, #0x2
+ 	str r1, [r2, #PLL_DP_CONFIG] /* disable auto-restart AREN bit */
+ 
+-	str r3, [r2, #PLL_DP_OP]
++5:	str r3, [r2, #PLL_DP_OP]
+ 	str r3, [r2, #PLL_DP_HFS_OP]
+ 
+ 	str r4, [r2, #PLL_DP_MFD]
+@@ -132,8 +136,17 @@
+ 	str r5, [r2, #PLL_DP_MFN]
+ 	str r5, [r2, #PLL_DP_HFS_MFN]
+ 
++
++	ldr r1, =PLL1_BASE_ADDR
++	cmp r1, r2
++	bne    6f
+ 	ldr r1, =0x00001236 /* Set PLM =1, manual restart and enable PLL*/
+-	str r1, [r2, #PLL_DP_CTL]
++	b       7f
++
++6:	ldr r1, =0x00001232
++
++7:	str r1, [r2, #PLL_DP_CTL]
++
+ 1:	ldr r1, [r2, #PLL_DP_CTL]
+ 	ands r1, r1, #0x1
+ 	beq 1b
+-- 
+1.7.7.4
+

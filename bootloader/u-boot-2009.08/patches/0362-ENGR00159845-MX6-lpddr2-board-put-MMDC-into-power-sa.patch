@@ -1,0 +1,48 @@
+From f2cd986d01c056cb75f1b8ea4faabf2113c0758b Mon Sep 17 00:00:00 2001
+From: Anson Huang <b20788@freescale.com>
+Date: Thu, 13 Oct 2011 10:26:09 +0800
+Subject: [PATCH 362/678] ENGR00159845 [MX6]lpddr2 board, put MMDC into power
+ saving mode
+
+For lpddr2 board.
+1. Put mmdc into power saving mode;
+2. Do the necessary setting for AXI cache and IPU Qos.
+
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/flash_header.S |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/flash_header.S b/board/freescale/mx6q_sabreauto/flash_header.S
+index 4a20fb4..441694e 100644
+--- a/board/freescale/mx6q_sabreauto/flash_header.S
++++ b/board/freescale/mx6q_sabreauto/flash_header.S
+@@ -55,8 +55,8 @@ plugin:           .word 0x0
+ 
+ #ifdef CONFIG_LPDDR2
+ 
+-dcd_hdr:          .word 0x40e803D2 /* Tag=0xD2, Len=124*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x04e403CC /* Tag=0xCC, Len=124*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x400804D2 /* Tag=0xD2, Len=128*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x040404CC /* Tag=0xCC, Len=128*8 + 4, Param=0x04 */
+ 
+ /* DCD */
+ MXC_DCD_ITEM(1, CCM_BASE_ADDR + 0x18, 0x60324)
+@@ -219,6 +219,14 @@ MXC_DCD_ITEM(122, MMDC_P1_BASE_ADDR + 0x8b8, 0x800)
+ MXC_DCD_ITEM(123, MMDC_P0_BASE_ADDR + 0x1c, 0x0)
+ MXC_DCD_ITEM(124, MMDC_P1_BASE_ADDR + 0x1c, 0x0)
+ 
++MXC_DCD_ITEM(125, MMDC_P0_BASE_ADDR + 0x404, 0x00011006)
++
++/* enable AXI cache for VDOA/VPU/IPU */
++MXC_DCD_ITEM(126, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
++/* set IPU Qos=0x7 */
++MXC_DCD_ITEM(127, IOMUXC_BASE_ADDR + 0x018, 0x00070007)
++MXC_DCD_ITEM(128, IOMUXC_BASE_ADDR + 0x01c, 0x00070007)
++
+ #else
+ 
+ dcd_hdr:          .word 0x40F002D2 /* Tag=0xD2, Len=93*8 + 4 + 4, Ver=0x40 */
+-- 
+1.7.7.4
+

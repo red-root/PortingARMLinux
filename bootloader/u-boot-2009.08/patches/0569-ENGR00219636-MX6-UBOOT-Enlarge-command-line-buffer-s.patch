@@ -1,0 +1,194 @@
+From 7140562bb1bfeef8761c510f59eb7e31006e465e Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Tue, 7 Aug 2012 16:41:13 +0800
+Subject: [PATCH 569/678] ENGR00219636 MX6 UBOOT : Enlarge command line buffer
+ size
+
+There is a problem that a too long command line parameter in U-Boot
+console will actually be truncated and not properly truncated to the
+kernel.
+
+The root cause is that the command line in the U-Boot console is read
+into a buffer --- console_buffer[CONFIG_SYS_CBSIZE]. Currently the
+CONFIG_SYS_CBSIZE is set as 256. Command line parameter larger than it
+will not be recorded. On the other hand, max length of boot parameter of
+linux kernel is set to 1024, which means it can accept parameter size as
+large as 1024.
+
+So we need to align these 2 values. Enlarge CONFIG_SYS_CBSIZE to 1024 as
+well.
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ .gitignore                            |    1 +
+ include/configs/mx6dl_arm2.h          |    2 +-
+ include/configs/mx6dl_arm2_lpddr2.h   |    2 +-
+ include/configs/mx6dl_sabresd.h       |    2 +-
+ include/configs/mx6q_arm2.h           |    2 +-
+ include/configs/mx6q_arm2_lpddr2.h    |    2 +-
+ include/configs/mx6q_arm2_lpddr2pop.h |    2 +-
+ include/configs/mx6q_sabreauto.h      |    2 +-
+ include/configs/mx6q_sabrelite.h      |    2 +-
+ include/configs/mx6q_sabresd.h        |    2 +-
+ include/configs/mx6sl_arm2.h          |    2 +-
+ include/configs/mx6solo_sabreauto.h   |    2 +-
+ 12 files changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/.gitignore b/.gitignore
+index 1400d84..14bb475 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -59,6 +59,7 @@ cscope.*
+ /tags
+ /ctags
+ /etags
++/csc
+ 
+ # OneNAND IPL files
+ /onenand_ipl/onenand-ipl*
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index 7bc3d71..8e15535 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -146,7 +146,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6SDL ARM2 U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+diff --git a/include/configs/mx6dl_arm2_lpddr2.h b/include/configs/mx6dl_arm2_lpddr2.h
+index be5c4e4..1e1dbb7 100644
+--- a/include/configs/mx6dl_arm2_lpddr2.h
++++ b/include/configs/mx6dl_arm2_lpddr2.h
+@@ -142,7 +142,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6SDL ARM2 LPDDR2 U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index 00b4f69..60d8695 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -141,7 +141,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6SDL SABRESD U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index a52ac55..45f97e5 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -145,7 +145,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6Q ARM2 U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+diff --git a/include/configs/mx6q_arm2_lpddr2.h b/include/configs/mx6q_arm2_lpddr2.h
+index 9e37e48..826f762 100644
+--- a/include/configs/mx6q_arm2_lpddr2.h
++++ b/include/configs/mx6q_arm2_lpddr2.h
+@@ -137,7 +137,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6Q ARM2 U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+diff --git a/include/configs/mx6q_arm2_lpddr2pop.h b/include/configs/mx6q_arm2_lpddr2pop.h
+index bb5ce46..e09752c 100755
+--- a/include/configs/mx6q_arm2_lpddr2pop.h
++++ b/include/configs/mx6q_arm2_lpddr2pop.h
+@@ -142,7 +142,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6Q ARM2 U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index 0a5f291..7685218 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -140,7 +140,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6Q SABREAUTO U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index ad1953b..66bd6a9 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -154,7 +154,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6Q SABRELITE U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index 09c1ba0..a1c55c4 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -141,7 +141,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6Q SABRESD U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+diff --git a/include/configs/mx6sl_arm2.h b/include/configs/mx6sl_arm2.h
+index f355f42..d652f6b 100644
+--- a/include/configs/mx6sl_arm2.h
++++ b/include/configs/mx6sl_arm2.h
+@@ -147,7 +147,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6Sl ARM2 U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+diff --git a/include/configs/mx6solo_sabreauto.h b/include/configs/mx6solo_sabreauto.h
+index 1a90d68..c1d255d 100644
+--- a/include/configs/mx6solo_sabreauto.h
++++ b/include/configs/mx6solo_sabreauto.h
+@@ -142,7 +142,7 @@
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+ #define CONFIG_SYS_PROMPT		"MX6SOLO SABREAUTO U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+-#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+ #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
+ #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
+-- 
+1.7.7.4
+

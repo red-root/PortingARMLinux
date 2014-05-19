@@ -1,0 +1,38 @@
+From d88984cfb3429b0b8512af009e1593ce6ecd6229 Mon Sep 17 00:00:00 2001
+From: Robby Cai <R63905@freescale.com>
+Date: Tue, 11 Sep 2012 16:25:48 +0800
+Subject: [PATCH 597/678] ENGR00223788 mx6sl_evk: change boot args to boot
+ from mmc/sd
+
+default setting is to boot via nfs. By this way, after mfgtool burned the whole
+image on EVK, the system will probably not load the Linux kernel if the network
+is not correctly set or not availabe for it. Change to mmc/sd boot to make
+sure an entire boot process can be completed, in order to easily verify mfgtool.
+
+Signed-off-by: Robby Cai <R63905@freescale.com>
+---
+ include/configs/mx6sl_evk.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/configs/mx6sl_evk.h b/include/configs/mx6sl_evk.h
+index b89430b..a20f705 100644
+--- a/include/configs/mx6sl_evk.h
++++ b/include/configs/mx6sl_evk.h
+@@ -132,12 +132,12 @@
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+ 			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+-		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "     \
++		"bootargs_mmc=setenv bootargs ${bootargs} "     \
+ 			"root=/dev/mmcblk0p1 rootwait\0"                \
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "   \
+ 		"mmc dev 1; "	\
+ 		"mmc read ${loadaddr} 0x800 0x2000; bootm\0"	\
+-		"bootcmd=run bootcmd_net\0"                             \
++		"bootcmd=run bootcmd_mmc\0"                             \
+ 
+ 
+ #define CONFIG_ARP_TIMEOUT	200UL
+-- 
+1.7.7.4
+

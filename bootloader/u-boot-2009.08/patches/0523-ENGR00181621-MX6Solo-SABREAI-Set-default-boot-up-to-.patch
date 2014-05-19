@@ -1,0 +1,29 @@
+From cc5984828f56a16dd602481224ad8863ceb738e7 Mon Sep 17 00:00:00 2001
+From: Prabhu Sundararaj <b36876@freescale.com>
+Date: Thu, 3 May 2012 17:07:36 -0500
+Subject: [PATCH 523/678] ENGR00181621 : MX6Solo SABREAI - Set default boot up
+ to SD Card
+
+Set default boot to SD Card
+
+Signed-off-by: Prabhu Sundararaj <b36876@freescale.com>
+---
+ include/configs/mx6solo_sabreauto.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6solo_sabreauto.h b/include/configs/mx6solo_sabreauto.h
+index eadb69e..db67768 100644
+--- a/include/configs/mx6solo_sabreauto.h
++++ b/include/configs/mx6solo_sabreauto.h
+@@ -92,7 +92,7 @@
+ #define CONFIG_CMD_SPI
+ #define CONFIG_CMD_I2C
+ #define CONFIG_CMD_IMXOTP
+-#define CONFIG_CMD_WEIMNOR 	/*To boot from WEIM NOR. This will disable SPI NOR BOOT */
++/*#define CONFIG_CMD_WEIMNOR*/  /*To boot from WEIM NOR. This will disable SPI NOR BOOT */
+ 
+ /* Enable below configure when supporting nand */
+ #define CONFIG_CMD_SF
+-- 
+1.7.7.4
+

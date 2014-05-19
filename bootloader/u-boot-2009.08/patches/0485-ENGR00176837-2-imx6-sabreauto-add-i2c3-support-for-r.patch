@@ -1,0 +1,43 @@
+From 3df4b117b5c07210ee490aa82f1ea976019b6d6c Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Thu, 22 Mar 2012 20:29:14 +0800
+Subject: [PATCH 485/678] ENGR00176837-2 - imx6 sabreauto : add i2c3 support
+ for revb board.
+
+- Add i2c3_SDA iomux config for the change of signal traces.
+
+Signed-off-by: Fugang Duan  <B38611@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index ffa3ce1..243fecb 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -330,14 +330,18 @@ static void setup_i2c(unsigned int module_base)
+ 		/* GPIO_3 for I2C3_SCL */
+ 		mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_3__I2C3_SCL);
+ 
+-		/* GPIO_16 for I2C3_SDA */
+-		mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_16__I2C3_SDA);
++		if (mx6_board_is_reva()) /* GPIO_16 for I2C3_SDA */
++			mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_16__I2C3_SDA);
++		else
++			mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_D18__I2C3_SDA);
+ #elif defined CONFIG_MX6DL
+ 		/* GPIO_3 for I2C3_SCL */
+ 		mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_3__I2C3_SCL);
+ 
+-		/* GPIO_16 for I2C3_SDA */
+-		mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_16__I2C3_SDA);
++		if (mx6_board_is_reva()) /* GPIO_16 for I2C3_SDA */
++			mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_16__I2C3_SDA);
++		else
++			mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_D18__I2C3_SDA);
+ #endif
+ 		/* Enable i2c clock */
+ 		reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR2);
+-- 
+1.7.7.4
+

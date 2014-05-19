@@ -1,0 +1,241 @@
+From 3bd28a982614215fdf088d87e055e950eca5eeb9 Mon Sep 17 00:00:00 2001
+From: Adrian Alonso <aalonso@freescale.com>
+Date: Tue, 28 Aug 2012 14:28:48 -0500
+Subject: [PATCH 589/678] ENGR00219316-1: mx6 sabreauto: enable mxc_gpio
+ support
+
+* Enable mxc_gpio support in order to configure
+  steer logic circuits so attached pads can be used
+  by dedicated IP modules I2C3, SPI-NOR, WEIM-NOR.
+
+Signed-off-by: Adrian Alonso <aalonso@freescale.com>
+---
+ include/configs/mx6q_sabreauto.h                |    1 +
+ include/configs/mx6q_sabreauto_mfg.h            |    5 +++--
+ include/configs/mx6q_sabreauto_nand.h           |    7 ++++---
+ include/configs/mx6q_sabreauto_spi-nor_mfg.h    |    5 +++--
+ include/configs/mx6q_sabreauto_weimnor.h        |    1 +
+ include/configs/mx6q_sabreauto_weimnor_mfg.h    |    5 +++--
+ include/configs/mx6solo_sabreauto.h             |    1 +
+ include/configs/mx6solo_sabreauto_mfg.h         |    1 +
+ include/configs/mx6solo_sabreauto_spi-nor_mfg.h |    1 +
+ include/configs/mx6solo_sabreauto_weimnor.h     |    1 +
+ include/configs/mx6solo_sabreauto_weimnor_mfg.h |    1 +
+ 11 files changed, 20 insertions(+), 9 deletions(-)
+
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index 52d460e..8aa7a30 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -52,6 +52,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+diff --git a/include/configs/mx6q_sabreauto_mfg.h b/include/configs/mx6q_sabreauto_mfg.h
+index 552269a..4cafba4 100644
+--- a/include/configs/mx6q_sabreauto_mfg.h
++++ b/include/configs/mx6q_sabreauto_mfg.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+- * Configuration settings for the MX6Q Armadillo2 Freescale board.
++ * Configuration settings for the MX6Q SABRE-AI Freescale board.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -53,6 +53,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+@@ -182,7 +183,7 @@
+ 	#define CONFIG_I2C_MXC          1
+ 	#define CONFIG_SYS_I2C_PORT             I2C3_BASE_ADDR
+ 	#define CONFIG_SYS_I2C_SPEED            100000
+-	#define CONFIG_SYS_I2C_SLAVE            0x1f
++	#define CONFIG_SYS_I2C_SLAVE            0x30
+ #endif
+ 
+ /*
+diff --git a/include/configs/mx6q_sabreauto_nand.h b/include/configs/mx6q_sabreauto_nand.h
+index ea85f2f..5232647 100644
+--- a/include/configs/mx6q_sabreauto_nand.h
++++ b/include/configs/mx6q_sabreauto_nand.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+- * Configuration settings for the MX6Q Armadillo2 Freescale board.
++ * Configuration settings for the MX6Q SABRE-AI Freescale board.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -28,7 +28,7 @@
+ #define CONFIG_ARMV7	/* This is armv7 Cortex-A9 CPU core */
+ #define CONFIG_MXC
+ #define CONFIG_MX6Q
+-#define CONFIG_MX6Q_ARM2
++#define CONFIG_MX6Q_SABREAUTO
+ #define CONFIG_FLASH_HEADER
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+@@ -54,6 +54,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+@@ -177,7 +178,7 @@
+ 	#define CONFIG_I2C_MXC          1
+ 	#define CONFIG_SYS_I2C_PORT             I2C3_BASE_ADDR
+ 	#define CONFIG_SYS_I2C_SPEED            100000
+-	#define CONFIG_SYS_I2C_SLAVE            0x1f
++	#define CONFIG_SYS_I2C_SLAVE            0x30
+ #endif
+ 
+ /*
+diff --git a/include/configs/mx6q_sabreauto_spi-nor_mfg.h b/include/configs/mx6q_sabreauto_spi-nor_mfg.h
+index 82b0857..bf7ff73 100644
+--- a/include/configs/mx6q_sabreauto_spi-nor_mfg.h
++++ b/include/configs/mx6q_sabreauto_spi-nor_mfg.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+- * Configuration settings for the MX6Q Armadillo2 Freescale board.
++ * Configuration settings for the MX6Q SABRE-AI Freescale board.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -53,6 +53,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+@@ -182,7 +183,7 @@
+ 	#define CONFIG_I2C_MXC          1
+ 	#define CONFIG_SYS_I2C_PORT             I2C3_BASE_ADDR
+ 	#define CONFIG_SYS_I2C_SPEED            100000
+-	#define CONFIG_SYS_I2C_SLAVE            0x1f
++	#define CONFIG_SYS_I2C_SLAVE            0x30
+ #endif
+ 
+ /*
+diff --git a/include/configs/mx6q_sabreauto_weimnor.h b/include/configs/mx6q_sabreauto_weimnor.h
+index 8f14369..058b515 100644
+--- a/include/configs/mx6q_sabreauto_weimnor.h
++++ b/include/configs/mx6q_sabreauto_weimnor.h
+@@ -51,6 +51,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+diff --git a/include/configs/mx6q_sabreauto_weimnor_mfg.h b/include/configs/mx6q_sabreauto_weimnor_mfg.h
+index 33690e5..dbd0aec 100644
+--- a/include/configs/mx6q_sabreauto_weimnor_mfg.h
++++ b/include/configs/mx6q_sabreauto_weimnor_mfg.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+- * Configuration settings for the MX6Q Armadillo2 Freescale board.
++ * Configuration settings for the MX6Q SABRE-AI Freescale board.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -53,6 +53,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+@@ -183,7 +184,7 @@
+ 	#define CONFIG_I2C_MXC          1
+ 	#define CONFIG_SYS_I2C_PORT             I2C3_BASE_ADDR
+ 	#define CONFIG_SYS_I2C_SPEED            100000
+-	#define CONFIG_SYS_I2C_SLAVE            0x1f
++	#define CONFIG_SYS_I2C_SLAVE            0x30
+ #endif
+ 
+ /*
+diff --git a/include/configs/mx6solo_sabreauto.h b/include/configs/mx6solo_sabreauto.h
+index 9d13dbc..c7cbf76 100644
+--- a/include/configs/mx6solo_sabreauto.h
++++ b/include/configs/mx6solo_sabreauto.h
+@@ -54,6 +54,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+diff --git a/include/configs/mx6solo_sabreauto_mfg.h b/include/configs/mx6solo_sabreauto_mfg.h
+index 75dbe07..69aa201 100644
+--- a/include/configs/mx6solo_sabreauto_mfg.h
++++ b/include/configs/mx6solo_sabreauto_mfg.h
+@@ -55,6 +55,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+diff --git a/include/configs/mx6solo_sabreauto_spi-nor_mfg.h b/include/configs/mx6solo_sabreauto_spi-nor_mfg.h
+index 5f53485..8ad6b71 100644
+--- a/include/configs/mx6solo_sabreauto_spi-nor_mfg.h
++++ b/include/configs/mx6solo_sabreauto_spi-nor_mfg.h
+@@ -55,6 +55,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+diff --git a/include/configs/mx6solo_sabreauto_weimnor.h b/include/configs/mx6solo_sabreauto_weimnor.h
+index 1ebed71..de32dfc 100644
+--- a/include/configs/mx6solo_sabreauto_weimnor.h
++++ b/include/configs/mx6solo_sabreauto_weimnor.h
+@@ -53,6 +53,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+diff --git a/include/configs/mx6solo_sabreauto_weimnor_mfg.h b/include/configs/mx6solo_sabreauto_weimnor_mfg.h
+index 5fe8788..3ee0945 100644
+--- a/include/configs/mx6solo_sabreauto_weimnor_mfg.h
++++ b/include/configs/mx6solo_sabreauto_weimnor_mfg.h
+@@ -55,6 +55,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+-- 
+1.7.7.4
+

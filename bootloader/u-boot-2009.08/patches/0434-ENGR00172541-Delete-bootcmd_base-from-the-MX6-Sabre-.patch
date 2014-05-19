@@ -1,0 +1,37 @@
+From 62ade1e4ba642f476d0f7a6f756d9e6f14d3c0bb Mon Sep 17 00:00:00 2001
+From: Mahesh Mahadevan <r9aadq@freescale.com>
+Date: Mon, 23 Jan 2012 18:47:17 -0600
+Subject: [PATCH 434/678] ENGR00172541 Delete bootcmd_base from the MX6
+ Sabre-lite config
+
+Update the config to delete bootcmd_base from the default env settings for
+Sabre-lite
+
+Signed-off-by: Mahesh Mahadevan <r9aadq@freescale.com>
+---
+ include/configs/mx6q_sabrelite.h |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index 39933e2..fc2594f 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -120,13 +120,11 @@
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+ 		"bootargs=console=ttymxc1,115200\0" 			\
+-		"bootcmd_base=\0" \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+-		"bootcmd_net=run bootcmd_base bootargs_nfs; "	       	\
++		"bootcmd_net=run bootargs_nfs;"		\
+ 			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+-		"bootcmd_mmc=run bootcmd_base ;" 			\
+-			"for disk in 0 1 ; do mmc dev ${disk} ;" 	\
++		"bootcmd_mmc= for disk in 0 1 ; do mmc dev ${disk} ;"	\
+ 				"for fs in fat ext2 ; do " 		\
+ 					"${fs}load mmc ${disk}:1 10008000 " \
+ 						"/6q_bootscript && " 	\
+-- 
+1.7.7.4
+

@@ -1,0 +1,27 @@
+From aac855885f336cb9a7ed570247901c0704570871 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Mon, 5 Sep 2011 16:10:33 +0800
+Subject: [PATCH 348/678] ENGR00156034: Fix mx53 evk build error
+
+Fix mx53 evk build error.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ include/configs/mx53_evk.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx53_evk.h b/include/configs/mx53_evk.h
+index da4ff4e..bf2c95e 100644
+--- a/include/configs/mx53_evk.h
++++ b/include/configs/mx53_evk.h
+@@ -137,7 +137,6 @@
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "   \
+ 		"mmc dev 0; "	\
+ 		"mmc read ${loadaddr} 0x800 0x1800; bootm\0"	\
+-
+ 		"bootcmd=run bootcmd_net\0"                             \
+ 
+ 
+-- 
+1.7.7.4
+

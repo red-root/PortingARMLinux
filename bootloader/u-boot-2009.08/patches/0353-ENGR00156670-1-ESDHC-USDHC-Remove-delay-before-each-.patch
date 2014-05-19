@@ -1,0 +1,70 @@
+From a77c6fec8596891be96b2cdbc742c9824844b92a Mon Sep 17 00:00:00 2001
+From: Anish Trivedi <anish@freescale.com>
+Date: Tue, 13 Sep 2011 18:17:31 -0500
+Subject: [PATCH 353/678] ENGR00156670-1 ESDHC/USDHC: Remove delay before each
+ cmd and some bug fixes
+
+Removed delay of 10 ms before each command. There should not be
+a need to have this delay after the ENGR00156405 patch that polls
+until card is not busy anymore before proceeding to next cmd.
+
+Added poll on reset bits of controller after the bits are set to
+wait until they clear before proceeding further.
+
+Signed-off-by: Tony Lin <tony.lin@freescale.com>
+Signed-off-by: Anish Trivedi <anish@freescale.com>
+---
+ drivers/mmc/imx_esdhc.c |   21 +++++++++++++--------
+ 1 files changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/mmc/imx_esdhc.c b/drivers/mmc/imx_esdhc.c
+index 489fd6a..a326f87 100644
+--- a/drivers/mmc/imx_esdhc.c
++++ b/drivers/mmc/imx_esdhc.c
+@@ -185,13 +185,6 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+ 
+ 	while (readl(&regs->prsstat) & PRSSTAT_DLA);
+ 
+-	/* Wait at least 8 SD clock cycles before the next command */
+-	/*
+-	 * Note: This is way more than 8 cycles, but 1ms seems to
+-	 * resolve timing issues with some cards
+-	 */
+-	udelay(10000);
+-
+ 	/* Set up for a data transfer if we have one */
+ 	if (data) {
+ 		int err;
+@@ -232,9 +225,18 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+ 	irqstat = readl(&regs->irqstat);
+ 	writel(irqstat, &regs->irqstat);
+ 
+-	/* Reset CMD portion on error */
++	/* Reset CMD and DATA portions on error */
+ 	if (irqstat & (CMD_ERR | IRQSTAT_CTOE)) {
+ 		writel(readl(&regs->sysctl) | SYSCTL_RSTC, &regs->sysctl);
++		while (readl(&regs->sysctl) & SYSCTL_RSTC)
++			;
++
++		if (data) {
++			writel(readl(&regs->sysctl) | SYSCTL_RSTD,
++				&regs->sysctl);
++			while (readl(&regs->sysctl) & SYSCTL_RSTD)
++				;
++		}
+ 
+ 		/* Restore auto-clock gate if error */
+ 		if (!cfg->is_usdhc && !data && (cmd->resp_type & MMC_RSP_BUSY))
+@@ -327,6 +329,9 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+ 	if (readl(&regs->irqstat) & 0xFFFF0000) {
+ 		writel(readl(&regs->sysctl) | SYSCTL_RSTC | SYSCTL_RSTD,
+ 			&regs->sysctl);
++		while (readl(&regs->sysctl) & (SYSCTL_RSTC | SYSCTL_RSTD))
++			;
++
+ 		return COMM_ERR;
+ 	}
+ 	writel(-1, &regs->irqstat);
+-- 
+1.7.7.4
+

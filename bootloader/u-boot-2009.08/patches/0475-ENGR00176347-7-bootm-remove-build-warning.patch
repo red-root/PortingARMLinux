@@ -1,0 +1,30 @@
+From 09b87ad3c1ef65e3ec090806ae1c48365e6c45d8 Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Fri, 9 Mar 2012 21:16:51 +0800
+Subject: [PATCH 475/678] ENGR00176347-7 bootm: remove build warning
+
+Remove the following build warning:
+bootm.c: In function 'do_booti_linux':
+bootm.c:147: warning: pointer targets in assignment differ in signedness
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ lib_arm/bootm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/lib_arm/bootm.c b/lib_arm/bootm.c
+index f301edb..5da3425 100644
+--- a/lib_arm/bootm.c
++++ b/lib_arm/bootm.c
+@@ -144,7 +144,7 @@ void do_booti_linux (boot_img_hdr *hdr)
+ 
+ 	/* If no bootargs env, just use hdr command line */
+ 	if (!commandline)
+-	    commandline = hdr->cmdline;
++		commandline = (char *)hdr->cmdline;
+ 
+ 	/* XXX: in production, you should always use boot.img 's cmdline !!! */
+ 
+-- 
+1.7.7.4
+

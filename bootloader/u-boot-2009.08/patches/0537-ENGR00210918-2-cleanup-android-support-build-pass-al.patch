@@ -1,0 +1,1093 @@
+From 1627b8fd466be9cb0248be08f39b52a6e80337f1 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Fri, 25 May 2012 18:42:52 +0800
+Subject: [PATCH 537/678] ENGR00210918-2 cleanup android support, build pass
+ all boards
+
+- move recovery.h to common inlcude place.
+- move supported_reco_envs to soc related, not board related,
+- user can change this via configure header,
+  don't needs this in every board file.
+- pass build for all mx5/mx6 android configs.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ board/freescale/common/recovery.c               |    2 +-
+ board/freescale/common/recovery.h               |   32 ------------
+ board/freescale/mx50_rdp/mx50_rdp.c             |   44 +----------------
+ board/freescale/mx51_3stack/mx51_3stack.c       |   19 +-------
+ board/freescale/mx51_bbg/mx51_bbg.c             |   19 +-------
+ board/freescale/mx53_ard/mx53_ard.c             |   42 +----------------
+ board/freescale/mx53_evk/mx53_evk.c             |   43 +----------------
+ board/freescale/mx53_loco/mx53_loco.c           |   43 +----------------
+ board/freescale/mx53_pcba/mx53_pcba.c           |   42 +----------------
+ board/freescale/mx53_smd/mx53_smd.c             |   40 +---------------
+ board/freescale/mx6q_sabrelite/mx6q_sabrelite.c |   40 +---------------
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c     |   46 +-----------------
+ cpu/arm_cortexa8/mx50/generic.c                 |   58 ++++++++++++++++++++++-
+ cpu/arm_cortexa8/mx51/generic.c                 |   31 ++++++++++++-
+ cpu/arm_cortexa8/mx53/generic.c                 |   58 ++++++++++++++++++++++-
+ cpu/arm_cortexa8/mx6/generic.c                  |   46 ++++++++++++++++++
+ include/configs/mx50_rd3_android.h              |    2 +
+ include/configs/mx50_rdp_android.h              |    2 +
+ include/configs/mx50_rdp_mfg.h                  |    3 +-
+ include/configs/mx51_bbg_android.h              |    2 +
+ include/configs/mx53_evk_android.h              |    3 +
+ include/configs/mx53_smd_android.h              |    2 +
+ include/recovery.h                              |   32 ++++++++++++
+ 23 files changed, 252 insertions(+), 399 deletions(-)
+
+diff --git a/board/freescale/common/recovery.c b/board/freescale/common/recovery.c
+index 73f091b..6a402ca 100644
+--- a/board/freescale/common/recovery.c
++++ b/board/freescale/common/recovery.c
+@@ -20,7 +20,7 @@
+  */
+ #include <common.h>
+ #include <malloc.h>
+-#include "recovery.h"
++#include <recovery.h>
+ #ifdef CONFIG_MXC_KPD
+ #include <mxc_keyb.h>
+ #endif
+diff --git a/board/freescale/common/recovery.h b/board/freescale/common/recovery.h
+deleted file mode 100644
+index 5dde01d..0000000
+--- a/board/freescale/common/recovery.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- * Android Recovery supported header file
+- *
+- * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *
+- */
+-
+-#ifndef __RECOVERY_H_
+-#define __RECOVERY_H_
+-
+-struct reco_envs {
+-	char *cmd;
+-	char *args;
+-};
+-
+-int check_and_clean_recovery_flag(void);
+-
+-#endif
+diff --git a/board/freescale/mx50_rdp/mx50_rdp.c b/board/freescale/mx50_rdp/mx50_rdp.c
+index a56284f..6f3deb7 100644
+--- a/board/freescale/mx50_rdp/mx50_rdp.c
++++ b/board/freescale/mx50_rdp/mx50_rdp.c
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2009-2011 Freescale Semiconductor, Inc.
++ * (C) Copyright 2009-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -57,7 +57,7 @@
+ #endif
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-#include "../common/recovery.h"
++#include <recovery.h>
+ #include <part.h>
+ #include <ext2fs.h>
+ #include <linux/mtd/mtd.h>
+@@ -1241,46 +1241,6 @@ int board_init(void)
+ }
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-#ifdef CONFIG_CMD_UBI
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_NAND,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_NAND,
+-	 },
+-#endif
+-};
+ 
+ #ifdef CONFIG_CMD_UBI
+ extern int ubifs_init(void);
+diff --git a/board/freescale/mx51_3stack/mx51_3stack.c b/board/freescale/mx51_3stack/mx51_3stack.c
+index 4c773ad..4822d28 100644
+--- a/board/freescale/mx51_3stack/mx51_3stack.c
++++ b/board/freescale/mx51_3stack/mx51_3stack.c
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2009-2010 Freescale Semiconductor, Inc.
++ * (C) Copyright 2009-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -43,7 +43,7 @@
+ #endif
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-#include "../common/recovery.h"
++#include <recovery.h>
+ #include <mxc_keyb.h>
+ #include <part.h>
+ #include <ext2fs.h>
+@@ -612,21 +612,6 @@ int board_init(void)
+ }
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_NAND,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_NAND,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-};
+-
+ static int check_mmc_recovery_cmd_file(int dev_num, int part_num, char *path)
+ {
+ 	block_dev_desc_t *dev_desc = NULL;
+diff --git a/board/freescale/mx51_bbg/mx51_bbg.c b/board/freescale/mx51_bbg/mx51_bbg.c
+index ea0c447..325be2a 100644
+--- a/board/freescale/mx51_bbg/mx51_bbg.c
++++ b/board/freescale/mx51_bbg/mx51_bbg.c
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2009-2011 Freescale Semiconductor, Inc.
++ * (C) Copyright 2009-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -59,7 +59,7 @@
+ #endif
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-#include "../common/recovery.h"
++#include <recovery.h>
+ #include <part.h>
+ #include <ext2fs.h>
+ #include <linux/mtd/mtd.h>
+@@ -1022,21 +1022,6 @@ int board_init(void)
+ }
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-};
+-
+ int check_recovery_cmd_file(void)
+ {
+ 	disk_partition_t info;
+diff --git a/board/freescale/mx53_ard/mx53_ard.c b/board/freescale/mx53_ard/mx53_ard.c
+index 2360d7c..658079c 100755
+--- a/board/freescale/mx53_ard/mx53_ard.c
++++ b/board/freescale/mx53_ard/mx53_ard.c
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2009-2011 Freescale Semiconductor, Inc.
++ * (C) Copyright 2009-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -62,7 +62,7 @@
+ #endif
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-#include "../common/recovery.h"
++#include <recovery.h>
+ #include <part.h>
+ #include <ext2fs.h>
+ #include <linux/mtd/mtd.h>
+@@ -1076,44 +1076,6 @@ int board_init(void)
+ 
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-};
+ 
+ int check_recovery_cmd_file(void)
+ {
+diff --git a/board/freescale/mx53_evk/mx53_evk.c b/board/freescale/mx53_evk/mx53_evk.c
+index 4129a0b..82bee9f 100644
+--- a/board/freescale/mx53_evk/mx53_evk.c
++++ b/board/freescale/mx53_evk/mx53_evk.c
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2009-2011 Freescale Semiconductor, Inc.
++ * (C) Copyright 2009-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -54,7 +54,7 @@
+ #endif
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-#include "../common/recovery.h"
++#include <recovery.h>
+ #include <part.h>
+ #include <ext2fs.h>
+ #include <linux/mtd/mtd.h>
+@@ -1007,45 +1007,6 @@ int board_init(void)
+ 
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-};
+-
+ int check_recovery_cmd_file(void)
+ {
+ 	disk_partition_t info;
+diff --git a/board/freescale/mx53_loco/mx53_loco.c b/board/freescale/mx53_loco/mx53_loco.c
+index 5f97328..70ec8a5 100644
+--- a/board/freescale/mx53_loco/mx53_loco.c
++++ b/board/freescale/mx53_loco/mx53_loco.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -51,7 +51,7 @@
+ #endif
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-#include "../common/recovery.h"
++#include <recovery.h>
+ #include <part.h>
+ #include <ext2fs.h>
+ #include <linux/mtd/mtd.h>
+@@ -739,45 +739,6 @@ int board_init(void)
+ 
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-};
+-
+ int check_recovery_cmd_file(void)
+ {
+ 	disk_partition_t info;
+diff --git a/board/freescale/mx53_pcba/mx53_pcba.c b/board/freescale/mx53_pcba/mx53_pcba.c
+index 5168e5d..9ee205c 100644
+--- a/board/freescale/mx53_pcba/mx53_pcba.c
++++ b/board/freescale/mx53_pcba/mx53_pcba.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -46,7 +46,7 @@
+ #endif
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-#include "../common/recovery.h"
++#include <recovery.h>
+ #include <part.h>
+ #include <ext2fs.h>
+ #include <linux/mtd/mtd.h>
+@@ -666,44 +666,6 @@ int board_init(void)
+ 
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-};
+ 
+ int check_recovery_cmd_file(void)
+ {
+diff --git a/board/freescale/mx53_smd/mx53_smd.c b/board/freescale/mx53_smd/mx53_smd.c
+index 240b596..cda2756 100644
+--- a/board/freescale/mx53_smd/mx53_smd.c
++++ b/board/freescale/mx53_smd/mx53_smd.c
+@@ -63,7 +63,7 @@
+ #endif
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-#include "../common/recovery.h"
++#include <recovery.h>
+ #include <part.h>
+ #include <ext2fs.h>
+ #include <linux/mtd/mtd.h>
+@@ -1284,44 +1284,6 @@ int board_init(void)
+ 
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	 },
+-	{
+-	 .cmd = NULL,
+-	 .args = NULL,
+-	 },
+-};
+ 
+ int check_recovery_cmd_file(void)
+ {
+diff --git a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+index 09f34dd..ccec01a 100644
+--- a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
++++ b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+@@ -54,7 +54,7 @@
+ #endif
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-#include "../common/recovery.h"
++#include <recovery.h>
+ #include <part.h>
+ #include <ext2fs.h>
+ #include <linux/mtd/mtd.h>
+@@ -451,44 +451,6 @@ int board_init(void)
+ }
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+-	{
+-		.cmd = NULL,
+-		.args = NULL,
+-	},
+-	{
+-		.cmd = NULL,
+-		.args = NULL,
+-	},
+-	{
+-		.cmd = NULL,
+-		.args = NULL,
+-	},
+-	{
+-		.cmd = NULL,
+-		.args = NULL,
+-	},
+-	{
+-		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	},
+-	{
+-		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	},
+-	{
+-		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	},
+-	{
+-		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	},
+-	{
+-		.cmd = NULL,
+-		.args = NULL,
+-	},
+-};
+ 
+ int check_recovery_cmd_file(void)
+ {
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index ff2a1b2..b91219a 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -71,13 +71,7 @@
+ #endif
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-#include "../common/recovery.h"
+-#include <part.h>
+-#include <ext2fs.h>
+-#include <linux/mtd/mtd.h>
+-#include <linux/mtd/partitions.h>
+-#include <ubi_uboot.h>
+-#include <jffs2/load_kernel.h>
++#include <recovery.h>
+ #endif
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+@@ -1196,44 +1190,6 @@ int board_init(void)
+ 
+ 
+ #ifdef CONFIG_ANDROID_RECOVERY
+-struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+-	{
+-		.cmd = NULL,
+-		.args = NULL,
+-	},
+-	{
+-		.cmd = NULL,
+-		.args = NULL,
+-	},
+-	{
+-		.cmd = NULL,
+-		.args = NULL,
+-	},
+-	{
+-		.cmd = NULL,
+-		.args = NULL,
+-	},
+-	{
+-		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	},
+-	{
+-		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	},
+-	{
+-		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	},
+-	{
+-		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
+-		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
+-	},
+-	{
+-		.cmd = NULL,
+-		.args = NULL,
+-	},
+-};
+ 
+ int check_recovery_cmd_file(void)
+ {
+diff --git a/cpu/arm_cortexa8/mx50/generic.c b/cpu/arm_cortexa8/mx50/generic.c
+index e1f55d1..0faa3b8 100644
+--- a/cpu/arm_cortexa8/mx50/generic.c
++++ b/cpu/arm_cortexa8/mx50/generic.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc. All Rights Reserved.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -33,6 +33,10 @@
+ #include <asm/cache-cp15.h>
+ #endif
+ 
++#ifdef CONFIG_ANDROID_RECOVERY
++#include <recovery.h>
++#endif
++
+ enum pll_clocks {
+ 	PLL1_CLK = MXC_DPLL1_BASE,
+ 	PLL2_CLK = MXC_DPLL2_BASE,
+@@ -1140,3 +1144,55 @@ int arch_cpu_init(void)
+ }
+ #endif
+ 
++#ifdef CONFIG_ANDROID_RECOVERY
++struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
++	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
++	 },
++	{
++	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
++	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
++	 },
++#ifdef CONFIG_CMD_UBI
++	{
++	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_NAND,
++	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_NAND,
++	 },
++#endif
++};
++#endif
++
++#ifdef CONFIG_FASTBOOT
++/* check if the recovery bit is set by kernel, it can be set by kernel
++ * issue a command '# reboot fastboot' */
++int fastboot_check_and_clean_flag(void)
++{
++	return 0;
++}
++#endif
++
+diff --git a/cpu/arm_cortexa8/mx51/generic.c b/cpu/arm_cortexa8/mx51/generic.c
+index b116922..f3b9751 100644
+--- a/cpu/arm_cortexa8/mx51/generic.c
++++ b/cpu/arm_cortexa8/mx51/generic.c
+@@ -2,7 +2,7 @@
+  * (C) Copyright 2007
+  * Sascha Hauer, Pengutronix
+  *
+- * (C) Copyright 2009-2011 Freescale Semiconductor, Inc.
++ * (C) Copyright 2009-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -37,6 +37,9 @@
+ #include <imx_spi.h>
+ #include <asm/arch/imx_spi_pmic.h>
+ #endif
++#ifdef CONFIG_ANDROID_RECOVERY
++#include <recovery.h>
++#endif
+ #include <div64.h>
+ #include "crm_regs.h"
+ 
+@@ -1105,3 +1108,29 @@ void ipu_clk_disable(void)
+ 	reg |= (0x1 << 18);
+ 	writel(reg, CCM_BASE_ADDR + CLKCTL_CLPCR);
+ }
++
++#ifdef CONFIG_ANDROID_RECOVERY
++struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
++	{
++		.cmd = NULL,
++		.args = NULL,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
++	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
++	 },
++};
++#endif
++
++#ifdef CONFIG_FASTBOOT
++/* check if the recovery bit is set by kernel, it can be set by kernel
++ * issue a command '# reboot fastboot' */
++int fastboot_check_and_clean_flag(void)
++{
++	return 0;
++}
++#endif
+diff --git a/cpu/arm_cortexa8/mx53/generic.c b/cpu/arm_cortexa8/mx53/generic.c
+index e53a720..7a6d95e 100644
+--- a/cpu/arm_cortexa8/mx53/generic.c
++++ b/cpu/arm_cortexa8/mx53/generic.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -33,6 +33,10 @@
+ #include <asm/cache-cp15.h>
+ #endif
+ 
++#ifdef CONFIG_ANDROID_RECOVERY
++#include <recovery.h>
++#endif
++
+ enum pll_clocks {
+ 	PLL1_CLK = MXC_DPLL1_BASE,
+ 	PLL2_CLK = MXC_DPLL2_BASE,
+@@ -1166,3 +1170,55 @@ U_BOOT_CMD(
+ 	"download_mode - enter i.MX serial/usb download mode\n",
+ 	"");
+ #endif
++
++
++#ifdef CONFIG_ANDROID_RECOVERY
++struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	},
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++	{
++	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
++	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
++	 },
++	{
++	 .cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
++	 .args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
++	 },
++	{
++	 .cmd = NULL,
++	 .args = NULL,
++	 },
++};
++#endif
++
++#ifdef CONFIG_FASTBOOT
++/* check if the recovery bit is set by kernel, it can be set by kernel
++ * issue a command '# reboot fastboot' */
++int fastboot_check_and_clean_flag(void)
++{
++	return 0;
++}
++#endif
++
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 43893ee..a762498 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -41,6 +41,10 @@
+ #include <usb/imx_udc.h>
+ #endif
+ 
++#ifdef CONFIG_ANDROID_RECOVERY
++#include <recovery.h>
++#endif
++
+ #include <usb/regs-usbphy-mx6.h>
+ 
+ enum pll_clocks {
+@@ -1203,3 +1207,45 @@ U_BOOT_CMD(
+ 	"download_mode - enter i.MX serial/usb download mode",
+ 	"");
+ #endif
++
++
++#ifdef CONFIG_ANDROID_RECOVERY
++struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
++	{
++		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
++		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
++	},
++	{
++		.cmd = NULL,
++		.args = NULL,
++	},
++	{
++		.cmd = NULL,
++		.args = NULL,
++	},
++	{
++		.cmd = NULL,
++		.args = NULL,
++	},
++	{
++		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
++		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
++	},
++	{
++		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
++		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
++	},
++	{
++		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
++		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
++	},
++	{
++		.cmd = CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC,
++		.args = CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC,
++	},
++	{
++		.cmd = NULL,
++		.args = NULL,
++	},
++};
++#endif
+diff --git a/include/configs/mx50_rd3_android.h b/include/configs/mx50_rd3_android.h
+index b0fedc1..7e40e41 100644
+--- a/include/configs/mx50_rd3_android.h
++++ b/include/configs/mx50_rd3_android.h
+@@ -331,6 +331,8 @@
+ #define CONFIG_MTD_DEVICE
+ #define CONFIG_MTD_PARTITIONS
+ 
++#define CONFIG_CMD_BOOTI
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC -1
+ #define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 2
+ #define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 4
+ #define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
+diff --git a/include/configs/mx50_rdp_android.h b/include/configs/mx50_rdp_android.h
+index 79f5dc7..ab6e578 100644
+--- a/include/configs/mx50_rdp_android.h
++++ b/include/configs/mx50_rdp_android.h
+@@ -333,6 +333,8 @@
+ #define CONFIG_MTD_DEVICE
+ #define CONFIG_MTD_PARTITIONS
+ 
++#define CONFIG_CMD_BOOTI
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC -1
+ #define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 2
+ #define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 4
+ #define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
+diff --git a/include/configs/mx50_rdp_mfg.h b/include/configs/mx50_rdp_mfg.h
+index 447cb35..fab45ef 100644
+--- a/include/configs/mx50_rdp_mfg.h
++++ b/include/configs/mx50_rdp_mfg.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX50-RDP Freescale board.
+  *
+@@ -127,7 +127,6 @@
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "   \
+ 		"mmc dev 0; "	\
+ 		"mmc read ${loadaddr} 0x800 0x1800; bootm\0"   \
+-
+ 		"bootcmd=run bootcmd_net\0"                             \
+ 
+ 
+diff --git a/include/configs/mx51_bbg_android.h b/include/configs/mx51_bbg_android.h
+index 6b46d9d..9a6268c 100644
+--- a/include/configs/mx51_bbg_android.h
++++ b/include/configs/mx51_bbg_android.h
+@@ -130,6 +130,8 @@
+ 	"mmc read ${loadaddr} 0x800 0x2000;bootm"
+ #define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
+ 
++#define CONFIG_CMD_BOOTI
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC -1
+ #define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 2
+ #define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 4
+ #define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
+diff --git a/include/configs/mx53_evk_android.h b/include/configs/mx53_evk_android.h
+index cfff3be..41c8bdc 100644
+--- a/include/configs/mx53_evk_android.h
++++ b/include/configs/mx53_evk_android.h
+@@ -90,10 +90,13 @@
+ #define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
+ #define CONFIG_FASTBOOT_INTERFACE_STR    "Android fastboot"
+ #define CONFIG_FASTBOOT_SERIAL_NUM      "12345"
++#define CONFIG_FASTBOOT_SATA_NO		 0
+ #define CONFIG_FASTBOOT_TRANSFER_BUF    0x80000000
+ #define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x9400000 /* 148M byte */
+ 
++#define CONFIG_CMD_BOOTI
+ #define CONFIG_ANDROID_RECOVERY
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC -1
+ 
+ #define CONFIG_MTD_DEVICE
+ #define CONFIG_MTD_PARTITIONS
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index 247917f..a14fa3a 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -112,6 +112,8 @@
+ 	"mmc read ${loadaddr} 0x800 0x2000;bootm"
+ #define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
+ 
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC -1
++#define CONFIG_ANDROID_MAIN_MMC_BUS 2
+ #define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 2
+ #define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 4
+ #define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
+diff --git a/include/recovery.h b/include/recovery.h
+new file mode 100644
+index 0000000..5dde01d
+--- /dev/null
++++ b/include/recovery.h
+@@ -0,0 +1,32 @@
++/*
++ * Android Recovery supported header file
++ *
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ */
++
++#ifndef __RECOVERY_H_
++#define __RECOVERY_H_
++
++struct reco_envs {
++	char *cmd;
++	char *args;
++};
++
++int check_and_clean_recovery_flag(void);
++
++#endif
+-- 
+1.7.7.4
+

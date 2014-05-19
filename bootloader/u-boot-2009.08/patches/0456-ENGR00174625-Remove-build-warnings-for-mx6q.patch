@@ -1,0 +1,83 @@
+From 72e8b5a4858d802d5135ba0d4b41ea9554a8c987 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Fri, 17 Feb 2012 00:34:16 +0800
+Subject: [PATCH 456/678] ENGR00174625: Remove build warnings for mx6q
+
+Remove build warnings for mx6q.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ cpu/arm_cortexa8/cpu.c         |    4 +++-
+ cpu/arm_cortexa8/mx6/generic.c |    6 +++++-
+ drivers/net/mxc_fec.c          |    2 +-
+ 3 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/cpu.c b/cpu/arm_cortexa8/cpu.c
+index a7a6fb7..58cb529 100644
+--- a/cpu/arm_cortexa8/cpu.c
++++ b/cpu/arm_cortexa8/cpu.c
+@@ -8,7 +8,7 @@
+  * (C) Copyright 2002
+  * Gary Jennejohn, DENX Software Engineering, <garyj@denx.de>
+  *
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -137,6 +137,8 @@ int cleanup_before_linux(void)
+ 	unsigned int i;
+ 
+ #ifdef CONFIG_CMD_IMX_DOWNLOAD_MODE
++	extern void clear_mfgmode_mem(void);
++
+ 	clear_mfgmode_mem();
+ #endif
+ 
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 144924a..58e4966 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -1066,6 +1066,8 @@ void set_usboh3_clk(void)
+ /*BOOT_CFG1[7..4] = 0x3 Boot from Serial ROM (I2C/SPI)*/
+ #define BOOT_MODE_SERIAL_ROM			(0x00000030)
+ 
++extern int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
++
+ /* this function should call before enter linux, otherwise, you
+  * watchdog reset will enter mfg download mode again, clear this bit
+  * to prevent this behavior */
+@@ -1082,7 +1084,7 @@ void clear_mfgmode_mem(void)
+ 	reg = writel(reg, SRC_BASE_ADDR + SRC_GPR10);
+ }
+ 
+-void do_switch_mfgmode(void)
++int do_switch_mfgmode(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+ 	u32 reg;
+ 
+@@ -1104,6 +1106,8 @@ void do_switch_mfgmode(void)
+ 	 * mode.
+ 	 */
+ 	do_reset(NULL, 0, 0, NULL);
++
++	return 0;
+ }
+ 
+ U_BOOT_CMD(
+diff --git a/drivers/net/mxc_fec.c b/drivers/net/mxc_fec.c
+index 6482de7..345e476 100644
+--- a/drivers/net/mxc_fec.c
++++ b/drivers/net/mxc_fec.c
+@@ -141,7 +141,7 @@ static inline void fec_localhw_setup(volatile fec_t *fecp)
+ 		udelay(1);
+ }
+ #else
+-static inline void fec_localhw_setup(fec_t *fecp)
++static inline void fec_localhw_setup(volatile fec_t *fecp)
+ {
+ }
+ #endif
+-- 
+1.7.7.4
+

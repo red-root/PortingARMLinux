@@ -1,0 +1,120 @@
+From 7e9b5ed40d8e59574b9dd4e22a8be021db151b62 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Fri, 16 Sep 2011 16:55:57 +0800
+Subject: [PATCH 367/678] ENGR00156934: Update mx35 AIPS max dbg m3if esdctl
+ settings
+
+This patch is to fix mx35 TVIN flicker issue.
+It will change AIPS, M3IF, MAX, DBG and esdctl settings.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ board/freescale/mx35_3stack/board-mx35_3stack.h |   11 +++---
+ board/freescale/mx35_3stack/lowlevel_init.S     |   39 +++++++++++++++-------
+ 2 files changed, 32 insertions(+), 18 deletions(-)
+
+diff --git a/board/freescale/mx35_3stack/board-mx35_3stack.h b/board/freescale/mx35_3stack/board-mx35_3stack.h
+index bbe32b0..8a7a147 100644
+--- a/board/freescale/mx35_3stack/board-mx35_3stack.h
++++ b/board/freescale/mx35_3stack/board-mx35_3stack.h
+@@ -33,14 +33,15 @@
+ #define L2CC_AUX_CTL_CONFIG	0x00030024
+ 
+ #define AIPS_MPR_CONFIG		0x77777777
+-#define AIPS_OPACR_CONFIG	0x00000000
++#define AIPS_PACR_CONFIG	0x00000000
++#define AIPS_PACR0_CONFIG	0x40000000
+ 
+ /* MPR - priority is M4 > M2 > M3 > M5 > M0 > M1 */
+-#define MAX_MPR_CONFIG		0x00302154
++#define MAX_MPR_CONFIG		0x00032154
+ /* SGPCR - always park on last master */
+ #define MAX_SGPCR_CONFIG	0x00000010
+ /* MGPCR - restore default values */
+-#define MAX_MGPCR_CONFIG	0x00000000
++#define MAX_MGPCR_CONFIG	0x00000001
+ 
+ /*
+  * M3IF Control Register (M3IFCTL)
+@@ -55,10 +56,10 @@
+  *                                               ------------
+  *                                                 0x00000040
+  */
+-#define M3IF_CONFIG	0x00000040
++#define M3IF_CONFIG	0x000000C0
+ 
+ #define DBG_BASE_ADDR		WEIM_CTRL_CS5
+-#define DBG_CSCR_U_CONFIG	0x0000D843
++#define DBG_CSCR_U_CONFIG	0x0000D000
+ #define DBG_CSCR_L_CONFIG	0x22252521
+ #define DBG_CSCR_A_CONFIG	0x22220A00
+ 
+diff --git a/board/freescale/mx35_3stack/lowlevel_init.S b/board/freescale/mx35_3stack/lowlevel_init.S
+index f1458b8..0f24b2c 100644
+--- a/board/freescale/mx35_3stack/lowlevel_init.S
++++ b/board/freescale/mx35_3stack/lowlevel_init.S
+@@ -83,35 +83,48 @@
+  * The PACR default values are good.*/
+ .macro init_aips
+ 	/*
+-	 * Set all MPROTx to be non-bufferable, trusted for R/W,
+-	 * not forced to user-mode.
+-	 */
+-	ldr r0, =AIPS1_BASE_ADDR
+-	ldr r1, =AIPS_MPR_CONFIG
+-	str r1, [r0, #0x00]
+-	str r1, [r0, #0x04]
+-	ldr r0, =AIPS2_BASE_ADDR
+-	str r1, [r0, #0x00]
+-	str r1, [r0, #0x04]
+-
+-	/*
+ 	 * Clear the on and off peripheral modules Supervisor Protect bit
+ 	 * for SDMA to access them. Did not change the AIPS control registers
+ 	 * (offset 0x20) access type
+ 	 */
+ 	ldr r0, =AIPS1_BASE_ADDR
+-	ldr r1, =AIPS_OPACR_CONFIG
++	ldr r1, =AIPS_PACR_CONFIG
++	str r1, [r0, #0x24]
++	str r1, [r0, #0x28]
++	str r1, [r0, #0x2C]
+ 	str r1, [r0, #0x40]
+ 	str r1, [r0, #0x44]
+ 	str r1, [r0, #0x48]
+ 	str r1, [r0, #0x4C]
+ 	str r1, [r0, #0x50]
+ 	ldr r0, =AIPS2_BASE_ADDR
++	str r1, [r0, #0x24]
++	str r1, [r0, #0x28]
++	str r1, [r0, #0x2C]
+ 	str r1, [r0, #0x40]
+ 	str r1, [r0, #0x44]
+ 	str r1, [r0, #0x48]
+ 	str r1, [r0, #0x4C]
+ 	str r1, [r0, #0x50]
++
++	ldr r0, =AIPS1_BASE_ADDR
++	ldr r1, =AIPS_PACR0_CONFIG
++	str r1, [r0, #0x20]
++	ldr r0, =AIPS2_BASE_ADDR
++	str r1, [r0, #0x20]
++
++	/*
++	 * Set all MPROTx to be non-bufferable, trusted for R/W,
++	 * not forced to user-mode.
++	 */
++	ldr r0, =AIPS1_BASE_ADDR
++	ldr r1, =AIPS_MPR_CONFIG
++	str r1, [r0, #0x00]
++	str r1, [r0, #0x04]
++	ldr r0, =AIPS2_BASE_ADDR
++	str r1, [r0, #0x00]
++	str r1, [r0, #0x04]
++
+ .endm /* init_aips */
+ 
+ /* MAX (Multi-Layer AHB Crossbar Switch) setup */
+-- 
+1.7.7.4
+

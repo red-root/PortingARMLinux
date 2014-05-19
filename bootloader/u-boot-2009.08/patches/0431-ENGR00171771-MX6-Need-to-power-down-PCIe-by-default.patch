@@ -1,0 +1,47 @@
+From 35056bb16d68df8101ac1a85a82766cc35c32785 Mon Sep 17 00:00:00 2001
+From: Anson Huang <b20788@freescale.com>
+Date: Wed, 11 Jan 2012 17:18:05 +0800
+Subject: [PATCH 431/678] ENGR00171771 [MX6]Need to power down PCIe by default
+
+PCIe is power on by defaultt, we need to power down
+it in u-boot, it can save more than 1mW during suspend.
+
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/generic.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 73fee40..281368b 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -91,6 +91,7 @@ static int cpu_tmp;
+ static unsigned int fuse;
+ 
+ #define SNVS_LPGPR_OFFSET	0x68
++#define IOMUXC_GPR1_OFFSET	0x4
+ 
+ static u32 __decode_pll(enum pll_clocks pll, u32 infreq)
+ {
+@@ -962,6 +963,11 @@ int arch_cpu_init(void)
+ 	val |= BF_ANADIG_REG_CORE_REG2_TRG(0x14);
+ 	REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+ 
++	/* Need to power down PCIe */
++	val = REG_RD(IOMUXC_BASE_ADDR, IOMUXC_GPR1_OFFSET);
++	val |= (0x1 << 18);
++	REG_WR(IOMUXC_BASE_ADDR, IOMUXC_GPR1_OFFSET, val);
++
+ 	return 0;
+ }
+ #endif
+-- 
+1.7.7.4
+

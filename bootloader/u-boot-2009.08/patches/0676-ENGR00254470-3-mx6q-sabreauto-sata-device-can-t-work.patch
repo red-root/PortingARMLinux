@@ -1,0 +1,79 @@
+From 75a15f1dc81d03aa90d38edf4b775b8d57166f3f Mon Sep 17 00:00:00 2001
+From: Richard Zhu <r65037@freescale.com>
+Date: Tue, 16 Apr 2013 09:45:41 +0800
+Subject: [PATCH 676/678] ENGR00254470-3 mx6q-sabreauto:sata device can't work
+ properly on most boards
+
+Revert "ENGR00241595-3 mx6q-sabreauto:Enable SATA PHY PDDQ default"
+
+This reverts commit 027af67a25773a0872659788eab0c09b72e2bbe0.
+
+Reasons:
+* according to SATA Power mode (in SATA protocol) PHY TX/RX/CLK is
+powered down automatically according to SATA controller
+power mode SATA port support Disable/Slumber/Partial/Enabled(OOB)
+
+The SATA PHY PDDQ mode is one-shot and recommeded to be used for test,
+SATA would not work properly if the PHY PDDQ mode is enabled in U-boot.
+
+Signed-off-by: Richard Zhu <r65037@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |   21 ---------------------
+ 1 files changed, 0 insertions(+), 21 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index 0a53dd9..00ef2ed 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -215,8 +215,6 @@ void board_mmu_init(void)
+ #define ANATOP_PLL_PWDN_MASK            0x00001000
+ #define ANATOP_PLL_HOLD_RING_OFF_MASK   0x00000800
+ #define ANATOP_SATA_CLK_ENABLE_MASK     0x00100000
+-#define	PORT_PHY_CTL			        0x178
+-#define	PORT_PHY_CTL_PDDQ_LOC		    0x100000
+ 
+ #ifdef CONFIG_DWC_AHSATA
+ /* Staggered Spin-up */
+@@ -231,11 +229,6 @@ int sata_initialize(void)
+ 	u32 iterations = 1000000;
+ 
+ 	if (sata_curr_device == -1) {
+-		/* Make sure that the PDDQ mode is disabled. */
+-		reg = readl(SATA_ARB_BASE_ADDR + PORT_PHY_CTL);
+-		writel(reg & (~PORT_PHY_CTL_PDDQ_LOC),
+-				SATA_ARB_BASE_ADDR + PORT_PHY_CTL);
+-
+ 		/* Reset HBA */
+ 		writel(HOST_RESET, SATA_ARB_BASE_ADDR + HOST_CTL);
+ 
+@@ -315,16 +308,6 @@ static int setup_sata(void)
+ 	 * */
+ 	reg |= 0x59124c6;
+ 	writel(reg, IOMUXC_BASE_ADDR + 0x34);
+-    /* FIXME */
+-    /*
+-     * It needs to wait SATA PHY initialize completed, otherwise write the
+-     * PORT_PHY_CTL will fail, then can't enable PDDQ which let PHY entry LPM
+-     * Currently set it as 1ms.
+-     */
+-	udelay(1000);
+-	/* Enable PDDQ mode in default */
+-    writel(readl(SATA_ARB_BASE_ADDR + PORT_PHY_CTL) | PORT_PHY_CTL_PDDQ_LOC,
+-			SATA_ARB_BASE_ADDR + PORT_PHY_CTL);
+ 
+ 	return 0;
+ }
+@@ -1205,10 +1188,6 @@ int checkboard(void)
+ 		printf("UNKNOWN\n");
+ 		break;
+ 	}
+-	if (cpu_is_mx6q())
+-		printf("SATA PDDQ: %s\n", ((readl(SATA_ARB_BASE_ADDR
+-							+ PORT_PHY_CTL)
+-			& PORT_PHY_CTL_PDDQ_LOC)>>20) ? "enabled" : "disabled");
+ 	return 0;
+ }
+ 
+-- 
+1.7.7.4
+

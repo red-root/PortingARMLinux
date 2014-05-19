@@ -1,0 +1,89 @@
+From 2e16cc73885a342cc05dfb225e0c7ff75e05df2f Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Fri, 16 Mar 2012 17:49:36 +0800
+Subject: [PATCH 478/678] ENGR00177070 android: isolate booti command to fix
+ build.
+
+fix build error invoke by this patch:
+
+commit e3303f5b59df570c1f76b043d85e42be3dc7a63f
+Author: Lily Zhang <r58066@freescale.com>
+Date:   Fri Mar 9 21:16:51 2012 +0800
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ common/cmd_bootm.c                       |    5 ++++-
+ include/configs/mx53_smd_android.h       |    1 +
+ include/configs/mx6q_sabrelite_android.h |    1 +
+ include/configs/mx6q_sabresd_android.h   |    1 +
+ 4 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/common/cmd_bootm.c b/common/cmd_bootm.c
+index 1ee574d..0b45847 100644
+--- a/common/cmd_bootm.c
++++ b/common/cmd_bootm.c
+@@ -1460,6 +1460,7 @@ static int do_bootm_integrity (int flag, int argc, char *argv[],
+ }
+ #endif
+ 
++#ifdef CONFIG_CMD_BOOTI
+   /* Section for Android bootimage format support
+    * Refer:
+    * http://android.git.kernel.org/?p=platform/system/core.git;a=blob;f=mkbootimg/bootimg.h
+@@ -1517,10 +1518,11 @@ int do_booti(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 
+ 	if (mmcc != -1) {
+ #ifdef CONFIG_MMC
++		struct fastboot_ptentry *pte;
+ 		struct mmc *mmc;
+ 		disk_partition_t info;
+ 		block_dev_desc_t *dev_desc = NULL;
+-		unsigned sector;
++		unsigned sector, partno = -1;
+ 
+ 		memset((void *)&info, 0 , sizeof(disk_partition_t));
+ 		/* i.MX use MBR as partition table, so this will have
+@@ -1672,3 +1674,4 @@ U_BOOT_CMD(
+ 	"\t'mmcX' is the mmc device you store your boot.img, which will read the boot.img from 1M offset('/boot' partition)\n"
+ 	"\t 'partition' (optional) is the partition id of your device, if no partition give, will going to 'boot' partition\n"
+ );
++#endif	/* CMD_BOOTI */
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index 0f5ce65..4c275ae 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -97,6 +97,7 @@
+ #define CONFIG_FASTBOOT_TRANSFER_BUF	0x80000000
+ #define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x9400000 /* 148M byte */
+ 
++#define CONFIG_CMD_BOOTI
+ #define CONFIG_ANDROID_RECOVERY
+ 
+ #define CONFIG_MTD_DEVICE
+diff --git a/include/configs/mx6q_sabrelite_android.h b/include/configs/mx6q_sabrelite_android.h
+index a574007..96c0bff 100644
+--- a/include/configs/mx6q_sabrelite_android.h
++++ b/include/configs/mx6q_sabrelite_android.h
+@@ -89,6 +89,7 @@
+ #define CONFIG_FASTBOOT_TRANSFER_BUF	0x30000000
+ #define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x10000000 /* 256M byte */
+ 
++#define CONFIG_CMD_BOOTI
+ #define CONFIG_ANDROID_RECOVERY
+ #define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
+ #define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 5
+diff --git a/include/configs/mx6q_sabresd_android.h b/include/configs/mx6q_sabresd_android.h
+index 883715f..2f842e5 100644
+--- a/include/configs/mx6q_sabresd_android.h
++++ b/include/configs/mx6q_sabresd_android.h
+@@ -44,6 +44,7 @@
+ #define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x10000000 /* 256M byte */
+ #endif	/* if 0 */
+ 
++#define CONFIG_CMD_BOOTI
+ #define CONFIG_ANDROID_RECOVERY
+ /* which mmc bus is your main storage ? */
+ #define CONFIG_ANDROID_MAIN_MMC_BUS 3
+-- 
+1.7.7.4
+

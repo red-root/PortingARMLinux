@@ -1,0 +1,40 @@
+From 711e63c61114c9a692796348e4a54770dec19cc8 Mon Sep 17 00:00:00 2001
+From: Huang Shijie <b32955@freescale.com>
+Date: Wed, 31 Oct 2012 14:10:33 +0800
+Subject: [PATCH 626/678] ENGR00231891-1 gpmi: replace the hardcode
+
+We have get the right infomation when we call the set_geometry().
+So we replace the hardcode with the proper gpmi_info's values.
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ drivers/mtd/nand/gpmi_nfc_hal.c |   12 +++---------
+ 1 files changed, 3 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/mtd/nand/gpmi_nfc_hal.c b/drivers/mtd/nand/gpmi_nfc_hal.c
+index 5eac818..d4f8c09 100644
+--- a/drivers/mtd/nand/gpmi_nfc_hal.c
++++ b/drivers/mtd/nand/gpmi_nfc_hal.c
+@@ -225,16 +225,10 @@ static int set_geometry(struct mtd_info *mtd)
+ 	MTDDEBUG(MTD_DEBUG_LEVEL3, "%s =>\n", __func__);
+ 
+ 	/* Translate the abstract choices into register fields. */
+-	block_count = GPMI_NFC_ECC_CHUNK_CNT(mtd->writesize) - 1;
+-#if defined(CONFIG_GPMI_NFC_V2)
+-	block_size = GPMI_NFC_CHUNK_DATA_CHUNK_SIZE >> 2;
+-#else
+-	block_size = GPMI_NFC_CHUNK_DATA_CHUNK_SIZE;
+-#endif
+-	metadata_size = GPMI_NFC_METADATA_SIZE;
+-
++	block_count = gpmi_info->ecc_chunk_count - 1;
++	block_size = gpmi_info->ecc_chunk_size;
++	metadata_size = gpmi_info->metadata_size;
+ 	ecc_strength = gpmi_info->ecc_strength >> 1;
+-
+ 	page_size    = mtd->writesize + mtd->oobsize;
+ 
+ 	/*
+-- 
+1.7.7.4
+

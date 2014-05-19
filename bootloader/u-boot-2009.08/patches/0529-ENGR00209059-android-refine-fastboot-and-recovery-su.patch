@@ -1,0 +1,539 @@
+From 2bb05eaa651cb22a6d2fceada7082b192aa7daf2 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Mon, 14 May 2012 14:50:42 +0800
+Subject: [PATCH 529/678] ENGR00209059 android: refine fastboot and recovery
+ support.
+
+1. add check asrc register to enter recovery mode,
+   rather then check the file.
+2. fix the boot.img can not fastboot flash function.
+3. consolidate and cleanup fastboot code.
+4. clean up many build warnning message.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ board/freescale/common/recovery.h               |    4 +-
+ board/freescale/mx6q_sabrelite/mx6q_sabrelite.c |   79 +-------------------
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c     |   68 +-----------------
+ common/cmd_fastboot.c                           |    5 +-
+ cpu/arm_cortexa8/mx6/generic.c                  |   44 +++++++++++
+ drivers/fastboot/fastboot.c                     |   88 ++++++++++++-----------
+ drivers/usb/gadget/imx_udc.c                    |    4 +-
+ include/fastboot.h                              |    6 ++-
+ include/usb/imx_udc.h                           |    5 +-
+ lib_arm/board.c                                 |    3 +
+ 10 files changed, 115 insertions(+), 191 deletions(-)
+
+diff --git a/board/freescale/common/recovery.h b/board/freescale/common/recovery.h
+index f3a47b8..5dde01d 100644
+--- a/board/freescale/common/recovery.h
++++ b/board/freescale/common/recovery.h
+@@ -1,7 +1,7 @@
+ /*
+  * Android Recovery supported header file
+  *
+- * Copyright (C) 2010 Freescale Semiconductor.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -27,4 +27,6 @@ struct reco_envs {
+ 	char *args;
+ };
+ 
++int check_and_clean_recovery_flag(void);
++
+ #endif
+diff --git a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+index c9de1d3..09f34dd 100644
+--- a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
++++ b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+@@ -492,84 +492,11 @@ struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+ 
+ int check_recovery_cmd_file(void)
+ {
+-	disk_partition_t info;
+ 	int button_pressed = 0;
+-	ulong part_length;
+-	int filelen = 0;
+-	char *env;
++	int recovery_mode = 0;
+ 	u32 reg;
+-	int i;
+-
+-	/* For test only */
+-	/* When detecting android_recovery_switch,
+-	 * enter recovery mode directly */
+-	env = getenv("android_recovery_switch");
+-	if (!strcmp(env, "1")) {
+-		printf("Env recovery detected!\nEnter recovery mode!\n");
+-		return 1;
+-	}
+-
+-	printf("Checking for recovery command file...\n");
+-	switch (get_boot_device()) {
+-	case MMC_BOOT:
+-	case SD_BOOT:
+-	case SPI_NOR_BOOT:
+-	case I2C_BOOT:
+-		{
+-			for (i = 0; i < 3; i++) {
+-				block_dev_desc_t *dev_desc = NULL;
+-				struct mmc *mmc = find_mmc_device(i);
+-
+-				dev_desc = get_dev("mmc", i);
+-
+-				if (NULL == dev_desc) {
+-					printf("** Block device MMC %d not supported\n", i);
+-					continue;
+-				}
+-
+-				mmc_init(mmc);
+-
+-				if (get_partition_info(dev_desc,
+-						       CONFIG_ANDROID_CACHE_PARTITION_MMC,
+-						       &info)) {
+-					printf("** Bad partition %d **\n",
+-					       CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-					continue;
+-				}
+-
+-				part_length = ext2fs_set_blk_dev(dev_desc,
+-								 CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-				if (part_length == 0) {
+-					printf("** Bad partition - mmc %d:%d **\n", i,
+-					       CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-					ext2fs_close();
+-					continue;
+-				}
+-
+-				if (!ext2fs_mount(part_length)) {
+-					printf("** Bad ext2 partition or "
+-					       "disk - mmc %d:%d **\n",
+-					       i, CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-					ext2fs_close();
+-					continue;
+-				}
+-
+-				filelen = ext2fs_open(CONFIG_ANDROID_RECOVERY_CMD_FILE);
+-
+-				ext2fs_close();
+-				break;
+-			}
+-		}
+-		break;
+-	case NAND_BOOT:
+-		return 0;
+-		break;
+-	case UNKNOWN_BOOT:
+-	default:
+-		return 0;
+-		break;
+-	}
+ 
++	recovery_mode = check_and_clean_recovery_flag();
+ 
+ 	/* Check Recovery Combo Button press or not. */
+ 	mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_19__GPIO_4_5);
+@@ -582,7 +509,7 @@ int check_recovery_cmd_file(void)
+ 		printf("Recovery key pressed\n");
+ 	}
+ 
+-	return (filelen > 0 || button_pressed);
++	return recovery_mode || button_pressed;
+ }
+ #endif
+ 
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index d785fe2..2af4f6f 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -678,7 +678,6 @@ int i2c_bus_recovery(void)
+ void setup_pmic_voltages(void)
+ {
+ 	unsigned char value = 0 ;
+-	unsigned int val = 0;
+ 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+ 	if (!i2c_probe(0x8)) {
+ 		if (i2c_read(0x8, 0, 1, &value, 1))
+@@ -1229,72 +1228,11 @@ struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+ 
+ int check_recovery_cmd_file(void)
+ {
+-	disk_partition_t info;
+ 	int button_pressed = 0;
+-	ulong part_length;
+-	int filelen = 0;
++	int recovery_mode = 0;
+ 	u32 reg;
+-	int i = 0;
+-
+-	printf("Checking for recovery command file...\n");
+-	switch (get_boot_device()) {
+-	case MMC_BOOT:
+-	case SD_BOOT:
+-	case SPI_NOR_BOOT:
+-	case I2C_BOOT:
+-		{
+-			block_dev_desc_t *dev_desc = NULL;
+-			struct mmc *mmc = find_mmc_device(CONFIG_ANDROID_MAIN_MMC_BUS);
+-
+-			dev_desc = get_dev("mmc", CONFIG_ANDROID_MAIN_MMC_BUS);
+-
+-			if (NULL == dev_desc) {
+-				printf("** Block device MMC %d not supported\n", i);
+-				break;
+-			}
+-
+-			mmc_init(mmc);
+-
+-			if (get_partition_info(dev_desc,
+-					       CONFIG_ANDROID_CACHE_PARTITION_MMC,
+-					       &info)) {
+-				printf("** Bad partition %d **\n",
+-				       CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-				break;
+-			}
+-
+-			part_length = ext2fs_set_blk_dev(dev_desc,
+-							 CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-			if (part_length == 0) {
+-				printf("** Bad partition - mmc %d:%d **\n", i,
+-				       CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-				ext2fs_close();
+-				break;
+-			}
+-
+-			if (!ext2fs_mount(part_length)) {
+-				printf("** Bad ext2 partition or "
+-				       "disk - mmc %d:%d **\n",
+-				       i, CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-				ext2fs_close();
+-				break;
+-			}
+-
+-			filelen = ext2fs_open(CONFIG_ANDROID_RECOVERY_CMD_FILE);
+-
+-			ext2fs_close();
+-			break;
+-		}
+-		break;
+-	case NAND_BOOT:
+-		return 0;
+-		break;
+-	case UNKNOWN_BOOT:
+-	default:
+-		return 0;
+-		break;
+-	}
+ 
++	recovery_mode = check_and_clean_recovery_flag();
+ 
+ 	/* Check Recovery Combo Button press or not. */
+ #if defined CONFIG_MX6Q
+@@ -1311,7 +1249,7 @@ int check_recovery_cmd_file(void)
+ 		printf("Recovery key pressed\n");
+ 	}
+ 
+-	return (filelen > 0 || button_pressed);
++	return recovery_mode || button_pressed;
+ }
+ #endif
+ 
+diff --git a/common/cmd_fastboot.c b/common/cmd_fastboot.c
+index eb91763..c28f6df 100644
+--- a/common/cmd_fastboot.c
++++ b/common/cmd_fastboot.c
+@@ -1014,15 +1014,14 @@ static int rx_handler (const unsigned char *buffer, unsigned int buffer_size)
+ 			    (CFG_FASTBOOT_MKBOOTIMAGE_PAGE_SIZE <
+ 				    download_bytes)) {
+ 				char start[32];
+-				char *go[3]    = { "go",    NULL, NULL, };
+ 				char *booti_args[4] = {"booti",  NULL, "boot", NULL};
+ 
+ 				/*
+ 				 * Use this later to determine if a command line was passed
+ 				 * for the kernel.
+ 				 */
+-				struct fastboot_boot_img_hdr *fb_hdr =
+-					(struct fastboot_boot_img_hdr *) interface.transfer_buffer;
++				/* struct fastboot_boot_img_hdr *fb_hdr = */
++				/* 	(struct fastboot_boot_img_hdr *) interface.transfer_buffer; */
+ 
+ 				/* Skip the mkbootimage header */
+ 				/* image_header_t *hdr = */
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 9294be0..bcbaf64 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -1101,6 +1101,50 @@ void set_usboh3_clk(void)
+ }
+ #endif
+ 
++#ifdef CONFIG_ANDROID_RECOVERY
++#define ANDROID_RECOVERY_BOOT  (1 << 7)
++/* check if the recovery bit is set by kernel, it can be set by kernel
++ * issue a command '# reboot recovery' */
++int check_and_clean_recovery_flag()
++{
++	int flag_set = 0;
++	u32 reg;
++	reg = readl(SRC_BASE_ADDR + SRC_GPR10);
++
++	flag_set = !!(reg & ANDROID_RECOVERY_BOOT);
++
++	/* clean it in case looping infinite here.... */
++	if (flag_set) {
++		reg &= ~ANDROID_RECOVERY_BOOT;
++		writel(reg, SRC_BASE_ADDR + SRC_GPR10);
++	}
++
++	return flag_set;
++}
++#endif
++
++#ifdef CONFIG_FASTBOOT
++#define ANDROID_FASTBOOT_BOOT  (1 << 8)
++/* check if the recovery bit is set by kernel, it can be set by kernel
++ * issue a command '# reboot fastboot' */
++int fastboot_check_and_clean_flag()
++{
++	int flag_set = 0;
++	u32 reg;
++	reg = readl(SRC_BASE_ADDR + SRC_GPR10);
++
++	flag_set = !!(reg & ANDROID_FASTBOOT_BOOT);
++
++	/* clean it in case looping infinite here.... */
++	if (flag_set) {
++		reg &= ~ANDROID_FASTBOOT_BOOT;
++		writel(reg, SRC_BASE_ADDR + SRC_GPR10);
++	}
++
++	return flag_set;
++}
++#endif
++
+ #ifdef CONFIG_CMD_IMX_DOWNLOAD_MODE
+ #define PERSIST_WATCHDOG_RESET_BOOT		(0x10000000)
+ /*BOOT_CFG1[7..4] = 0x3 Boot from Serial ROM (I2C/SPI)*/
+diff --git a/drivers/fastboot/fastboot.c b/drivers/fastboot/fastboot.c
+index e405a76..3558ab5 100644
+--- a/drivers/fastboot/fastboot.c
++++ b/drivers/fastboot/fastboot.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+@@ -255,8 +255,6 @@ static int get_mmc_no(char *env_str)
+  */
+ int fastboot_init(struct cmd_fastboot_interface *interface)
+ {
+-	char *fastboot_env;
+-
+ 	printf("fastboot is in init......");
+ 	fastboot_interface = interface;
+ 	fastboot_interface->product_name = CONFIG_FASTBOOT_PRODUCT_NAME_STR;
+@@ -281,6 +279,34 @@ int fastboot_init(struct cmd_fastboot_interface *interface)
+ }
+ 
+ #ifdef CONFIG_FASTBOOT_STORAGE_EMMC_SATA
++/**
++   @mmc_dos_partition_index: the partition index in mbr.
++   @mmc_partition_index: the boot partition or user partition index,
++   not related to the partition table.
++ */
++static int setup_ptable_mmc_partition(int ptable_index,
++				      int mmc_dos_partition_index,
++				      int mmc_partition_index,
++				      const char *name,
++				      block_dev_desc_t *dev_desc,
++				      fastboot_ptentry *ptable)
++{
++	disk_partition_t info;
++	strcpy(ptable[ptable_index].name, name);
++
++	if (get_partition_info(dev_desc,
++			       mmc_dos_partition_index, &info)) {
++		printf("Bad partition index:%d for partition:%s\n",
++		       mmc_dos_partition_index, name);
++		return -1;
++	} else {
++		ptable[ptable_index].start = info.start;
++		ptable[ptable_index].length = info.size;
++		ptable[ptable_index].partition_id = mmc_partition_index;
++	}
++	return 0;
++}
++
+ static int fastboot_init_mmc_sata_ptable(void)
+ {
+ 	int i, sata_device_no;
+@@ -289,7 +315,6 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 	 * default is no partition, for emmc default user part, except emmc*/
+ 	struct mmc *mmc;
+ 	block_dev_desc_t *dev_desc;
+-	disk_partition_t info;
+ 	char *fastboot_env;
+ 	fastboot_ptentry ptable[PTN_RECOVERY_INDEX + 1];
+ 
+@@ -353,43 +378,18 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 	ptable[PTN_BOOTLOADER_INDEX].length =
+ 				 ANDROID_BOOTLOADER_SIZE / dev_desc->blksz;
+ 	ptable[PTN_BOOTLOADER_INDEX].partition_id = boot_partition;
+-	/* kernel */
+-	strcpy(ptable[PTN_KERNEL_INDEX].name, "kernel");
+-	ptable[PTN_KERNEL_INDEX].start =
+-				ANDROID_KERNEL_OFFSET / dev_desc->blksz;
+-	ptable[PTN_KERNEL_INDEX].length =
+-				ANDROID_KERNEL_SIZE / dev_desc->blksz;
+-	ptable[PTN_KERNEL_INDEX].partition_id = user_partition;
+-	/* uramdisk */
+-	strcpy(ptable[PTN_URAMDISK_INDEX].name, "uramdisk");
+-	ptable[PTN_URAMDISK_INDEX].start =
+-				ANDROID_URAMDISK_OFFSET / dev_desc->blksz;
+-	ptable[PTN_URAMDISK_INDEX].length =
+-				ANDROID_URAMDISK_SIZE / dev_desc->blksz;
+-	ptable[PTN_URAMDISK_INDEX].partition_id = user_partition;
+-
+-	/* system partition */
+-	strcpy(ptable[PTN_SYSTEM_INDEX].name, "system");
+-	if (get_partition_info(dev_desc,
+-				CONFIG_ANDROID_SYSTEM_PARTITION_MMC, &info))
+-		printf("Bad partition index:%d\n",
+-			CONFIG_ANDROID_SYSTEM_PARTITION_MMC);
+-	else {
+-		ptable[PTN_SYSTEM_INDEX].start = info.start;
+-		ptable[PTN_SYSTEM_INDEX].length = info.size;
+-		ptable[PTN_SYSTEM_INDEX].partition_id = user_partition;
+-	}
+-	/* recovery partition */
+-	strcpy(ptable[PTN_RECOVERY_INDEX].name, "recovery");
+-	if (get_partition_info(dev_desc,
+-				CONFIG_ANDROID_RECOVERY_PARTITION_MMC, &info))
+-		printf("Bad partition index:%d\n",
+-			CONFIG_ANDROID_RECOVERY_PARTITION_MMC);
+-	else {
+-		ptable[PTN_RECOVERY_INDEX].start = info.start;
+-		ptable[PTN_RECOVERY_INDEX].length = info.size;
+-		ptable[PTN_RECOVERY_INDEX].partition_id = user_partition;
+-	}
++
++	setup_ptable_mmc_partition(PTN_KERNEL_INDEX,
++				   CONFIG_ANDROID_BOOT_PARTITION_MMC,
++				   user_partition, "boot", dev_desc, ptable);
++	setup_ptable_mmc_partition(PTN_RECOVERY_INDEX,
++				   CONFIG_ANDROID_RECOVERY_PARTITION_MMC,
++				   user_partition,
++				   "recovery", dev_desc, ptable);
++	setup_ptable_mmc_partition(PTN_SYSTEM_INDEX,
++				   CONFIG_ANDROID_SYSTEM_PARTITION_MMC,
++				   user_partition,
++				   "system", dev_desc, ptable);
+ 
+ 	for (i = 0; i <= PTN_RECOVERY_INDEX; i++)
+ 		fastboot_flash_add_ptn(&ptable[i]);
+@@ -771,3 +771,9 @@ int fastboot_cdc_setup(struct usb_device_request *request, struct urb *urb)
+ 	return 0;
+ }
+ 
++/* export to lib_arm/board.c */
++void check_fastboot_mode(void)
++{
++	if (fastboot_check_and_clean_flag())
++		do_fastboot(NULL, 0, 0, 0);
++}
+diff --git a/drivers/usb/gadget/imx_udc.c b/drivers/usb/gadget/imx_udc.c
+index b3f4008..7745760 100644
+--- a/drivers/usb/gadget/imx_udc.c
++++ b/drivers/usb/gadget/imx_udc.c
+@@ -297,7 +297,7 @@ static int mxc_ep_xfer_is_working(mxc_ep_t *ep, u32 in)
+ 		temp = readl(USB_USBCMD);
+ 		writel(temp|USB_CMD_ATDTW, USB_USBCMD);
+ 		tstat = readl(USB_ENDPTSTAT) & bitmask;
+-	} while (!readl(USB_USBCMD) & USB_CMD_ATDTW);
++	} while (!(readl(USB_USBCMD) & USB_CMD_ATDTW));
+ 	writel(temp & (~USB_CMD_ATDTW), USB_USBCMD);
+ 
+ 	if (tstat)
+@@ -542,7 +542,7 @@ static void mxc_udc_read_setup_pkt(setup_packet *s)
+ 		writel(temp, USB_USBCMD);
+ 		memcpy((void *)s,
+ 			(void *)mxc_udc.mxc_ep[0].ep_qh->setup_data, 8);
+-	} while (!readl(USB_USBCMD) & USB_CMD_SUTW);
++	} while (!(readl(USB_USBCMD) & USB_CMD_SUTW));
+ 
+ 	DBG("handle_setup s.type=%x req=%x len=%x\n",
+ 		s->bmRequestType, s->bRequest, s->wLength);
+diff --git a/include/fastboot.h b/include/fastboot.h
+index b0bcaef..dfca793 100644
+--- a/include/fastboot.h
++++ b/include/fastboot.h
+@@ -3,7 +3,7 @@
+  * Windriver, <www.windriver.com>
+  * Tom Rix <Tom.Rix@windriver.com>
+  *
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -326,6 +326,9 @@ int fastboot_flash_read_ext(fastboot_ptentry *ptn,
+ int fastboot_flash_write(fastboot_ptentry *ptn, unsigned extra_per_page,
+ 				const void *data, unsigned bytes);
+ 
++/* Check the board special boot mode reboot to fastboot mode. */
++int fastboot_check_and_clean_flag(void);
++int do_fastboot(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
+ 
+ #else
+ 
+@@ -350,6 +353,7 @@ int fastboot_flash_write(fastboot_ptentry *ptn, unsigned extra_per_page,
+ #define fastboot_flash_read_ext(a, b, c, d, e) 0
+ #define fastboot_flash_read(a, b, c, d, e) 0
+ #define fastboot_flash_write(a, b, c, d) 0
++#define do_fastboot(a, b, c, d) 0
+ 
+ #endif /* CONFIG_FASTBOOT */
+ #endif /* FASTBOOT_H */
+diff --git a/include/usb/imx_udc.h b/include/usb/imx_udc.h
+index ca751ff..4e89d68 100644
+--- a/include/usb/imx_udc.h
++++ b/include/usb/imx_udc.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+@@ -483,7 +483,8 @@ void udc_setup_ep(struct usb_device_instance *device,
+ int udc_endpoint_write(struct usb_endpoint_instance *epi);
+ void udc_irq(void);
+ void usb_shutdown(void);
+-
++void mxc_udc_rxqueue_update(u8 ep, u32 len);
+ int is_usb_disconnected(void);
++void reset_usb_phy1();
+ 
+ #endif
+diff --git a/lib_arm/board.c b/lib_arm/board.c
+index d97d37b..a9b87b5 100644
+--- a/lib_arm/board.c
++++ b/lib_arm/board.c
+@@ -483,6 +483,9 @@ extern void davinci_eth_set_mac_addr (const u_int8_t *addr);
+ 	reset_phy();
+ #endif
+ #endif
++#ifdef CONFIG_FASTBOOT
++	check_fastboot_mode();
++#endif
+ 	/* main_loop() can return to retry autoboot, if so just run it again. */
+ 	for (;;) {
+ 		main_loop ();
+-- 
+1.7.7.4
+

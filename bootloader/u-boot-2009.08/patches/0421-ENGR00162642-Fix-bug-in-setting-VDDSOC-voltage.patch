@@ -1,0 +1,30 @@
+From 9a57b6eacb43d329c6a19872ba18b20f02af16af Mon Sep 17 00:00:00 2001
+From: Ranjani Vaidyanathan <ra5478@freescale.com>
+Date: Fri, 18 Nov 2011 15:07:00 -0600
+Subject: [PATCH 421/678] ENGR00162642: Fix bug in setting VDDSOC voltage
+
+Fix incorrect VDDSOC voltage setting in uboot.
+
+Signed-off-by: Ranjani Vaidyanathan <ra5478@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/generic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 216308b..bf79613 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -879,8 +879,8 @@ int arch_cpu_init(void)
+ 	/* Increase the VDDSOC to 1.2V */
+ 	val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
+ 	val &= ~BM_ANADIG_REG_CORE_REG2_TRG;
+-	val |= BF_ANADIG_REG_CORE_REG2_TRG(0x5);
+-	REG_SET(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
++	val |= BF_ANADIG_REG_CORE_REG2_TRG(0x14);
++	REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+ 
+ 	return 0;
+ }
+-- 
+1.7.7.4
+

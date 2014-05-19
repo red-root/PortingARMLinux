@@ -1,0 +1,40 @@
+From b6f61895319e387e80b2a78b7cf42163cb52ecf1 Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Wed, 11 Jan 2012 17:46:23 +0000
+Subject: [PATCH 428/678] ENGR00171622 - FEC : workaround for Gb enet in
+ sabrelite board.
+
+Micrel phy KSZ9021 Gb speed cannot work well in i.MX6 sabrelite
+board. Advertise phy is not 1000Base-T capable, and  enet can
+work well at 100Mbps mode in 1000M environment(1G cable & 1G hub).
+
+Signed-off-by: Fugang Duan  <B38611@freescale.com>
+---
+ board/freescale/mx6q_sabrelite/mx6q_sabrelite.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+index f269a3e..c9de1d3 100644
+--- a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
++++ b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -657,8 +657,8 @@ int mx6_rgmii_rework(char *devname, int phy_addr)
+ 	phy_write(devname, phy_addr, 0x9, 0x0c00);
+ #endif
+ 
+-	/* enable master mode, 1000 Base-T capable */
+-	phy_write(devname, phy_addr, 0x9, 0x1f00);
++	/* enable master mode, force phy to 100Mbps */
++	phy_write(devname, phy_addr, 0x9, 0x1c00);
+ 
+ 	/* min rx data delay */
+ 	phy_write(devname, phy_addr, 0x0b, 0x8105);
+-- 
+1.7.7.4
+

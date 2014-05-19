@@ -1,0 +1,53 @@
+From e8f18f57c77f56b207dec136ad8584dcaa940d14 Mon Sep 17 00:00:00 2001
+From: Ryan QIAN <b32804@freescale.com>
+Date: Wed, 6 Jun 2012 08:18:29 +0800
+Subject: [PATCH 542/678] ENGR00212229 [MX6SL_ARM2]uboot: 8bit MMC cards
+ failed to boot on SD1.
+
+issue:
+	SD1 connector on ARM2 is an MS-SD combo one which can not make
+good contact with DAT4~DAT7 of 8bit mmc cards. It is an hw limitation
+which will cause boot failure from 8bit mmc.
+
+solution:
+	disable SD1 8bit mode on MX6SL arm2 board.
+
+Signed-off-by: Ryan QIAN <b32804@freescale.com>
+---
+ include/configs/mx6sl_arm2.h     |    4 ++--
+ include/configs/mx6sl_arm2_mfg.h |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/mx6sl_arm2.h b/include/configs/mx6sl_arm2.h
+index 6485609..c5b0892 100644
+--- a/include/configs/mx6sl_arm2.h
++++ b/include/configs/mx6sl_arm2.h
+@@ -212,8 +212,8 @@
+ 	/* detect whether SD1, 2, or 3 is boot device */
+ 	#define CONFIG_DYNAMIC_MMC_DEVNO
+ 
+-	/* SD1 is 8 bit */
+-	#define CONFIG_MMC_8BIT_PORTS   0x3
++	/* SD2 is 8 bit */
++	#define CONFIG_MMC_8BIT_PORTS   0x2
+ 	/* Setup target delay in DDR mode for each SD port */
+ 	#define CONFIG_GET_DDR_TARGET_DELAY
+ #endif
+diff --git a/include/configs/mx6sl_arm2_mfg.h b/include/configs/mx6sl_arm2_mfg.h
+index 804a36a..5b44d25 100644
+--- a/include/configs/mx6sl_arm2_mfg.h
++++ b/include/configs/mx6sl_arm2_mfg.h
+@@ -201,8 +201,8 @@
+ 	/* detect whether SD1, 2, or 3 is boot device */
+ 	#define CONFIG_DYNAMIC_MMC_DEVNO
+ 
+-	/* SD1 is 8 bit */
+-	#define CONFIG_MMC_8BIT_PORTS   0x3
++	/* SD2 is 8 bit */
++	#define CONFIG_MMC_8BIT_PORTS   0x2
+ 	/* Setup target delay in DDR mode for each SD port */
+ 	#define CONFIG_GET_DDR_TARGET_DELAY
+ #endif
+-- 
+1.7.7.4
+

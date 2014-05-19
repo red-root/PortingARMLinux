@@ -1,0 +1,139 @@
+From 97efee177f82b082db9d2019ed641c5b99b3f54b Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Thu, 10 Nov 2011 10:46:49 +0800
+Subject: [PATCH 390/678] ENGR00161852: remove u-boot build warnings for mx6q
+
+Remove u-boot build warnings for mx6q.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ board/freescale/mx6q_sabrelite/mx6q_sabrelite.c |    4 +++-
+ common/cmd_mmc.c                                |    6 +++---
+ drivers/mmc/imx_esdhc.c                         |    2 +-
+ drivers/mtd/spi/imx_spi_nor_m25pxx.c            |    2 ++
+ drivers/net/mxc_fec.c                           |    2 ++
+ include/fsl_esdhc.h                             |    1 +
+ 6 files changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+index dc87502..472f1c7 100644
+--- a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
++++ b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+@@ -400,7 +400,7 @@ int board_mmc_init(bd_t *bis)
+  * CONFIG is not defined, then the default target delay value will be used.
+  */
+ #ifdef CONFIG_GET_DDR_TARGET_DELAY
+-u32 get_ddr_delay(struct fsl_esdhc *cfg)
++u32 get_ddr_delay(struct fsl_esdhc_cfg *cfg)
+ {
+ 	/* No delay required  */
+ 	return 0;
+@@ -476,6 +476,7 @@ iomux_v3_cfg_t enet_pads_final[] = {
+ 	MX6Q_PAD_RGMII_RX_CTL__ENET_RGMII_RX_CTL,
+ };
+ 
++#ifdef DEBUG
+ static int phy_read(char *devname, unsigned char addr, unsigned char reg,
+ 		    unsigned short *pdata)
+ {
+@@ -485,6 +486,7 @@ static int phy_read(char *devname, unsigned char addr, unsigned char reg,
+ 		       devname, addr, reg);
+ 	return ret;
+ }
++#endif
+ 
+ static int phy_write(char *devname, unsigned char addr, unsigned char reg,
+ 		     unsigned short value)
+diff --git a/common/cmd_mmc.c b/common/cmd_mmc.c
+index 85f0200..f1431d3 100644
+--- a/common/cmd_mmc.c
++++ b/common/cmd_mmc.c
+@@ -144,7 +144,7 @@ static void print_mmcinfo(struct mmc *mmc)
+ 	}
+ }
+ 
+-int do_mmcinfo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
++int do_mmcinfo(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+ 	struct mmc *mmc;
+ 
+@@ -177,7 +177,7 @@ U_BOOT_CMD(
+ 	""
+ );
+ 
+-int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
++int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+ 	enum mmc_state state;
+ 
+@@ -342,7 +342,7 @@ int do_mmcops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+ 	if (state != MMC_INVALID) {
+ 		struct mmc *mmc = find_mmc_device(curr_device);
+ 		int idx = 2;
+-		u32 blk, cnt, n;
++		u32 blk, cnt, n = 0;
+ 		void *addr;
+ 
+ 		if (state != MMC_ERASE) {
+diff --git a/drivers/mmc/imx_esdhc.c b/drivers/mmc/imx_esdhc.c
+index ab7f585..b242755 100644
+--- a/drivers/mmc/imx_esdhc.c
++++ b/drivers/mmc/imx_esdhc.c
+@@ -168,7 +168,7 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+ {
+ 	uint	xfertyp, mixctrl;
+ 	uint	irqstat;
+-	u32	tmp, sysctl_restore;
++	u32	tmp, sysctl_restore = 0;
+ 	struct fsl_esdhc_cfg *cfg = (struct fsl_esdhc_cfg *)mmc->priv;
+ 	volatile struct fsl_esdhc *regs = (struct fsl_esdhc *)cfg->esdhc_base;
+ 
+diff --git a/drivers/mtd/spi/imx_spi_nor_m25pxx.c b/drivers/mtd/spi/imx_spi_nor_m25pxx.c
+index 9ad2262..492d0fb 100644
+--- a/drivers/mtd/spi/imx_spi_nor_m25pxx.c
++++ b/drivers/mtd/spi/imx_spi_nor_m25pxx.c
+@@ -137,6 +137,7 @@ static int wait_till_ready(struct spi_flash *flash)
+ 	return 1;
+ }
+ 
++#ifdef DEBUG
+ static int erase_chip(struct spi_flash *flash)
+ {
+ 	/* Wait until finished previous write command. */
+@@ -156,6 +157,7 @@ static int erase_chip(struct spi_flash *flash)
+ 
+ 	return 0;
+ }
++#endif
+ 
+ static int erase_sector(struct spi_flash *flash, u32 offset)
+ {
+diff --git a/drivers/net/mxc_fec.c b/drivers/net/mxc_fec.c
+index 4f9f34d..071c795 100644
+--- a/drivers/net/mxc_fec.c
++++ b/drivers/net/mxc_fec.c
+@@ -299,7 +299,9 @@ static void setFecDuplexSpeed(volatile fec_t *fecp, unsigned char addr,
+ {
+ 	unsigned short val = 0;
+ 	int ret;
++#ifdef CONFIG_PHY_MICREL_KSZ9021
+ 	int cnt;
++#endif
+ 
+ #ifdef CONFIG_MX28
+ 	/* Dummy read with delay to get phy start working */
+diff --git a/include/fsl_esdhc.h b/include/fsl_esdhc.h
+index da7e584..cf24e14 100644
+--- a/include/fsl_esdhc.h
++++ b/include/fsl_esdhc.h
+@@ -198,6 +198,7 @@ struct fsl_esdhc_cfg {
+ int fsl_esdhc_mmc_init(bd_t *bis);
+ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg);
+ void fdt_fixup_esdhc(void *blob, bd_t *bd);
++u32 get_ddr_delay(struct fsl_esdhc_cfg *cfg);
+ #else
+ static inline int fsl_esdhc_mmc_init(bd_t *bis) { return -ENOSYS; }
+ static inline void fdt_fixup_esdhc(void *blob, bd_t *bd) {}
+-- 
+1.7.7.4
+

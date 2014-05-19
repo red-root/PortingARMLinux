@@ -1,0 +1,749 @@
+From 9981c5c0e60324a46ce637b78892f96fad1e44d6 Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Tue, 7 Feb 2012 19:24:22 +0800
+Subject: [PATCH 441/678] ENGR00173966-4: ARM2: add initial support for
+ i.mx6sdl
+
+This patch add the initial support for i.mx6dl ARM2 board
+-SD/MMC basic
+-DDR 400Mhz,
+-FEC,basic
+
+Due to i.mx6dl shares the same board with i.mx6q on ARM2,
+the most common code should be the same as the i.mx6q ARM2
+So, no need to create one seperate board file for i.mx6dl.
+
+But We can't simply resue anything from the board file since
+the i.mx6dl iomux is changed and thus we have to deal with the
+difference between i.mx6q and i.mx6dl for the pad setting part.
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ Makefile                              |    5 +-
+ board/freescale/mx6q_arm2/mx6q_arm2.c |  196 ++++++++++++++++++---
+ include/configs/mx6dl_arm2.h          |  316 +++++++++++++++++++++++++++++++++
+ 3 files changed, 489 insertions(+), 28 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index afbbd9a..b84e50b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -3306,9 +3306,10 @@ mx53_evk_mfg_config             \
+ mx53_evk_config      : unconfig
+ 	@$(MKCONFIG) $(@:_config=) arm arm_cortexa8 mx53_evk freescale mx53
+ 
+-mx6q_arm2_config			\
++mx6dl_arm2_config		\
++mx6q_arm2_config		\
+ mx6q_arm2_mfg_config		\
+-mx6q_arm2_lpddr2_config	\
++mx6q_arm2_lpddr2_config		\
+ mx6q_arm2_lpddr2pop_config	\
+ mx6q_arm2_iram_config	: unconfig
+ 	@[ -z "$(findstring iram_,$@)" ] || \
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index 3c3a484..731feed 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -24,6 +24,7 @@
+ #include <asm/io.h>
+ #include <asm/arch/mx6.h>
+ #include <asm/arch/mx6_pins.h>
++#include <asm/arch/mx6dl_pins.h>
+ #include <asm/arch/iomux-v3.h>
+ #include <asm/errno.h>
+ #include <miiphy.h>
+@@ -139,8 +140,11 @@ enum boot_device get_boot_device(void)
+ u32 get_board_rev(void)
+ {
+ 
++#if defined CONFIG_MX6Q
+ 	system_rev = 0x63000;
+-
++#elif defined CONFIG_MX6DL
++	system_rev = 0x61000;
++#endif
+ 	return system_rev;
+ }
+ 
+@@ -298,11 +302,19 @@ int dram_init(void)
+ 
+ static void setup_uart(void)
+ {
++#if defined CONFIG_MX6Q
+ 	/* UART4 TXD */
+ 	mxc_iomux_v3_setup_pad(MX6Q_PAD_KEY_COL0__UART4_TXD);
+ 
+ 	/* UART4 RXD */
+ 	mxc_iomux_v3_setup_pad(MX6Q_PAD_KEY_ROW0__UART4_RXD);
++#elif defined CONFIG_MX6DL
++	/* UART4 TXD */
++	mxc_iomux_v3_setup_pad(MX6DL_PAD_KEY_COL0__UART4_TXD);
++
++	/* UART4 RXD */
++	mxc_iomux_v3_setup_pad(MX6DL_PAD_KEY_ROW0__UART4_RXD);
++#endif
+ }
+ 
+ #ifdef CONFIG_VIDEO_MX5
+@@ -313,12 +325,19 @@ static void setup_i2c(unsigned int module_base)
+ 
+ 	switch (module_base) {
+ 	case I2C1_BASE_ADDR:
++	#if defined CONFIG_MX6Q
+ 		/* i2c1 SDA */
+ 		mxc_iomux_v3_setup_pad(MX6Q_PAD_CSI0_DAT8__I2C1_SDA);
+ 
+ 		/* i2c1 SCL */
+ 		mxc_iomux_v3_setup_pad(MX6Q_PAD_CSI0_DAT9__I2C1_SCL);
++	#elif defined CONFIG_MX6DL
++		/* i2c1 SDA */
++		mxc_iomux_v3_setup_pad(MX6DL_PAD_CSI0_DAT8__I2C1_SDA);
+ 
++		/* i2c1 SCL */
++		mxc_iomux_v3_setup_pad(MX6DL_PAD_CSI0_DAT9__I2C1_SCL);
++	#endif
+ 		/* Enable i2c clock */
+ 		reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR2);
+ 		reg |= 0xC0;
+@@ -326,11 +345,19 @@ static void setup_i2c(unsigned int module_base)
+ 
+ 		break;
+ 	case I2C2_BASE_ADDR:
++	#if defined CONFIG_MX6Q
+ 		/* i2c2 SDA */
+ 		mxc_iomux_v3_setup_pad(MX6Q_PAD_KEY_ROW3__I2C2_SDA);
+ 
+ 		/* i2c2 SCL */
+ 		mxc_iomux_v3_setup_pad(MX6Q_PAD_KEY_COL3__I2C2_SCL);
++	#elif defined CONFIG_MX6DL
++		/* i2c2 SDA */
++		mxc_iomux_v3_setup_pad(MX6DL_PAD_KEY_ROW3__I2C2_SDA);
++
++		/* i2c2 SCL */
++		mxc_iomux_v3_setup_pad(MX6DL_PAD_KEY_COL3__I2C2_SCL);
++	#endif
+ 
+ 		/* Enable i2c clock */
+ 		reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR2);
+@@ -339,11 +366,19 @@ static void setup_i2c(unsigned int module_base)
+ 
+ 		break;
+ 	case I2C3_BASE_ADDR:
++	#if defined CONFIG_MX6Q
+ 		/* GPIO_5 for I2C3_SCL */
+ 		mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_5__I2C3_SCL);
+ 
+ 		/* GPIO_16 for I2C3_SDA */
+ 		mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_16__I2C3_SDA);
++	#elif defined CONFIG_MX6DL
++		/* GPIO_5 for I2C3_SCL */
++		mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_5__I2C3_SCL);
++
++		/* GPIO_16 for I2C3_SDA */
++		mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_16__I2C3_SDA);
++	#endif
+ 
+ 		/* Enable i2c clock */
+ 		reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR2);
+@@ -412,7 +447,7 @@ void spi_io_init(struct imx_spi_dev_t *dev)
+ 		reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR1);
+ 		reg |= 0x3;
+ 		writel(reg, CCM_BASE_ADDR + CLKCTL_CCGR1);
+-
++	#if defined CONFIG_MX6Q
+ 		/* SCLK */
+ 		mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_D16__ECSPI1_SCLK);
+ 
+@@ -426,6 +461,21 @@ void spi_io_init(struct imx_spi_dev_t *dev)
+ 			mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_EB2__ECSPI1_SS0);
+ 		else if (dev->ss == 1)
+ 			mxc_iomux_v3_setup_pad(MX6Q_PAD_EIM_D19__ECSPI1_SS1);
++	#elif defined CONFIG_MX6DL
++		/* SCLK */
++		mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_D16__ECSPI1_SCLK);
++
++		/* MISO */
++		mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_D17__ECSPI1_MISO);
++
++		/* MOSI */
++		mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_D18__ECSPI1_MOSI);
++
++		if (dev->ss == 0)
++			mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_EB2__ECSPI1_SS0);
++		else if (dev->ss == 1)
++			mxc_iomux_v3_setup_pad(MX6DL_PAD_EIM_D19__ECSPI1_SS1);
++	#endif
+ 		break;
+ 	case ECSPI2_BASE_ADDR:
+ 	case ECSPI3_BASE_ADDR:
+@@ -438,7 +488,7 @@ void spi_io_init(struct imx_spi_dev_t *dev)
+ #endif
+ 
+ #ifdef CONFIG_NAND_GPMI
+-
++#if defined CONFIG_MX6Q
+ iomux_v3_cfg_t nfc_pads[] = {
+ 	MX6Q_PAD_NANDF_CLE__RAWNAND_CLE,
+ 	MX6Q_PAD_NANDF_ALE__RAWNAND_ALE,
+@@ -460,6 +510,29 @@ iomux_v3_cfg_t nfc_pads[] = {
+ 	MX6Q_PAD_NANDF_D7__RAWNAND_D7,
+ 	MX6Q_PAD_SD4_DAT0__RAWNAND_DQS,
+ };
++#elif defined CONFIG_MX6DL
++iomux_v3_cfg_t nfc_pads[] = {
++	MX6DL_PAD_NANDF_CLE__RAWNAND_CLE,
++	MX6DL_PAD_NANDF_ALE__RAWNAND_ALE,
++	MX6DL_PAD_NANDF_WP_B__RAWNAND_RESETN,
++	MX6DL_PAD_NANDF_RB0__RAWNAND_READY0,
++	MX6DL_PAD_NANDF_CS0__RAWNAND_CE0N,
++	MX6DL_PAD_NANDF_CS1__RAWNAND_CE1N,
++	MX6DL_PAD_NANDF_CS2__RAWNAND_CE2N,
++	MX6DL_PAD_NANDF_CS3__RAWNAND_CE3N,
++	MX6DL_PAD_SD4_CMD__RAWNAND_RDN,
++	MX6DL_PAD_SD4_CLK__RAWNAND_WRN,
++	MX6DL_PAD_NANDF_D0__RAWNAND_D0,
++	MX6DL_PAD_NANDF_D1__RAWNAND_D1,
++	MX6DL_PAD_NANDF_D2__RAWNAND_D2,
++	MX6DL_PAD_NANDF_D3__RAWNAND_D3,
++	MX6DL_PAD_NANDF_D4__RAWNAND_D4,
++	MX6DL_PAD_NANDF_D5__RAWNAND_D5,
++	MX6DL_PAD_NANDF_D6__RAWNAND_D6,
++	MX6DL_PAD_NANDF_D7__RAWNAND_D7,
++	MX6DL_PAD_SD4_DAT0__RAWNAND_DQS,
++};
++#endif
+ 
+ int setup_gpmi_nand(void)
+ {
+@@ -524,8 +597,8 @@ int get_mmc_env_devno(void)
+ 
+ }
+ #endif
+-
+-iomux_v3_cfg_t mx6q_usdhc1_pads[] = {
++#if defined CONFIG_MX6Q
++iomux_v3_cfg_t usdhc1_pads[] = {
+ 	MX6Q_PAD_SD1_CLK__USDHC1_CLK,
+ 	MX6Q_PAD_SD1_CMD__USDHC1_CMD,
+ 	MX6Q_PAD_SD1_DAT0__USDHC1_DAT0,
+@@ -534,7 +607,7 @@ iomux_v3_cfg_t mx6q_usdhc1_pads[] = {
+ 	MX6Q_PAD_SD1_DAT3__USDHC1_DAT3,
+ };
+ 
+-iomux_v3_cfg_t mx6q_usdhc2_pads[] = {
++iomux_v3_cfg_t usdhc2_pads[] = {
+ 	MX6Q_PAD_SD2_CLK__USDHC2_CLK,
+ 	MX6Q_PAD_SD2_CMD__USDHC2_CMD,
+ 	MX6Q_PAD_SD2_DAT0__USDHC2_DAT0,
+@@ -543,7 +616,7 @@ iomux_v3_cfg_t mx6q_usdhc2_pads[] = {
+ 	MX6Q_PAD_SD2_DAT3__USDHC2_DAT3,
+ };
+ 
+-iomux_v3_cfg_t mx6q_usdhc3_pads[] = {
++iomux_v3_cfg_t usdhc3_pads[] = {
+ 	MX6Q_PAD_SD3_CLK__USDHC3_CLK,
+ 	MX6Q_PAD_SD3_CMD__USDHC3_CMD,
+ 	MX6Q_PAD_SD3_DAT0__USDHC3_DAT0,
+@@ -557,7 +630,7 @@ iomux_v3_cfg_t mx6q_usdhc3_pads[] = {
+ 	MX6Q_PAD_GPIO_18__USDHC3_VSELECT,
+ };
+ 
+-iomux_v3_cfg_t mx6q_usdhc4_pads[] = {
++iomux_v3_cfg_t usdhc4_pads[] = {
+ 	MX6Q_PAD_SD4_CLK__USDHC4_CLK,
+ 	MX6Q_PAD_SD4_CMD__USDHC4_CMD,
+ 	MX6Q_PAD_SD4_DAT0__USDHC4_DAT0,
+@@ -569,7 +642,52 @@ iomux_v3_cfg_t mx6q_usdhc4_pads[] = {
+ 	MX6Q_PAD_SD4_DAT6__USDHC4_DAT6,
+ 	MX6Q_PAD_SD4_DAT7__USDHC4_DAT7,
+ };
++#elif defined CONFIG_MX6DL
++iomux_v3_cfg_t usdhc1_pads[] = {
++	MX6DL_PAD_SD1_CLK__USDHC1_CLK,
++	MX6DL_PAD_SD1_CMD__USDHC1_CMD,
++	MX6DL_PAD_SD1_DAT0__USDHC1_DAT0,
++	MX6DL_PAD_SD1_DAT1__USDHC1_DAT1,
++	MX6DL_PAD_SD1_DAT2__USDHC1_DAT2,
++	MX6DL_PAD_SD1_DAT3__USDHC1_DAT3,
++};
++
++iomux_v3_cfg_t usdhc2_pads[] = {
++	MX6DL_PAD_SD2_CLK__USDHC2_CLK,
++	MX6DL_PAD_SD2_CMD__USDHC2_CMD,
++	MX6DL_PAD_SD2_DAT0__USDHC2_DAT0,
++	MX6DL_PAD_SD2_DAT1__USDHC2_DAT1,
++	MX6DL_PAD_SD2_DAT2__USDHC2_DAT2,
++	MX6DL_PAD_SD2_DAT3__USDHC2_DAT3,
++};
++
++iomux_v3_cfg_t usdhc3_pads[] = {
++	MX6DL_PAD_SD3_CLK__USDHC3_CLK,
++	MX6DL_PAD_SD3_CMD__USDHC3_CMD,
++	MX6DL_PAD_SD3_DAT0__USDHC3_DAT0,
++	MX6DL_PAD_SD3_DAT1__USDHC3_DAT1,
++	MX6DL_PAD_SD3_DAT2__USDHC3_DAT2,
++	MX6DL_PAD_SD3_DAT3__USDHC3_DAT3,
++	MX6DL_PAD_SD3_DAT4__USDHC3_DAT4,
++	MX6DL_PAD_SD3_DAT5__USDHC3_DAT5,
++	MX6DL_PAD_SD3_DAT6__USDHC3_DAT6,
++	MX6DL_PAD_SD3_DAT7__USDHC3_DAT7,
++	MX6DL_PAD_GPIO_18__USDHC3_VSELECT,
++};
+ 
++iomux_v3_cfg_t usdhc4_pads[] = {
++	MX6DL_PAD_SD4_CLK__USDHC4_CLK,
++	MX6DL_PAD_SD4_CMD__USDHC4_CMD,
++	MX6DL_PAD_SD4_DAT0__USDHC4_DAT0,
++	MX6DL_PAD_SD4_DAT1__USDHC4_DAT1,
++	MX6DL_PAD_SD4_DAT2__USDHC4_DAT2,
++	MX6DL_PAD_SD4_DAT3__USDHC4_DAT3,
++	MX6DL_PAD_SD4_DAT4__USDHC4_DAT4,
++	MX6DL_PAD_SD4_DAT5__USDHC4_DAT5,
++	MX6DL_PAD_SD4_DAT6__USDHC4_DAT6,
++	MX6DL_PAD_SD4_DAT7__USDHC4_DAT7,
++};
++#endif
+ int usdhc_gpio_init(bd_t *bis)
+ {
+ 	s32 status = 0;
+@@ -579,24 +697,20 @@ int usdhc_gpio_init(bd_t *bis)
+ 		++index) {
+ 		switch (index) {
+ 		case 0:
+-			mxc_iomux_v3_setup_multiple_pads(mx6q_usdhc1_pads,
+-				sizeof(mx6q_usdhc1_pads) /
+-				sizeof(mx6q_usdhc1_pads[0]));
++			mxc_iomux_v3_setup_multiple_pads(usdhc1_pads,
++						ARRAY_SIZE(usdhc1_pads));
+ 			break;
+ 		case 1:
+-			mxc_iomux_v3_setup_multiple_pads(mx6q_usdhc2_pads,
+-				sizeof(mx6q_usdhc2_pads) /
+-				sizeof(mx6q_usdhc2_pads[0]));
++			mxc_iomux_v3_setup_multiple_pads(usdhc2_pads,
++						ARRAY_SIZE(usdhc2_pads));
+ 			break;
+ 		case 2:
+-			mxc_iomux_v3_setup_multiple_pads(mx6q_usdhc3_pads,
+-				sizeof(mx6q_usdhc3_pads) /
+-				sizeof(mx6q_usdhc3_pads[0]));
++			mxc_iomux_v3_setup_multiple_pads(usdhc3_pads,
++						ARRAY_SIZE(usdhc3_pads));
+ 			break;
+ 		case 3:
+-			mxc_iomux_v3_setup_multiple_pads(mx6q_usdhc4_pads,
+-				sizeof(mx6q_usdhc4_pads) /
+-				sizeof(mx6q_usdhc4_pads[0]));
++			mxc_iomux_v3_setup_multiple_pads(usdhc4_pads,
++						ARRAY_SIZE(usdhc4_pads));
+ 			break;
+ 		default:
+ 			printf("Warning: you configured more USDHC controllers"
+@@ -651,7 +765,11 @@ void lcd_enable(void)
+ 	g_ipu_hw_rev = IPUV3_HW_REV_IPUV3H;
+ 
+ 	/* set GPIO_9 to high so that backlight control could be high */
++#if defined CONFIG_MX6Q
+ 	mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_9__GPIO_1_9);
++#elif defined CONFIG_MX6DL
++	mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_9__GPIO_1_9);
++#endif
+ 	reg = readl(GPIO1_BASE_ADDR + GPIO_GDIR);
+ 	reg |= (1 << 9);
+ 	writel(reg, GPIO1_BASE_ADDR + GPIO_GDIR);
+@@ -817,7 +935,7 @@ int mx6_rgmii_rework(char *devname, int phy_addr)
+ 
+ 	return 0;
+ }
+-
++#if defined CONFIG_MX6Q
+ iomux_v3_cfg_t enet_pads[] = {
+ 	MX6Q_PAD_KEY_COL1__ENET_MDIO,
+ 	MX6Q_PAD_KEY_COL2__ENET_MDC,
+@@ -837,15 +955,41 @@ iomux_v3_cfg_t enet_pads[] = {
+ 	MX6Q_PAD_GPIO_0__CCM_CLKO,
+ 	MX6Q_PAD_GPIO_3__CCM_CLKO2,
+ };
++#elif defined CONFIG_MX6DL
++iomux_v3_cfg_t enet_pads[] = {
++	MX6DL_PAD_KEY_COL1__ENET_MDIO,
++	MX6DL_PAD_KEY_COL2__ENET_MDC,
++	MX6DL_PAD_RGMII_TXC__ENET_RGMII_TXC,
++	MX6DL_PAD_RGMII_TD0__ENET_RGMII_TD0,
++	MX6DL_PAD_RGMII_TD1__ENET_RGMII_TD1,
++	MX6DL_PAD_RGMII_TD2__ENET_RGMII_TD2,
++	MX6DL_PAD_RGMII_TD3__ENET_RGMII_TD3,
++	MX6DL_PAD_RGMII_TX_CTL__ENET_RGMII_TX_CTL,
++	MX6DL_PAD_ENET_REF_CLK__ENET_TX_CLK,
++	MX6DL_PAD_RGMII_RXC__ENET_RGMII_RXC,
++	MX6DL_PAD_RGMII_RD0__ENET_RGMII_RD0,
++	MX6DL_PAD_RGMII_RD1__ENET_RGMII_RD1,
++	MX6DL_PAD_RGMII_RD2__ENET_RGMII_RD2,
++	MX6DL_PAD_RGMII_RD3__ENET_RGMII_RD3,
++	MX6DL_PAD_RGMII_RX_CTL__ENET_RGMII_RX_CTL,
++	MX6DL_PAD_GPIO_0__CCM_CLKO,
++	MX6DL_PAD_GPIO_3__CCM_CLKO2,
++};
++#endif
+ 
+ void enet_board_init(void)
+ {
+ 	unsigned int reg;
+-	iomux_v3_cfg_t enet_reset =
+-			(MX6Q_PAD_KEY_ROW4__GPIO_4_15 &
++	iomux_v3_cfg_t enet_reset;
++#if defined CONFIG_MX6Q
++	enet_reset = (MX6Q_PAD_KEY_ROW4__GPIO_4_15 &
+ 			~MUX_PAD_CTRL_MASK)           |
+ 			 MUX_PAD_CTRL(0x84);
+-
++#elif defined CONFIG_MX6DL
++	enet_reset = (MX6DL_PAD_KEY_ROW4__GPIO_4_15 &
++			~MUX_PAD_CTRL_MASK)           |
++			 MUX_PAD_CTRL(0x84);
++#endif
+ 	mxc_iomux_v3_setup_multiple_pads(enet_pads,
+ 			ARRAY_SIZE(enet_pads));
+ 
+@@ -869,7 +1013,7 @@ void enet_board_init(void)
+ 
+ int checkboard(void)
+ {
+-	printf("Board: MX6Q-ARM2:[ ");
++	printf("Board: MX6Q/SDL-ARM2:[ ");
+ 
+ 	switch (__REG(SRC_BASE_ADDR + 0x8)) {
+ 	case 0x0001:
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+new file mode 100644
+index 0000000..8b52ad5
+--- /dev/null
++++ b/include/configs/mx6dl_arm2.h
+@@ -0,0 +1,316 @@
++/*
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
++ *
++ * Configuration settings for the MX6Q Armadillo2 Freescale board.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef __CONFIG_H
++#define __CONFIG_H
++
++#include <asm/arch/mx6.h>
++
++ /* High Level Configuration Options */
++#define CONFIG_ARMV7	/* This is armv7 Cortex-A9 CPU core */
++#define CONFIG_MXC
++#define CONFIG_MX6DL
++#define CONFIG_MX6Q_ARM2
++#define CONFIG_FLASH_HEADER
++#define CONFIG_FLASH_HEADER_OFFSET 0x400
++#define CONFIG_MX6_CLK32	   32768
++
++#define CONFIG_SKIP_RELOCATE_UBOOT
++
++#define CONFIG_ARCH_CPU_INIT
++#undef CONFIG_ARCH_MMU /* disable MMU first */
++#define CONFIG_L2_OFF  /* disable L2 cache first*/
++
++#define CONFIG_MX6_HCLK_FREQ	24000000
++
++#define CONFIG_DISPLAY_CPUINFO
++#define CONFIG_DISPLAY_BOARDINFO
++
++#define CONFIG_SYS_64BIT_VSPRINTF
++
++#define BOARD_LATE_INIT
++
++#define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_REVISION_TAG
++#define CONFIG_SETUP_MEMORY_TAGS
++#define CONFIG_INITRD_TAG
++
++/*
++ * Size of malloc() pool
++ */
++#define CONFIG_SYS_MALLOC_LEN		(2 * 1024 * 1024)
++/* size in bytes reserved for initial data */
++#define CONFIG_SYS_GBL_DATA_SIZE	128
++
++/*
++ * Hardware drivers
++ */
++#define CONFIG_MXC_UART
++#define CONFIG_UART_BASE_ADDR   UART4_BASE_ADDR
++
++/* allow to overwrite serial and ethaddr */
++#define CONFIG_ENV_OVERWRITE
++#define CONFIG_CONS_INDEX		1
++#define CONFIG_BAUDRATE			115200
++#define CONFIG_SYS_BAUDRATE_TABLE	{9600, 19200, 38400, 57600, 115200}
++
++/***********************************************************
++ * Command definition
++ ***********************************************************/
++
++#include <config_cmd_default.h>
++
++#define CONFIG_CMD_PING
++#define CONFIG_CMD_DHCP
++#define CONFIG_CMD_MII
++#define CONFIG_CMD_NET
++#define CONFIG_NET_RETRY_COUNT  100
++#define CONFIG_NET_MULTI 1
++#define CONFIG_BOOTP_SUBNETMASK
++#define CONFIG_BOOTP_GATEWAY
++#define CONFIG_BOOTP_DNS
++
++#define CONFIG_CMD_SPI
++#define CONFIG_CMD_I2C
++#define CONFIG_CMD_IMXOTP
++
++/* Enable below configure when supporting nand */
++#define CONFIG_CMD_SF
++#define CONFIG_CMD_MMC
++#define CONFIG_CMD_ENV
++
++#define CONFIG_CMD_CLOCK
++#define CONFIG_REF_CLK_FREQ CONFIG_MX6_HCLK_FREQ
++
++#undef CONFIG_CMD_IMLS
++
++#define CONFIG_CMD_IMX_DOWNLOAD_MODE
++
++#define CONFIG_BOOTDELAY 3
++
++#define CONFIG_PRIME	"FEC0"
++
++#define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
++#define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
++
++#define	CONFIG_EXTRA_ENV_SETTINGS					\
++		"netdev=eth0\0"						\
++		"ethprime=FEC0\0"					\
++		"uboot=u-boot.bin\0"			\
++		"kernel=uImage\0"				\
++		"nfsroot=/opt/eldk/arm\0"				\
++		"bootargs_base=setenv bootargs console=ttymxc0,115200\0"\
++		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
++			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
++		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
++			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
++		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "     \
++			"root=/dev/mmcblk0p1 rootwait\0"                \
++		"bootcmd_mmc=run bootargs_base bootargs_mmc; "   \
++		"mmc dev 3; "	\
++		"mmc read ${loadaddr} 0x800 0x2000; bootm\0"	\
++		"bootcmd=run bootcmd_net\0"                             \
++
++
++#define CONFIG_ARP_TIMEOUT	200UL
++
++/*
++ * Miscellaneous configurable options
++ */
++#define CONFIG_SYS_LONGHELP		/* undef to save memory */
++#define CONFIG_SYS_PROMPT		"MX6SDL ARM2 U-Boot > "
++#define CONFIG_AUTO_COMPLETE
++#define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
++/* Print Buffer Size */
++#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
++#define CONFIG_SYS_MAXARGS	16	/* max number of command args */
++#define CONFIG_SYS_BARGSIZE CONFIG_SYS_CBSIZE /* Boot Argument Buffer Size */
++
++#define CONFIG_SYS_MEMTEST_START	0x10000000	/* memtest works on */
++#define CONFIG_SYS_MEMTEST_END		0x10010000
++
++#undef	CONFIG_SYS_CLKS_IN_HZ		/* everything, incl board info, in Hz */
++
++#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
++
++#define CONFIG_SYS_HZ			1000
++
++#define CONFIG_CMDLINE_EDITING
++
++#define CONFIG_FEC0_IOBASE	ENET_BASE_ADDR
++#define CONFIG_FEC0_PINMUX	-1
++#define CONFIG_FEC0_MIIBASE	-1
++#define CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
++#define CONFIG_MXC_FEC
++#define CONFIG_FEC0_PHY_ADDR		0
++#define CONFIG_ETH_PRIME
++#define CONFIG_RMII
++#define CONFIG_CMD_MII
++#define CONFIG_CMD_DHCP
++#define CONFIG_CMD_PING
++#define CONFIG_IPADDR			192.168.1.103
++#define CONFIG_SERVERIP			192.168.1.101
++#define CONFIG_NETMASK			255.255.255.0
++
++/*
++ * OCOTP Configs
++ */
++#ifdef CONFIG_CMD_IMXOTP
++	#define CONFIG_IMX_OTP
++	#define IMX_OTP_BASE			OCOTP_BASE_ADDR
++	#define IMX_OTP_ADDR_MAX		0x7F
++	#define IMX_OTP_DATA_ERROR_VAL	0xBADABADA
++#endif
++
++/*
++ * I2C Configs
++ */
++#ifdef CONFIG_CMD_I2C
++	#define CONFIG_HARD_I2C         1
++	#define CONFIG_I2C_MXC          1
++	#define CONFIG_SYS_I2C_PORT             I2C3_BASE_ADDR
++	#define CONFIG_SYS_I2C_SPEED            100000
++	#define CONFIG_SYS_I2C_SLAVE            0x1f
++#endif
++
++/*
++ * SPI Configs
++ */
++#ifdef CONFIG_CMD_SF
++	#define CONFIG_FSL_SF		1
++	#define CONFIG_SPI_FLASH_IMX_M25PXX	1
++	#define CONFIG_SPI_FLASH_CS	1
++	#define CONFIG_IMX_ECSPI
++	#define IMX_CSPI_VER_2_3	1
++	#define MAX_SPI_BYTES		(64 * 4)
++#endif
++
++/*
++ * MMC Configs
++ */
++#ifdef CONFIG_CMD_MMC
++	#define CONFIG_MMC
++	#define CONFIG_GENERIC_MMC
++	#define CONFIG_IMX_MMC
++	#define CONFIG_SYS_FSL_USDHC_NUM        4
++	#define CONFIG_SYS_FSL_ESDHC_ADDR       0
++	#define CONFIG_SYS_MMC_ENV_DEV  2
++	#define CONFIG_DOS_PARTITION	1
++	#define CONFIG_CMD_FAT		1
++	#define CONFIG_CMD_EXT2		1
++
++	/* detect whether SD1, 2, 3, or 4 is boot device */
++	#define CONFIG_DYNAMIC_MMC_DEVNO
++
++	/* SD3 and SD4 are 8 bit */
++	#define CONFIG_MMC_8BIT_PORTS   0xC
++	/* Setup target delay in DDR mode for each SD port */
++	#define CONFIG_GET_DDR_TARGET_DELAY
++#endif
++
++/*
++ * GPMI Nand Configs
++ */
++/* #define CONFIG_CMD_NAND */
++
++#ifdef CONFIG_CMD_NAND
++	#define CONFIG_NAND_GPMI
++	#define CONFIG_GPMI_NFC_SWAP_BLOCK_MARK
++	#define CONFIG_GPMI_NFC_V2
++
++	#define CONFIG_GPMI_REG_BASE	GPMI_BASE_ADDR
++	#define CONFIG_BCH_REG_BASE	BCH_BASE_ADDR
++
++	#define NAND_MAX_CHIPS		8
++	#define CONFIG_SYS_NAND_BASE		0x40000000
++	#define CONFIG_SYS_MAX_NAND_DEVICE	1
++
++	#define CONFIG_DOS_PARTITION	1
++	#define CONFIG_CMD_FAT		1
++	#define CONFIG_CMD_EXT2		1
++
++	/* NAND is the unique module invoke APBH-DMA */
++	#define CONFIG_APBH_DMA
++	#define CONFIG_APBH_DMA_V2
++	#define CONFIG_MXS_DMA_REG_BASE	ABPHDMA_BASE_ADDR
++#endif
++
++/*-----------------------------------------------------------------------
++ * Stack sizes
++ *
++ * The stack sizes are set up in start.S using the settings below
++ */
++#define CONFIG_STACKSIZE	(128 * 1024)	/* regular stack */
++
++/*-----------------------------------------------------------------------
++ * Physical Memory Map
++ */
++#define CONFIG_NR_DRAM_BANKS	1
++#define PHYS_SDRAM_1		CSD0_DDR_BASE_ADDR
++#define PHYS_SDRAM_1_SIZE	(2u * 1024 * 1024 * 1024)
++#define iomem_valid_addr(addr, size) \
++	(addr >= PHYS_SDRAM_1 && addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE))
++
++/*-----------------------------------------------------------------------
++ * FLASH and environment organization
++ */
++#define CONFIG_SYS_NO_FLASH
++
++/* Monitor at beginning of flash */
++#define CONFIG_FSL_ENV_IN_MMC
++/* #define CONFIG_FSL_ENV_IN_NAND */
++
++#define CONFIG_ENV_SECT_SIZE    (8 * 1024)
++#define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
++
++#if defined(CONFIG_FSL_ENV_IN_NAND)
++	#define CONFIG_ENV_IS_IN_NAND 1
++	#define CONFIG_ENV_OFFSET	0x100000
++#elif defined(CONFIG_FSL_ENV_IN_MMC)
++	#define CONFIG_ENV_IS_IN_MMC	1
++	#define CONFIG_ENV_OFFSET	(768 * 1024)
++#elif defined(CONFIG_FSL_ENV_IN_SF)
++	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
++	#define CONFIG_ENV_SPI_CS		1
++	#define CONFIG_ENV_OFFSET       (768 * 1024)
++#else
++	#define CONFIG_ENV_IS_NOWHERE	1
++#endif
++
++#ifdef CONFIG_SPLASH_SCREEN
++	/*
++	 * Framebuffer and LCD
++	 */
++	#define CONFIG_LCD
++	#define CONFIG_IPU_V3H
++	#define CONFIG_VIDEO_MX5
++	#define CONFIG_IPU_CLKRATE	260000000
++	#define CONFIG_SYS_CONSOLE_ENV_OVERWRITE
++	#define CONFIG_SYS_CONSOLE_OVERWRITE_ROUTINE
++	#define CONFIG_SYS_CONSOLE_IS_IN_ENV
++	#define LCD_BPP		LCD_COLOR16
++	#define CONFIG_CMD_BMP
++	#define CONFIG_BMP_8BPP
++	#define CONFIG_FB_BASE	(TEXT_BASE + 0x300000)
++	#define CONFIG_SPLASH_SCREEN_ALIGN
++	#define CONFIG_SYS_WHITE_ON_BLACK
++#endif
++#endif				/* __CONFIG_H */
+-- 
+1.7.7.4
+

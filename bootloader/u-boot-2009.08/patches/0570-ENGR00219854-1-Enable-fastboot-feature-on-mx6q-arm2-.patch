@@ -1,0 +1,149 @@
+From 526a3e74ad3e902212b80050aa76e212bafc1e1d Mon Sep 17 00:00:00 2001
+From: LiGang <b41990@freescale.com>
+Date: Thu, 9 Aug 2012 11:04:03 +0800
+Subject: [PATCH 570/678] ENGR00219854-1 Enable fastboot feature on mx6q-arm2
+ board
+
+1. enable fastboot feature on mx6q-arm2 board
+2. enlarge fastboot buffer to 320MB
+3. correct some usb descriptors
+
+Signed-off-by: LiGang <b41990@freescale.com>
+---
+ board/freescale/mx6q_arm2/mx6q_arm2.c |   47 +++++++++++++++++++++++++++++++++
+ include/configs/mx6q_arm2.h           |    2 +-
+ include/configs/mx6q_arm2_android.h   |   10 +++---
+ include/configs/mx6sl_arm2_android.h  |    2 +-
+ 4 files changed, 54 insertions(+), 7 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index 1538212..17ab35a 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -67,6 +67,11 @@
+ #include <asm/clock.h>
+ #endif
+ 
++#ifdef CONFIG_MXC_GPIO
++#include <asm/gpio.h>
++#include <asm/arch/gpio.h>
++#endif
++
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+ static u32 system_rev;
+@@ -1186,6 +1191,18 @@ int board_init(void)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_ANDROID_RECOVERY
++
++int check_recovery_cmd_file(void)
++{
++	/*not realized*/
++	return 0;
++}
++#endif
++
++
++
++
+ int board_late_init(void)
+ {
+ 	return 0;
+@@ -1374,3 +1391,33 @@ int checkboard(void)
+ 
+ 	return 0;
+ }
++
++
++#ifdef CONFIG_IMX_UDC
++
++#define USB_H1_POWER  IMX_GPIO_NR(3, 31)
++#define USB_OTG_PWR0  IMX_GPIO_NR(3, 22)
++#define USB_OTG_PWR1  IMX_GPIO_NR(4, 15)
++
++void udc_pins_setting(void)
++{
++	mxc_iomux_v3_setup_pad(MX6X_IOMUX(PAD_GPIO_1__USBOTG_ID));
++	mxc_iomux_set_gpr_register(1, 13, 1, 1);
++
++	/*USB_HOST_VBUS  EIM_D31                         LED D5*/
++	gpio_direction_output(USB_H1_POWER, 1);
++	mxc_iomux_v3_setup_pad(MX6X_IOMUX(PAD_EIM_D31__GPIO_3_31));
++
++	/*USB_OTG_VBUS  EIM_D22   KEY_ROW4               LED D6*/
++	/* there are two pads to control OTG power supply, but only one pads
++	acturally used, in case of different hardware setting, two pads
++	function as gpio, and set to 0.
++	In case of 1-pluse when set the pad as gpio, set the pad to 0 before
++	setting it as gpio*/
++	gpio_direction_output(USB_OTG_PWR0, 0);
++	mxc_iomux_v3_setup_pad(MX6X_IOMUX(PAD_EIM_D22__GPIO_3_22));
++
++	gpio_direction_output(USB_OTG_PWR1, 0);
++	mxc_iomux_v3_setup_pad(MX6X_IOMUX(PAD_KEY_ROW4__GPIO_4_15));
++}
++#endif
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index 45f97e5..39f49fc 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -57,7 +57,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+-
++#define CONFIG_MXC_GPIO
+ /*
+  * Size of malloc() pool
+  */
+diff --git a/include/configs/mx6q_arm2_android.h b/include/configs/mx6q_arm2_android.h
+index 361a720..62bf740 100644
+--- a/include/configs/mx6q_arm2_android.h
++++ b/include/configs/mx6q_arm2_android.h
+@@ -36,7 +36,6 @@
+   recovery, please reference sabreSD board which
+   mx6q_sabresd_android.h
+ */
+-#if 0
+ #define CONFIG_USB_DEVICE
+ #define CONFIG_IMX_UDC		       1
+ #define CONFIG_FASTBOOT		       1
+@@ -45,15 +44,16 @@
+ #define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+-#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q Sabre Smart Device"
++#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q ARM2 Smart Device"
+ #define CONFIG_FASTBOOT_INTERFACE_STR	 "Android fastboot"
+ #define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
+ #define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
+ #define CONFIG_FASTBOOT_SATA_NO		 0
+-#define CONFIG_FASTBOOT_TRANSFER_BUF	0x30000000
+-#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x10000000 /* 256M byte */
++/*  For system.img growing up more than 256MB, more buffer needs
++*   to receive the system.img*/
++#define CONFIG_FASTBOOT_TRANSFER_BUF	0x2c000000
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x14000000 /* 320M byte */
+ #define CONFIG_ANDROID_RECOVERY
+-#endif
+ 
+ #define CONFIG_CMD_BOOTI
+ /* which mmc bus is your main storage ? */
+diff --git a/include/configs/mx6sl_arm2_android.h b/include/configs/mx6sl_arm2_android.h
+index 0e25277..d3d1971 100644
+--- a/include/configs/mx6sl_arm2_android.h
++++ b/include/configs/mx6sl_arm2_android.h
+@@ -32,7 +32,7 @@
+ #define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+-#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q Sabre Smart Device"
++#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6sl ARM2 Smart Device"
+ #define CONFIG_FASTBOOT_INTERFACE_STR	 "Android fastboot"
+ #define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
+ #define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
+-- 
+1.7.7.4
+

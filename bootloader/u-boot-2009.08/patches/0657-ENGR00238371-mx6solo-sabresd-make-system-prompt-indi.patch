@@ -1,0 +1,30 @@
+From 82471d5f28c05846729cdb473ae0cf7b8b13aa06 Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Thu, 27 Dec 2012 15:38:26 +0800
+Subject: [PATCH 657/678] ENGR00238371: mx6solo: sabresd: make system prompt
+ indicate solo config
+
+make system prompt indicate solo config when using mx6solo_sabresd:
+"MX6Solo SABRESD U-Boot > "
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ include/configs/mx6solo_sabresd.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6solo_sabresd.h b/include/configs/mx6solo_sabresd.h
+index ea94ae3..5e4d30d 100644
+--- a/include/configs/mx6solo_sabresd.h
++++ b/include/configs/mx6solo_sabresd.h
+@@ -141,7 +141,7 @@
+  * Miscellaneous configurable options
+  */
+ #define CONFIG_SYS_LONGHELP		/* undef to save memory */
+-#define CONFIG_SYS_PROMPT		"MX6SDL SABRESD U-Boot > "
++#define CONFIG_SYS_PROMPT		"MX6Solo SABRESD U-Boot > "
+ #define CONFIG_AUTO_COMPLETE
+ #define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
+ /* Print Buffer Size */
+-- 
+1.7.7.4
+

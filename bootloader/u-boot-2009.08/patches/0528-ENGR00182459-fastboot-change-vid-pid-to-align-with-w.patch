@@ -1,0 +1,202 @@
+From c06971be58b28b61bcb4fc348b1f14d18a24c55e Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Fri, 11 May 2012 14:07:33 +0800
+Subject: [PATCH 528/678] ENGR00182459 fastboot: change vid pid to align with
+ winXP fastboot driver.
+
+align vid, pid to let windows fastboot driver can be install.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ include/configs/mx50_rd3_android.h       |    6 +++---
+ include/configs/mx50_rdp_android.h       |    6 +++---
+ include/configs/mx51_bbg_android.h       |    6 +++---
+ include/configs/mx53_evk_android.h       |    6 +++---
+ include/configs/mx53_pcba_android.h      |    6 +++---
+ include/configs/mx53_smd_android.h       |    2 +-
+ include/configs/mx6dl_sabresd_android.h  |    2 +-
+ include/configs/mx6q_arm2_android.h      |    2 +-
+ include/configs/mx6q_sabrelite_android.h |    2 +-
+ include/configs/mx6q_sabresd_android.h   |    2 +-
+ 10 files changed, 20 insertions(+), 20 deletions(-)
+
+diff --git a/include/configs/mx50_rd3_android.h b/include/configs/mx50_rd3_android.h
+index 6268bf6..b0fedc1 100644
+--- a/include/configs/mx50_rd3_android.h
++++ b/include/configs/mx50_rd3_android.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX50-RD3 Freescale board.
+  *
+@@ -306,8 +306,8 @@
+ #define CONFIG_IMX_UDC                 1
+ #define CONFIG_FASTBOOT                1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+-#define CONFIG_FASTBOOT_VENDOR_ID      0xbb4
+-#define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID     0xd02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+ #define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx50 rd3"
+diff --git a/include/configs/mx50_rdp_android.h b/include/configs/mx50_rdp_android.h
+index e39d9a3..79f5dc7 100644
+--- a/include/configs/mx50_rdp_android.h
++++ b/include/configs/mx50_rdp_android.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX50-RDP Freescale board.
+  *
+@@ -308,8 +308,8 @@
+ #define CONFIG_IMX_UDC                 1
+ #define CONFIG_FASTBOOT                1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+-#define CONFIG_FASTBOOT_VENDOR_ID      0xbb4
+-#define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID     0xd02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+ #define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx50 rdp"
+diff --git a/include/configs/mx51_bbg_android.h b/include/configs/mx51_bbg_android.h
+index 0eed306..6b46d9d 100644
+--- a/include/configs/mx51_bbg_android.h
++++ b/include/configs/mx51_bbg_android.h
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2009-2011 Freescale Semiconductor, Inc.
++ * (C) Copyright 2009-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX51-3Stack Freescale board.
+  *
+@@ -92,8 +92,8 @@
+ #define CONFIG_FASTBOOT		1
+ #define CONFIG_IMX_UDC		1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+-#define CONFIG_FASTBOOT_VENDOR_ID	0xbb4
+-#define CONFIG_FASTBOOT_PRODUCT_ID	0xc01
++#define CONFIG_FASTBOOT_VENDOR_ID	0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID	0xd02
+ #define CONFIG_FASTBOOT_BCD_DEVICE	0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+ #define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx51"
+diff --git a/include/configs/mx53_evk_android.h b/include/configs/mx53_evk_android.h
+index e29b37f..cfff3be 100644
+--- a/include/configs/mx53_evk_android.h
++++ b/include/configs/mx53_evk_android.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX53-EVK Freescale board.
+  *
+@@ -82,8 +82,8 @@
+ #define CONFIG_FASTBOOT                1
+ #define CONFIG_IMX_UDC                 1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+-#define CONFIG_FASTBOOT_VENDOR_ID      0xbb4
+-#define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID     0xd02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+ #define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx53 evk"
+diff --git a/include/configs/mx53_pcba_android.h b/include/configs/mx53_pcba_android.h
+index 242a180..c1bc5ff 100644
+--- a/include/configs/mx53_pcba_android.h
++++ b/include/configs/mx53_pcba_android.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX53-PCBA Freescale board.
+  *
+@@ -82,8 +82,8 @@
+ #define CONFIG_IMX_UDC                 1
+ #define CONFIG_FASTBOOT                1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+-#define CONFIG_FASTBOOT_VENDOR_ID      0xbb4
+-#define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID     0xd02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+ #define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx53 pcba"
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index 4c275ae..247917f 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -86,7 +86,7 @@
+ #define CONFIG_FASTBOOT		       1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+ #define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
+-#define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
++#define CONFIG_FASTBOOT_PRODUCT_ID     0xd02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+ #define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx53 smd"
+diff --git a/include/configs/mx6dl_sabresd_android.h b/include/configs/mx6dl_sabresd_android.h
+index 4aee00c..1b34c21 100644
+--- a/include/configs/mx6dl_sabresd_android.h
++++ b/include/configs/mx6dl_sabresd_android.h
+@@ -30,7 +30,7 @@
+ #define CONFIG_FASTBOOT		       1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+ #define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
+-#define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
++#define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+ #define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6dl Sabre SmartDevice"
+diff --git a/include/configs/mx6q_arm2_android.h b/include/configs/mx6q_arm2_android.h
+index 44ed9b6..264d85b 100644
+--- a/include/configs/mx6q_arm2_android.h
++++ b/include/configs/mx6q_arm2_android.h
+@@ -38,7 +38,7 @@
+ #define CONFIG_FASTBOOT		       1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+ #define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
+-#define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
++#define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+ #define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q Sabre Smart Device"
+diff --git a/include/configs/mx6q_sabrelite_android.h b/include/configs/mx6q_sabrelite_android.h
+index 96c0bff..4c76480 100644
+--- a/include/configs/mx6q_sabrelite_android.h
++++ b/include/configs/mx6q_sabrelite_android.h
+@@ -78,7 +78,7 @@
+ #define CONFIG_FASTBOOT		       1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+ #define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
+-#define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
++#define CONFIG_FASTBOOT_PRODUCT_ID     0xd02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+ #define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q sabrelite"
+diff --git a/include/configs/mx6q_sabresd_android.h b/include/configs/mx6q_sabresd_android.h
+index 7a149fd..0996de5 100644
+--- a/include/configs/mx6q_sabresd_android.h
++++ b/include/configs/mx6q_sabresd_android.h
+@@ -29,7 +29,7 @@
+ #define CONFIG_FASTBOOT		       1
+ #define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+ #define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
+-#define CONFIG_FASTBOOT_PRODUCT_ID     0xc01
++#define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
+ #define CONFIG_FASTBOOT_BCD_DEVICE     0x311
+ #define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+ #define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6q Sabre Smart Device"
+-- 
+1.7.7.4
+

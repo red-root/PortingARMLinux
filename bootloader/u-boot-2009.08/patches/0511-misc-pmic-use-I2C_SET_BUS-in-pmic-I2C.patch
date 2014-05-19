@@ -1,0 +1,30 @@
+From 3a4934917c23ea71d2905a8201b947ca61c8f73a Mon Sep 17 00:00:00 2001
+From: Stefano Babic <sbabic@denx.de>
+Date: Tue, 11 Oct 2011 19:18:05 +0200
+Subject: [PATCH 511/678] misc: pmic: use I2C_SET_BUS in pmic I2C
+
+Instead of using directly the i2c_set_bus() function,
+the I2C_SET_BUS macro must be used to avoid build
+errors for targets without multibus I2C.
+
+Signed-off-by: Stefano Babic <sbabic@denx.de>
+---
+ drivers/misc/pmic_i2c.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/misc/pmic_i2c.c b/drivers/misc/pmic_i2c.c
+index b82e899..ad55d64 100644
+--- a/drivers/misc/pmic_i2c.c
++++ b/drivers/misc/pmic_i2c.c
+@@ -81,7 +81,7 @@ int pmic_reg_read(struct pmic *p, u32 reg, u32 *val)
+ 
+ int pmic_probe(struct pmic *p)
+ {
+-	i2c_set_bus_num(p->bus);
++	I2C_SET_BUS(p->bus);
+ 	debug("PMIC:%s probed!\n", p->name);
+ 	if (i2c_probe(pmic_i2c_addr)) {
+ 		printf("Can't find PMIC:%s\n", p->name);
+-- 
+1.7.7.4
+

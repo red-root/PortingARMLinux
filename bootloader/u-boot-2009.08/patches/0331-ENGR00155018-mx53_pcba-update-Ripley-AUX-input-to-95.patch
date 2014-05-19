@@ -1,0 +1,42 @@
+From 41a2678fec8dbe36e079aee9f1ed7a961d6be14c Mon Sep 17 00:00:00 2001
+From: Wayne Zou <b36644@freescale.com>
+Date: Wed, 17 Aug 2011 14:35:09 +0800
+Subject: [PATCH 331/678] ENGR00155018 mx53_pcba: update Ripley AUX input to
+ 950mA and charge current
+
+set Ripley AUX input current limit to 950mA and
+set charge termination current to 400mA
+
+Signed-off-by: Wayne Zou <b36644@freescale.com>
+---
+ board/freescale/mx53_pcba/mx53_pcba.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx53_pcba/mx53_pcba.c b/board/freescale/mx53_pcba/mx53_pcba.c
+index 78e45f7..24cb45a 100644
+--- a/board/freescale/mx53_pcba/mx53_pcba.c
++++ b/board/freescale/mx53_pcba/mx53_pcba.c
+@@ -340,10 +340,10 @@ void setup_pmic_voltages(void)
+ 		if (i2c_write(0x8, 53, 1, buf, 3))
+ 			printf("%s:i2c_write 53:error\n", __func__);
+ 
+-		/* set both AUX&USB current limit to 1.5A for Ripley 2.1 only */
++		/* set both AUX current limit to 950mA */
+ 		if (i2c_read(0x8, 52, 1, &buf[0], 3))
+ 			printf("%s:i2c_read 52:error\n", __func__);
+-		buf[0] = (buf[0] & 0xef) | 0x10;
++		buf[1] = (buf[1] & 0xc7) | 0x38;
+ 		if (i2c_write(0x8, 52, 1, buf, 3))
+ 			printf("%s:i2c_write 52:error\n", __func__);
+ 
+@@ -353,6 +353,7 @@ void setup_pmic_voltages(void)
+ 			printf("%s:i2c_read 51:error\n", __func__);
+ 		buf[1] = (buf[1] & 0x0) | 0xd8;
+ 		buf[2] = (buf[2] & 0x3f) | 0xc0;
++		buf[0] = (buf[0] & 0xf8) | 0x7;
+ 		if (i2c_write(0x8, 51, 1, buf, 3))
+ 			printf("%s:i2c_write 51:error\n", __func__);
+ 
+-- 
+1.7.7.4
+

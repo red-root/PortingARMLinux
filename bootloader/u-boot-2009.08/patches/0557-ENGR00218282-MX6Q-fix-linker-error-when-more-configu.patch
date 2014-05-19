@@ -1,0 +1,126 @@
+From 2dbfc63a4a0206d31e419d9e595828e6408dce48 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Wed, 25 Jul 2012 11:35:11 +0800
+Subject: [PATCH 557/678] ENGR00218282 MX6Q: fix linker error when more
+ configure enabled.
+
+This commit fix the linker error when enable more function(like CONFIG_NAND,
+CONFIG_SPASHSCREEN,etc) in uboot ARM2 board, and a possable linker error for
+other MX6 boards:
+
+/home/lambert/share/SATA2/R13.3/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/
+bin/arm-eabi-ld: section .bss [27831000 -> 278666e7] overlaps section
+.rodata [2782387c -> 278609eb]
+
+/home/lambert/share/SATA2/R13.3/prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/
+bin/arm-eabi-ld: section .rodata.str1.1 [278609ec -> 27867803] overlaps
+section .bss [27831000 -> 278666e7]
+
+One issue here is:
+A recent gcc added a new unaligned rodata section called '.rodata.str1.1',
+which needs to be added the the linker script.  Instead of just adding this
+one section, we use a wildcard ".rodata*" to get all rodata linker section
+gcc has now and might add in the future.
+
+Another issue is:
+The secure boot feature require __hab_data section in uboot linker script,
+but it's have a hard coding magic number, but if we enable more code, cause
+.text section bigger, it will cross the line, so it report the
+first linker error.
+
+This commit disable SECURE_BOOT feature by default for android,
+and comments if user want to use this feature, it needs change the
+.lds by there configure.
+Also, enlarge the magic number that this feature needs to cover
+if more code is build in.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ board/freescale/mx6q_arm2/u-boot.lds      |    6 +++---
+ board/freescale/mx6q_sabreauto/u-boot.lds |    2 +-
+ board/freescale/mx6q_sabrelite/u-boot.lds |    2 +-
+ board/freescale/mx6q_sabresd/u-boot.lds   |    2 +-
+ include/configs/mx6q_arm2_android.h       |    4 ++++
+ 5 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/u-boot.lds b/board/freescale/mx6q_arm2/u-boot.lds
+index 5bd58bb..a6bcebb 100644
+--- a/board/freescale/mx6q_arm2/u-boot.lds
++++ b/board/freescale/mx6q_arm2/u-boot.lds
+@@ -53,7 +53,7 @@ SECTIONS
+ 	}
+ 
+ 	. = ALIGN(4);
+-	.rodata : { *(.rodata) }
++	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
+ 
+ 	. = ALIGN(4);
+ 	.data : { *(.data) }
+@@ -69,8 +69,8 @@ SECTIONS
+ 	. = ALIGN(4);
+ 	_end_of_copy = .; /* end_of ROM copy code when HAB is not enabled */
+ 
+-	/* Original Size is 0x27..., enlarge to 0x2F000 */
+-	. = TEXT_BASE + 0x2F000;
++	/* Original Size is 0x27..., enlarge to 0x3F000 */
++	. = TEXT_BASE + 0x3F000;
+ 	__hab_data = .;
+ 	. = . + 0x2000;
+ 	__hab_data_end = .;
+diff --git a/board/freescale/mx6q_sabreauto/u-boot.lds b/board/freescale/mx6q_sabreauto/u-boot.lds
+index f3ebb48..8ef52ce 100644
+--- a/board/freescale/mx6q_sabreauto/u-boot.lds
++++ b/board/freescale/mx6q_sabreauto/u-boot.lds
+@@ -53,7 +53,7 @@ SECTIONS
+ 	}
+ 
+ 	. = ALIGN(4);
+-	.rodata : { *(.rodata) }
++	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
+ 
+ 	. = ALIGN(4);
+ 	.data : { *(.data) }
+diff --git a/board/freescale/mx6q_sabrelite/u-boot.lds b/board/freescale/mx6q_sabrelite/u-boot.lds
+index fe40969..dceb877 100644
+--- a/board/freescale/mx6q_sabrelite/u-boot.lds
++++ b/board/freescale/mx6q_sabrelite/u-boot.lds
+@@ -53,7 +53,7 @@ SECTIONS
+ 	}
+ 
+ 	. = ALIGN(4);
+-	.rodata : { *(.rodata) }
++	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
+ 
+ 	. = ALIGN(4);
+ 	.data : { *(.data) }
+diff --git a/board/freescale/mx6q_sabresd/u-boot.lds b/board/freescale/mx6q_sabresd/u-boot.lds
+index 1473ea9..9b678da 100644
+--- a/board/freescale/mx6q_sabresd/u-boot.lds
++++ b/board/freescale/mx6q_sabresd/u-boot.lds
+@@ -53,7 +53,7 @@ SECTIONS
+ 	}
+ 
+ 	. = ALIGN(4);
+-	.rodata : { *(.rodata) }
++	.rodata : { *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.rodata*))) }
+ 
+ 	. = ALIGN(4);
+ 	.data : { *(.data) }
+diff --git a/include/configs/mx6q_arm2_android.h b/include/configs/mx6q_arm2_android.h
+index 264d85b..361a720 100644
+--- a/include/configs/mx6q_arm2_android.h
++++ b/include/configs/mx6q_arm2_android.h
+@@ -24,6 +24,10 @@
+ 
+ #include "mx6q_arm2.h"
+ 
++/* Disable secure boot feature in default, if you want to enable this
++ * feature, please carefully read related documents, you may needs to
++ * change u-boot.lds */
++#undef CONFIG_SECURE_BOOT
+ 
+ /* Disable fastboot and recovery to pass build.
+ 
+-- 
+1.7.7.4
+

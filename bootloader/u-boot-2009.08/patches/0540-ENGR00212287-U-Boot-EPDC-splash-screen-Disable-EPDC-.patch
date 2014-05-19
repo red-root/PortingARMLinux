@@ -1,0 +1,51 @@
+From 6f0a281d42fad88c75389869b4d1738b3c69999e Mon Sep 17 00:00:00 2001
+From: Danny Nold <dannynold@freescale.com>
+Date: Mon, 4 Jun 2012 10:02:26 -0500
+Subject: [PATCH 540/678] ENGR00212287 - U-Boot EPDC splash screen: Disable
+ EPDC splash by default
+
+- EPDC splash screen changed to be disabled by default in the config
+file for MX6DL_SABRESD and MX6DL_ARM2.  If left enabled, the U-Boot image
+will not boot correctly (hang), since some additional content on the boot device
+(waveform file) is required for EPDC splash to work correctly.
+- Fixes U-Boot break introduced with commit for ENGR00212287
+
+Signed-off-by: Danny Nold <dannynold@freescale.com>
+---
+ include/configs/mx6dl_arm2.h    |    4 ++--
+ include/configs/mx6dl_sabresd.h |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index 72fd980..4c53e48 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -299,8 +299,8 @@
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+ 
+-#define CONFIG_SPLASH_SCREEN
+-#define CONFIG_MXC_EPDC
++/* #define CONFIG_SPLASH_SCREEN */
++/* #define CONFIG_MXC_EPDC */
+ 
+ /*
+  * SPLASH SCREEN Configs
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index 060c94a..ea0a23f 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -303,8 +303,8 @@
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+ 
+-#define CONFIG_SPLASH_SCREEN
+-#define CONFIG_MXC_EPDC
++/* #define CONFIG_SPLASH_SCREEN */
++/* #define CONFIG_MXC_EPDC */
+ 
+ /*
+  * SPLASH SCREEN Configs
+-- 
+1.7.7.4
+

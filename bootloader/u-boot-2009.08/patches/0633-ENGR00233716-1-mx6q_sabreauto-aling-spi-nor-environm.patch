@@ -1,0 +1,192 @@
+From 6ffbfff232d0d6999ffd0ee0b5ec5a24a920cfc8 Mon Sep 17 00:00:00 2001
+From: Adrian Alonso <aalonso@freescale.com>
+Date: Wed, 14 Nov 2012 19:48:03 -0600
+Subject: [PATCH 633/678] ENGR00233716-1: mx6q_sabreauto aling spi-nor
+ environment offsset
+
+* Aling spi-nor environment offsset to 256k
+  this allows a partition layout
+
+  +-----------------+ 0x0
+  +   bootloader    +
+  +-----------------+ 0x40000 (256k)
+  +   boot env      +
+  +-----------------+ 0x42000 (8k)
+  +   kernel        +
+  +-----------------+ Remaining space (~3.7M)
+
+Signed-off-by: Adrian Alonso <aalonso@freescale.com>
+---
+ include/configs/mx6dl_sabreauto.h           |    2 +-
+ include/configs/mx6dl_sabreauto_nand.h      |    2 +-
+ include/configs/mx6dl_sabreauto_spi-nor.h   |    2 +-
+ include/configs/mx6dl_sabreauto_weimnor.h   |    2 +-
+ include/configs/mx6q_sabreauto.h            |    2 +-
+ include/configs/mx6q_sabreauto_nand.h       |    2 +-
+ include/configs/mx6q_sabreauto_spi-nor.h    |    2 +-
+ include/configs/mx6q_sabreauto_weimnor.h    |    2 +-
+ include/configs/mx6solo_sabreauto.h         |    2 +-
+ include/configs/mx6solo_sabreauto_nand.h    |    2 +-
+ include/configs/mx6solo_sabreauto_spi-nor.h |    2 +-
+ include/configs/mx6solo_sabreauto_weimnor.h |    2 +-
+ 12 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/include/configs/mx6dl_sabreauto.h b/include/configs/mx6dl_sabreauto.h
+index 918000b..8b447c7 100644
+--- a/include/configs/mx6dl_sabreauto.h
++++ b/include/configs/mx6dl_sabreauto.h
+@@ -325,7 +325,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #else
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+diff --git a/include/configs/mx6dl_sabreauto_nand.h b/include/configs/mx6dl_sabreauto_nand.h
+index 9ee9c03..db1b868 100644
+--- a/include/configs/mx6dl_sabreauto_nand.h
++++ b/include/configs/mx6dl_sabreauto_nand.h
+@@ -310,7 +310,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #else
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+diff --git a/include/configs/mx6dl_sabreauto_spi-nor.h b/include/configs/mx6dl_sabreauto_spi-nor.h
+index 89acb53..f6cb520 100644
+--- a/include/configs/mx6dl_sabreauto_spi-nor.h
++++ b/include/configs/mx6dl_sabreauto_spi-nor.h
+@@ -326,7 +326,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #else
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+diff --git a/include/configs/mx6dl_sabreauto_weimnor.h b/include/configs/mx6dl_sabreauto_weimnor.h
+index d9e12dc..2838b14 100644
+--- a/include/configs/mx6dl_sabreauto_weimnor.h
++++ b/include/configs/mx6dl_sabreauto_weimnor.h
+@@ -327,7 +327,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #elif defined(CONFIG_FSL_ENV_IN_FLASH)
+ 	#define CONFIG_ENV_IS_IN_FLASH 1
+ #else
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index 5f8f02c..a04529e 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -345,7 +345,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #else
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+diff --git a/include/configs/mx6q_sabreauto_nand.h b/include/configs/mx6q_sabreauto_nand.h
+index f36c41c..6c2c593 100644
+--- a/include/configs/mx6q_sabreauto_nand.h
++++ b/include/configs/mx6q_sabreauto_nand.h
+@@ -266,7 +266,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #else
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+diff --git a/include/configs/mx6q_sabreauto_spi-nor.h b/include/configs/mx6q_sabreauto_spi-nor.h
+index 832f302..9e0666d 100644
+--- a/include/configs/mx6q_sabreauto_spi-nor.h
++++ b/include/configs/mx6q_sabreauto_spi-nor.h
+@@ -346,7 +346,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #else
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+diff --git a/include/configs/mx6q_sabreauto_weimnor.h b/include/configs/mx6q_sabreauto_weimnor.h
+index a3db3a1..7879d1c 100644
+--- a/include/configs/mx6q_sabreauto_weimnor.h
++++ b/include/configs/mx6q_sabreauto_weimnor.h
+@@ -343,7 +343,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #elif defined(CONFIG_FSL_ENV_IN_FLASH)
+ 	#define CONFIG_ENV_IS_IN_FLASH 1
+ #else
+diff --git a/include/configs/mx6solo_sabreauto.h b/include/configs/mx6solo_sabreauto.h
+index 1288947..57e5ee7 100644
+--- a/include/configs/mx6solo_sabreauto.h
++++ b/include/configs/mx6solo_sabreauto.h
+@@ -326,7 +326,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #else
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+diff --git a/include/configs/mx6solo_sabreauto_nand.h b/include/configs/mx6solo_sabreauto_nand.h
+index 3b12433..9b27fd8 100644
+--- a/include/configs/mx6solo_sabreauto_nand.h
++++ b/include/configs/mx6solo_sabreauto_nand.h
+@@ -311,7 +311,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #else
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+diff --git a/include/configs/mx6solo_sabreauto_spi-nor.h b/include/configs/mx6solo_sabreauto_spi-nor.h
+index 93d3370..1402337 100644
+--- a/include/configs/mx6solo_sabreauto_spi-nor.h
++++ b/include/configs/mx6solo_sabreauto_spi-nor.h
+@@ -327,7 +327,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #else
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+diff --git a/include/configs/mx6solo_sabreauto_weimnor.h b/include/configs/mx6solo_sabreauto_weimnor.h
+index 189e5e0..bc3b70d 100644
+--- a/include/configs/mx6solo_sabreauto_weimnor.h
++++ b/include/configs/mx6solo_sabreauto_weimnor.h
+@@ -328,7 +328,7 @@
+ #elif defined(CONFIG_FSL_ENV_IN_SF)
+ 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
+ 	#define CONFIG_ENV_SPI_CS		1
+-	#define CONFIG_ENV_OFFSET       (768 * 1024)
++	#define CONFIG_ENV_OFFSET       0x40000
+ #elif defined(CONFIG_FSL_ENV_IN_FLASH)
+ 	#define CONFIG_ENV_IS_IN_FLASH 1
+ #else
+-- 
+1.7.7.4
+

@@ -1,0 +1,156 @@
+From 8ab3dff5721c68797fc8568bc91d8b1b95898404 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Sat, 11 Feb 2012 00:54:31 +0800
+Subject: [PATCH 451/678] ENGR00174230: Move partition command from nand to
+ sata in mx6
+
+Move partition command from nand to sata in mx6 for nand don't need
+these partition command.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ include/configs/mx6q_arm2.h           |    8 ++++----
+ include/configs/mx6q_arm2_lpddr2.h    |    4 ++++
+ include/configs/mx6q_arm2_lpddr2pop.h |    8 ++++----
+ include/configs/mx6q_sabreauto.h      |    8 ++++----
+ include/configs/mx6q_sabrelite.h      |    4 ++++
+ include/configs/mx6q_sabresd.h        |    8 ++++----
+ 6 files changed, 24 insertions(+), 16 deletions(-)
+
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index 9f26b55..fb25a89 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -237,6 +237,10 @@
+ 	#define CONFIG_DWC_AHSATA_BASE_ADDR	SATA_ARB_BASE_ADDR
+ 	#define CONFIG_LBA48
+ 	#define CONFIG_LIBATA
++
++	#define CONFIG_DOS_PARTITION	1
++	#define CONFIG_CMD_FAT		1
++	#define CONFIG_CMD_EXT2		1
+ #endif
+ 
+ /*
+@@ -256,10 +260,6 @@
+ 	#define CONFIG_SYS_NAND_BASE		0x40000000
+ 	#define CONFIG_SYS_MAX_NAND_DEVICE	1
+ 
+-	#define CONFIG_DOS_PARTITION	1
+-	#define CONFIG_CMD_FAT		1
+-	#define CONFIG_CMD_EXT2		1
+-
+ 	/* NAND is the unique module invoke APBH-DMA */
+ 	#define CONFIG_APBH_DMA
+ 	#define CONFIG_APBH_DMA_V2
+diff --git a/include/configs/mx6q_arm2_lpddr2.h b/include/configs/mx6q_arm2_lpddr2.h
+index a515e7f..59c5a16 100644
+--- a/include/configs/mx6q_arm2_lpddr2.h
++++ b/include/configs/mx6q_arm2_lpddr2.h
+@@ -212,6 +212,10 @@
+ 	#define CONFIG_DWC_AHSATA_BASE_ADDR	SATA_ARB_BASE_ADDR
+ 	#define CONFIG_LBA48
+ 	#define CONFIG_LIBATA
++
++	#define CONFIG_DOS_PARTITION	1
++	#define CONFIG_CMD_FAT		1
++	#define CONFIG_CMD_EXT2		1
+ #endif
+ 
+ /*-----------------------------------------------------------------------
+diff --git a/include/configs/mx6q_arm2_lpddr2pop.h b/include/configs/mx6q_arm2_lpddr2pop.h
+index e7e800e..45aea16 100755
+--- a/include/configs/mx6q_arm2_lpddr2pop.h
++++ b/include/configs/mx6q_arm2_lpddr2pop.h
+@@ -239,6 +239,10 @@
+ 	#define CONFIG_DWC_AHSATA_BASE_ADDR	SATA_ARB_BASE_ADDR
+ 	#define CONFIG_LBA48
+ 	#define CONFIG_LIBATA
++
++	#define CONFIG_DOS_PARTITION	1
++	#define CONFIG_CMD_FAT		1
++	#define CONFIG_CMD_EXT2		1
+ #endif
+ 
+ /*
+@@ -258,10 +262,6 @@
+ 	#define CONFIG_SYS_NAND_BASE		0x40000000
+ 	#define CONFIG_SYS_MAX_NAND_DEVICE	1
+ 
+-	#define CONFIG_DOS_PARTITION	1
+-	#define CONFIG_CMD_FAT		1
+-	#define CONFIG_CMD_EXT2		1
+-
+ 	/* NAND is the unique module invoke APBH-DMA */
+ 	#define CONFIG_APBH_DMA
+ 	#define CONFIG_APBH_DMA_V2
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index 601e757..7b497a7 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -238,6 +238,10 @@
+ 	#define CONFIG_DWC_AHSATA_BASE_ADDR	SATA_ARB_BASE_ADDR
+ 	#define CONFIG_LBA48
+ 	#define CONFIG_LIBATA
++
++	#define CONFIG_DOS_PARTITION	1
++	#define CONFIG_CMD_FAT		1
++	#define CONFIG_CMD_EXT2		1
+ #endif
+ 
+ /*
+@@ -257,10 +261,6 @@
+ 	#define CONFIG_SYS_NAND_BASE		0x40000000
+ 	#define CONFIG_SYS_MAX_NAND_DEVICE	1
+ 
+-	#define CONFIG_DOS_PARTITION	1
+-	#define CONFIG_CMD_FAT		1
+-	#define CONFIG_CMD_EXT2		1
+-
+ 	/* NAND is the unique module invoke APBH-DMA */
+ 	#define CONFIG_APBH_DMA
+ 	#define CONFIG_APBH_DMA_V2
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index fc2594f..1e8587d 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -252,6 +252,10 @@
+ 	#define CONFIG_DWC_AHSATA_BASE_ADDR	SATA_ARB_BASE_ADDR
+ 	#define CONFIG_LBA48
+ 	#define CONFIG_LIBATA
++
++	#define CONFIG_DOS_PARTITION	1
++	#define CONFIG_CMD_FAT		1
++	#define CONFIG_CMD_EXT2		1
+ #endif
+ 
+ /*-----------------------------------------------------------------------
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index f253f93..b8c7410 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -237,6 +237,10 @@
+ 	#define CONFIG_DWC_AHSATA_BASE_ADDR	SATA_ARB_BASE_ADDR
+ 	#define CONFIG_LBA48
+ 	#define CONFIG_LIBATA
++
++	#define CONFIG_DOS_PARTITION	1
++	#define CONFIG_CMD_FAT		1
++	#define CONFIG_CMD_EXT2		1
+ #endif
+ 
+ /*
+@@ -256,10 +260,6 @@
+ 	#define CONFIG_SYS_NAND_BASE		0x40000000
+ 	#define CONFIG_SYS_MAX_NAND_DEVICE	1
+ 
+-	#define CONFIG_DOS_PARTITION	1
+-	#define CONFIG_CMD_FAT		1
+-	#define CONFIG_CMD_EXT2		1
+-
+ 	/* NAND is the unique module invoke APBH-DMA */
+ 	#define CONFIG_APBH_DMA
+ 	#define CONFIG_APBH_DMA_V2
+-- 
+1.7.7.4
+

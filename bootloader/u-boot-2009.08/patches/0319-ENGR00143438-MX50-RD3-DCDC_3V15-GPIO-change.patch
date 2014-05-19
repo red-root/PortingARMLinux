@@ -1,0 +1,33 @@
+From 90479372456d62d426bc3b3241de1412c68f24a5 Mon Sep 17 00:00:00 2001
+From: Anson Huang <b20788@freescale.com>
+Date: Mon, 16 May 2011 11:51:31 +0800
+Subject: [PATCH 319/678] ENGR00143438 [MX50 RD3]DCDC_3V15 GPIO change
+
+Change DCDC_3V15's GPIO setting for REV-D.
+
+Signed-off-by: Anson Huang <b20788@freescale.com>
+(cherry picked from commit 28a8e166c6a8fa001325f88ef06e5a81f6ed82a9)
+---
+ board/freescale/mx50_rdp/mx50_rdp.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx50_rdp/mx50_rdp.c b/board/freescale/mx50_rdp/mx50_rdp.c
+index 7687def..a56284f 100644
+--- a/board/freescale/mx50_rdp/mx50_rdp.c
++++ b/board/freescale/mx50_rdp/mx50_rdp.c
+@@ -655,10 +655,10 @@ static void setup_fec(void)
+ 	reg |= (1 << 15);
+ 	writel(reg, GPIO4_BASE_ADDR + 0x4);
+ 
+-	/* DCDC_PWREN(GP4_16) set to 0 to enable DCDC_3V15 */
++	/* DCDC_PWREN(GP4_16) set to 1 to enable DCDC_3V15 */
+ 	mxc_request_iomux(MX50_PIN_ECSPI2_SCLK, IOMUX_CONFIG_ALT1);
+ 	reg = readl(GPIO4_BASE_ADDR + 0x0);
+-	reg &= ~(1 << 16);
++	reg |= (1 << 16);
+ 	writel(reg, GPIO4_BASE_ADDR + 0x0);
+ 
+ 	reg = readl(GPIO4_BASE_ADDR + 0x4);
+-- 
+1.7.7.4
+

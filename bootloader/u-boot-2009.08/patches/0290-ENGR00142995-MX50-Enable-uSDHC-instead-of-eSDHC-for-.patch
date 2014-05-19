@@ -1,0 +1,321 @@
+From c53f846a0b72a22f65f07b9eb6638168cc7004a9 Mon Sep 17 00:00:00 2001
+From: Anish Trivedi <anish@freescale.com>
+Date: Thu, 5 May 2011 13:16:17 -0500
+Subject: [PATCH 290/678] ENGR00142995 MX50: Enable uSDHC instead of eSDHC for
+ SDR mode
+
+On SD3 on MX50, there is an option to choose eSDHC or uSDHC controller.
+By default eSDHC is selected. However, eSDHC shows some borderline timing
+in SDR mode at 50 MHz, whereas uSDHC shows borderline timing in DDR mode
+at 50 MHz. Therefore, add a compile time option to uboot for MX50 to
+select uSDHC in SDR mode or eSDHC in DDR mode on SD3 port.
+
+By default the compile time option, CONFIG_MX50_ENABLE_USDHC_SDR,
+is commented out in the include/configs/mx50_<board>.h file to
+select eSDHC with DDR mode enabled. Uncomment the define to select
+uSDHC with only SDR mode enabled.
+
+Also increased max frequency supported by ESDHC to 52 MHz instead
+of 50 MHz.
+
+Signed-off-by: Anish Trivedi <anish@freescale.com>
+---
+ board/freescale/mx50_rdp/mx50_rdp.c |   15 ++++++++++++++
+ drivers/mmc/imx_esdhc.c             |   36 +++++++++++++++++++++++++++++-----
+ include/asm-arm/arch-mx50/mx50.h    |    1 +
+ include/configs/mx50_arm2.h         |   10 ++++++++-
+ include/configs/mx50_arm2_ddr2.h    |   10 ++++++++-
+ include/configs/mx50_arm2_lpddr2.h  |   10 ++++++++-
+ include/configs/mx50_rd3.h          |   10 ++++++++-
+ include/configs/mx50_rdp.h          |   10 ++++++++-
+ include/configs/mx50_rdp_android.h  |   10 ++++++++-
+ include/fsl_esdhc.h                 |    4 ++-
+ 10 files changed, 103 insertions(+), 13 deletions(-)
+
+diff --git a/board/freescale/mx50_rdp/mx50_rdp.c b/board/freescale/mx50_rdp/mx50_rdp.c
+index 5bac73a..133ef6a 100644
+--- a/board/freescale/mx50_rdp/mx50_rdp.c
++++ b/board/freescale/mx50_rdp/mx50_rdp.c
+@@ -800,6 +800,21 @@ int detect_mmc_emmc_ddr_port(struct fsl_esdhc_cfg *cfg)
+ }
+ #endif
+ 
++/* The following function enables uSDHC instead of eSDHC
++ * on SD3 port for SDR mode since eSDHC timing on MX50
++ * is borderline for SDR mode. DDR mode will be disabled when this
++ * define is enabled since the uSDHC timing on MX50 is borderline
++ * for DDR mode. */
++#ifdef CONFIG_MX50_ENABLE_USDHC_SDR
++void enable_usdhc()
++{
++	/* Bring DIGCTL block out of reset and ungate clock */
++	writel(0xC0000000, DIGCTL_BASE_ADDR + 0x8);
++	/* Set bit 0 to select uSDHC */
++	writel(1, DIGCTL_BASE_ADDR + 0x4);
++}
++#endif
++
+ int esdhc_gpio_init(bd_t *bis)
+ {
+ 	s32 status = 0;
+diff --git a/drivers/mmc/imx_esdhc.c b/drivers/mmc/imx_esdhc.c
+index ced336a..f31176f 100644
+--- a/drivers/mmc/imx_esdhc.c
++++ b/drivers/mmc/imx_esdhc.c
+@@ -66,12 +66,15 @@ struct fsl_esdhc {
+ 	uint	autoc12err;
+ 	uint	hostcapblt;
+ 	uint	wml;
+-	char	reserved1[8];
++	uint	mixctrl;
++	char	reserved1[4];
+ 	uint	fevt;
+ 	char	reserved2[12];
+ 	uint dllctrl;
+ 	uint dllstatus;
+-	char	reserved3[148];
++	char	reserved3[88];
++	uint vendorspec;
++	char	reserved4[56];
+ 	uint	hostver;
+ };
+ 
+@@ -206,17 +209,24 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+ 
+ 	/* Send the command */
+ 	writel(cmd->cmdarg, &regs->cmdarg);
++	/* for uSDHC, write to mixer control register */
++	writel(xfertyp, &regs->mixctrl);
+ 	writel(xfertyp, &regs->xfertyp);
+ 
+ 	/* Mask all irqs */
+ 	writel(0, &regs->irqsigen);
+ 
+ 	/* Wait for the command to complete */
+-	while (!(readl(&regs->irqstat) & IRQSTAT_CC));
++	while (!(readl(&regs->irqstat) & (IRQSTAT_CC | IRQSTAT_CTOE)))
++		;
+ 
+ 	irqstat = readl(&regs->irqstat);
+ 	writel(irqstat, &regs->irqstat);
+ 
++	/* Reset CMD portion on error */
++	if (irqstat & (CMD_ERR | IRQSTAT_CTOE))
++		writel(readl(&regs->sysctl) | SYSCTL_RSTC, &regs->sysctl);
++
+ 	if (irqstat & CMD_ERR)
+ 		return COMM_ERR;
+ 
+@@ -281,9 +291,12 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+ 		while (!(readl(&regs->irqstat) & IRQSTAT_TC)) ;
+ 	}
+ 
+-	if (readl(&regs->irqstat) & 0xFFFF0000)
++	/* Reset CMD and DATA portions of the controller on error */
++	if (readl(&regs->irqstat) & 0xFFFF0000) {
++		writel(readl(&regs->sysctl) | SYSCTL_RSTC | SYSCTL_RSTD,
++			&regs->sysctl);
+ 		return COMM_ERR;
+-
++	}
+ 	writel(-1, &regs->irqstat);
+ 
+ 	return 0;
+@@ -479,6 +492,11 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
+ 	mmc->set_ios = esdhc_set_ios;
+ 	mmc->init = esdhc_init;
+ 
++/* Enable uSDHC if the config is defined (only for i.MX50 in SDR mode) */
++#ifdef CONFIG_MX50_ENABLE_USDHC_SDR
++	enable_usdhc();
++#endif
++
+ 	caps = readl(&regs->hostcapblt);
+ 	if (caps & ESDHC_HOSTCAPBLT_VS30)
+ 		mmc->voltages |= MMC_VDD_29_30 | MMC_VDD_30_31;
+@@ -490,6 +508,10 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
+ 	if (caps & ESDHC_HOSTCAPBLT_HSS)
+ 		mmc->host_caps |= MMC_MODE_HS_52MHz | MMC_MODE_HS;
+ 
++/* Do not advertise DDR capability for uSDHC on MX50 since
++ *  it is to be used in SDR mode only. Use eSDHC for DDR mode.
++ */
++#ifndef CONFIG_MX50_ENABLE_USDHC_SDR
+ 	if (((readl(&regs->hostver) & ESDHC_HOSTVER_VVN_MASK)
+ 		>> ESDHC_HOSTVER_VVN_SHIFT) >= ESDHC_HOSTVER_DDR_SUPPORT)
+ 		mmc->host_caps |= EMMC_MODE_4BIT_DDR;
+@@ -499,8 +521,10 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
+ 		mmc->host_caps |= EMMC_MODE_4BIT_DDR;
+ #endif
+ 
++#endif /* #ifndef CONFIG_MX50_ENABLE_USDHC_SDR */
++
+ 	mmc->f_min = 400000;
+-	mmc->f_max = MIN(mxc_get_clock(MXC_ESDHC_CLK), 50000000);
++	mmc->f_max = MIN(mxc_get_clock(MXC_ESDHC_CLK), 52000000);
+ 
+ 	mmc_register(mmc);
+ 
+diff --git a/include/asm-arm/arch-mx50/mx50.h b/include/asm-arm/arch-mx50/mx50.h
+index 9c905e5..c004951 100644
+--- a/include/asm-arm/arch-mx50/mx50.h
++++ b/include/asm-arm/arch-mx50/mx50.h
+@@ -44,6 +44,7 @@
+ #define CORTEX_DBG_BASE_ADDR	(DEBUG_BASE_ADDR + 0x00008000)
+ #define ABPHDMA_BASE_ADDR	(DEBUG_BASE_ADDR + 0x01000000)
+ #define OCOTP_CTRL_BASE_ADDR	(DEBUG_BASE_ADDR + 0x01002000)
++#define DIGCTL_BASE_ADDR	(DEBUG_BASE_ADDR + 0x01004000)
+ #define GPMI_BASE_ADDR	(DEBUG_BASE_ADDR + 0x01006000)
+ #define BCH_BASE_ADDR		(DEBUG_BASE_ADDR + 0x01008000)
+ #define EPDC_BASE_ADDR		(DEBUG_BASE_ADDR + 0x01010000)
+diff --git a/include/configs/mx50_arm2.h b/include/configs/mx50_arm2.h
+index d6a56e0..d0266cc 100644
+--- a/include/configs/mx50_arm2.h
++++ b/include/configs/mx50_arm2.h
+@@ -251,7 +251,15 @@
+ 	#define CONFIG_EMMC_DDR_MODE
+ 
+ 	/* Indicate to esdhc driver which ports support 8-bit data */
+-	#define CONFIG_MMC_8BIT_PORTS		0x6   /* ports 1 and 2 */
++	#define CONFIG_MMC_8BIT_PORTS		0x6   /* SD2 and SD3 */
++
++	/* Uncomment the following define to enable uSDHC instead
++	 * of eSDHC on SD3 port for SDR mode since eSDHC timing on MX50
++	 * is borderline for SDR mode. DDR mode will be disabled when this
++	 * define is enabled since the uSDHC timing on MX50 is borderline
++	 * for DDR mode. */
++
++	/*#define CONFIG_MX50_ENABLE_USDHC_SDR	1*/
+ #endif
+ 
+ /*
+diff --git a/include/configs/mx50_arm2_ddr2.h b/include/configs/mx50_arm2_ddr2.h
+index e2eac01..c5e8bce 100644
+--- a/include/configs/mx50_arm2_ddr2.h
++++ b/include/configs/mx50_arm2_ddr2.h
+@@ -242,7 +242,15 @@
+ 	#define CONFIG_EMMC_DDR_MODE
+ 
+ 	/* Indicate to esdhc driver which ports support 8-bit data */
+-	#define CONFIG_MMC_8BIT_PORTS		0x6   /* ports 1 & 2 */
++	#define CONFIG_MMC_8BIT_PORTS		0x6   /* SD2 and SD3 */
++
++	/* Uncomment the following define to enable uSDHC instead
++	 * of eSDHC on SD3 port for SDR mode since eSDHC timing on MX50
++	 * is borderline for SDR mode. DDR mode will be disabled when this
++	 * define is enabled since the uSDHC timing on MX50 is borderline
++	 * for DDR mode. */
++
++	/*#define CONFIG_MX50_ENABLE_USDHC_SDR	1*/
+ 
+ #endif
+ 
+diff --git a/include/configs/mx50_arm2_lpddr2.h b/include/configs/mx50_arm2_lpddr2.h
+index d7e3aea..d1751df 100644
+--- a/include/configs/mx50_arm2_lpddr2.h
++++ b/include/configs/mx50_arm2_lpddr2.h
+@@ -243,7 +243,15 @@
+ 	#define CONFIG_EMMC_DDR_MODE
+ 
+ 	/* Indicate to esdhc driver which ports support 8-bit data */
+-	#define CONFIG_MMC_8BIT_PORTS		0x6   /* ports 1 and 2 */
++	#define CONFIG_MMC_8BIT_PORTS		0x6   /* SD2 and SD3 */
++
++	/* Uncomment the following define to enable uSDHC instead
++	 * of eSDHC on SD3 port for SDR mode since eSDHC timing on MX50
++	 * is borderline for SDR mode. DDR mode will be disabled when this
++	 * define is enabled since the uSDHC timing on MX50 is borderline
++	 * for DDR mode. */
++
++	/*#define CONFIG_MX50_ENABLE_USDHC_SDR	1*/
+ #endif
+ 
+ /*
+diff --git a/include/configs/mx50_rd3.h b/include/configs/mx50_rd3.h
+index 98d299d..58229a1 100644
+--- a/include/configs/mx50_rd3.h
++++ b/include/configs/mx50_rd3.h
+@@ -220,7 +220,15 @@
+ 	#define CONFIG_EMMC_DDR_MODE
+ 
+ 	/* Indicate to esdhc driver which ports support 8-bit data */
+-	#define CONFIG_MMC_8BIT_PORTS		0x6   /* ports 1 and 2 */
++	#define CONFIG_MMC_8BIT_PORTS		0x6   /* SD2 and SD3 */
++
++	/* Uncomment the following define to enable uSDHC instead
++	 * of eSDHC on SD3 port for SDR mode since eSDHC timing on MX50
++	 * is borderline for SDR mode. DDR mode will be disabled when this
++	 * define is enabled since the uSDHC timing on MX50 is borderline
++	 * for DDR mode. */
++
++	/*#define CONFIG_MX50_ENABLE_USDHC_SDR	1*/
+ #endif
+ 
+ /*
+diff --git a/include/configs/mx50_rdp.h b/include/configs/mx50_rdp.h
+index 8fb1189..fff16a9 100644
+--- a/include/configs/mx50_rdp.h
++++ b/include/configs/mx50_rdp.h
+@@ -220,7 +220,15 @@
+ 	#define CONFIG_EMMC_DDR_MODE
+ 
+ 	/* Indicate to esdhc driver which ports support 8-bit data */
+-	#define CONFIG_MMC_8BIT_PORTS		0x6   /* ports 1 and 2 */
++	#define CONFIG_MMC_8BIT_PORTS		0x6   /* SD2 and SD3 */
++
++	/* Uncomment the following define to enable uSDHC instead
++	 * of eSDHC on SD3 port for SDR mode since eSDHC timing on MX50
++	 * is borderline for SDR mode. DDR mode will be disabled when this
++	 * define is enabled since the uSDHC timing on MX50 is borderline
++	 * for DDR mode. */
++
++	/*#define CONFIG_MX50_ENABLE_USDHC_SDR	1*/
+ #endif
+ 
+ /*
+diff --git a/include/configs/mx50_rdp_android.h b/include/configs/mx50_rdp_android.h
+index 0b6eb8d..f3675dd 100644
+--- a/include/configs/mx50_rdp_android.h
++++ b/include/configs/mx50_rdp_android.h
+@@ -220,7 +220,15 @@
+ 	#define CONFIG_EMMC_DDR_MODE
+ 
+ 	/* Indicate to esdhc driver which ports support 8-bit data */
+-	#define CONFIG_MMC_8BIT_PORTS		0x2   /* ports 1 and 2 */
++	#define CONFIG_MMC_8BIT_PORTS		0x6   /* SD2 and SD3 */
++
++	/* Uncomment the following define to enable uSDHC instead
++	 * of eSDHC on SD3 port for SDR mode since eSDHC timing on MX50
++	 * is borderline for SDR mode. DDR mode will be disabled when this
++	 * define is enabled since the uSDHC timing on MX50 is borderline
++	 * for DDR mode. */
++
++	/*#define CONFIG_MX50_ENABLE_USDHC_SDR	1*/
+ #endif
+ 
+ /*
+diff --git a/include/fsl_esdhc.h b/include/fsl_esdhc.h
+index e32d7d2..1787407 100644
+--- a/include/fsl_esdhc.h
++++ b/include/fsl_esdhc.h
+@@ -2,7 +2,7 @@
+  * FSL SD/MMC Defines
+  *-------------------------------------------------------------------
+  *
+- * Copyright (C) 2007-2008, 2010 Freescale Semiconductor, Inc.
++ * Copyright (C) 2007-2008, 2010-2011 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -34,6 +34,8 @@
+ #define SYSCTL_TIMEOUT_MASK	0x000f0000
+ #define SYSCTL_CLOCK_MASK	0x0000fff0
+ #define SYSCTL_RSTA			0x01000000
++#define SYSCTL_RSTC			0x02000000
++#define SYSCTL_RSTD			0x04000000
+ #define SYSCTL_SDCLKEN		0x00000008
+ #define SYSCTL_PEREN		0x00000004
+ #define SYSCTL_HCKEN		0x00000002
+-- 
+1.7.7.4
+

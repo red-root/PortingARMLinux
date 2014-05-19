@@ -1,0 +1,87 @@
+From 9b6dfc4b6f0d30b7284511a962e64e83c426b854 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Fri, 18 May 2012 19:57:41 +0800
+Subject: [PATCH 532/678] ENGR00210014 i.mx6 : i.mx6sl : add PAD_CTL_LVE
+ support for pad configuration
+
+Original pad configuration don't provide enough bitfield width to hold
+all necessary information. For MX6Sololite, a "PAD_CTL_LVE" is needed
+to be configed for many pins.
+iomux_v3_cfg_t is re-orgnized to address this issue. PAD_CTRL is
+extended by 1 bit to hold the "PAD_CTL_LVE". Which is mapped to proper
+bit location when configure the PAD config register.
+
+Signed-off-by: Mahesh Mahadevan <r9aadq@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/iomux-v3.c     |   10 ++++++++--
+ include/asm-arm/arch-mx6/iomux-v3.h |   11 ++++++-----
+ 2 files changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/iomux-v3.c b/cpu/arm_cortexa8/mx6/iomux-v3.c
+index fbd738f..a147c4e 100644
+--- a/cpu/arm_cortexa8/mx6/iomux-v3.c
++++ b/cpu/arm_cortexa8/mx6/iomux-v3.c
+@@ -3,7 +3,7 @@
+  * Copyright (C) 2009 by Jan Weitzel Phytec Messtechnik GmbH,
+  *                       <armlinux@phytec.de>
+  *
+- * Copyright (C) 2004-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2004-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -48,8 +48,14 @@ int mxc_iomux_v3_setup_pad(iomux_v3_cfg_t pad)
+ 	if (sel_input_ofs)
+ 		__raw_writel(sel_input, base + sel_input_ofs);
+ 
+-	if (!(pad_ctrl & NO_PAD_CTRL) && pad_ctrl_ofs)
++	if (!(pad_ctrl & NO_PAD_CTRL) && pad_ctrl_ofs) {
++		if (pad_ctrl & PAD_CTL_LVE) {
++			/* Set the bit for LVE */
++			pad_ctrl |= (1 << PAD_CTL_LVE_OFFSET);
++			pad_ctrl &= ~(1 << PAD_CTL_LVE);
++		}
+ 		__raw_writel(pad_ctrl, base + pad_ctrl_ofs);
++	}
+ 
+ 	return 0;
+ }
+diff --git a/include/asm-arm/arch-mx6/iomux-v3.h b/include/asm-arm/arch-mx6/iomux-v3.h
+index 49487fb..50612ee 100644
+--- a/include/asm-arm/arch-mx6/iomux-v3.h
++++ b/include/asm-arm/arch-mx6/iomux-v3.h
+@@ -50,9 +50,8 @@
+  * PAD_CTRL_OFS:	   12..23 (12)
+  * SEL_INPUT_OFS:	   24..35 (12)
+  * MUX_MODE + SION:	   36..40  (5)
+- * PAD_CTRL + NO_PAD_CTRL: 41..58 (18)
+- * SEL_INP:		   59..62  (4)
+- * reserved:		     63    (1)
++ * PAD_CTRL + NO_PAD_CTRL: 41..59 (19)
++ * SEL_INP:		   60..63  (4)
+ */
+ 
+ typedef u64 iomux_v3_cfg_t;
+@@ -69,8 +68,8 @@ typedef u64 iomux_v3_cfg_t;
+ #define MUX_MODE_SHIFT		36
+ #define MUX_MODE_MASK		((iomux_v3_cfg_t)0x1f << MUX_MODE_SHIFT)
+ #define MUX_PAD_CTRL_SHIFT	41
+-#define MUX_PAD_CTRL_MASK	((iomux_v3_cfg_t)0x3ffff << MUX_PAD_CTRL_SHIFT)
+-#define MUX_SEL_INPUT_SHIFT	59
++#define MUX_PAD_CTRL_MASK	((iomux_v3_cfg_t)0x7ffff << MUX_PAD_CTRL_SHIFT)
++#define MUX_SEL_INPUT_SHIFT	60
+ #define MUX_SEL_INPUT_MASK	((iomux_v3_cfg_t)0xf << MUX_SEL_INPUT_SHIFT)
+ 
+ #define MUX_PAD_CTRL(x)		((iomux_v3_cfg_t)(x) << MUX_PAD_CTRL_SHIFT)
+@@ -88,6 +87,8 @@ typedef u64 iomux_v3_cfg_t;
+ /*
+  * Use to set PAD control
+  */
++#define PAD_CTL_LVE_OFFSET	(1 << 22)
++#define PAD_CTL_LVE		(1 << 18)
+ #define NO_PAD_CTRL		(1 << 17)
+ #define PAD_CTL_HYS		(1 << 16)
+ 
+-- 
+1.7.7.4
+

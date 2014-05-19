@@ -1,0 +1,41 @@
+From 306f1510e63b6d3dd793dbef0b05cda6c92078e9 Mon Sep 17 00:00:00 2001
+From: Liu Ying <Ying.Liu@freescale.com>
+Date: Fri, 14 Sep 2012 13:26:04 +0800
+Subject: [PATCH 607/678] ENGR00223797-3 IPUv3:Wait for sw reset finish
+
+This patch checks self-clear sw_ipu_rst bit in
+SCR register of SRC controller to be cleared
+after setting it to reset IPUv3. This makes
+sure that IPUv3 finishes  sofware resetting.
+
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+ drivers/video/ipu_common.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/video/ipu_common.c b/drivers/video/ipu_common.c
+index 79d87e3..2a1d960 100644
+--- a/drivers/video/ipu_common.c
++++ b/drivers/video/ipu_common.c
+@@ -6,7 +6,7 @@
+  *
+  * Linux IPU driver
+  *
+- * (C) Copyright 2005-2011 Freescale Semiconductor, Inc.
++ * (C) Copyright 2005-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -363,6 +363,9 @@ void ipu_reset(void)
+ 	value = __raw_readl(reg);
+ 	value = value | SW_IPU_RST;
+ 	__raw_writel(value, reg);
++
++	while (__raw_readl(reg) & SW_IPU_RST)
++		;
+ }
+ 
+ /*
+-- 
+1.7.7.4
+

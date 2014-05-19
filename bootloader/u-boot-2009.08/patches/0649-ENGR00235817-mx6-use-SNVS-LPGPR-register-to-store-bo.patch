@@ -1,0 +1,80 @@
+From 07663772b10318e3d7f0aa3e410f0ff840780806 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Tue, 11 Dec 2012 15:23:46 +0800
+Subject: [PATCH 649/678] ENGR00235817 mx6: use SNVS LPGPR register to store
+ boot mode value.
+
+After using POR reset, the content in SRC will be reset.
+See RM: 63.5.1.2.3 IPP_RESET_B(POR)
+
+Because POR reset will reset most of register in IC, so use
+SNVS_LP General Purpose Register (LPGPR) to store the boot mode value.
+
+Below copy from SNVS_BlockGuide.pdf:
+The SNVS_LP General Purpose Register provides a 32 bit read write
+register, which can be used by any application for retaining 32 bit
+data during a power-down mode
+
+This Patch will use [7,8] bits of this register.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/generic.c |    9 +++++----
+ include/asm-arm/arch-mx6/mx6.h |    2 ++
+ 2 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 257c930..bd47130 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -1146,14 +1146,14 @@ int check_and_clean_recovery_flag(void)
+ {
+ 	int flag_set = 0;
+ 	u32 reg;
+-	reg = readl(SRC_BASE_ADDR + SRC_GPR10);
++	reg = readl(SNVS_BASE_ADDR + SNVS_LPGPR);
+ 
+ 	flag_set = !!(reg & ANDROID_RECOVERY_BOOT);
+ 
+ 	/* clean it in case looping infinite here.... */
+ 	if (flag_set) {
+ 		reg &= ~ANDROID_RECOVERY_BOOT;
+-		writel(reg, SRC_BASE_ADDR + SRC_GPR10);
++		writel(reg, SNVS_BASE_ADDR + SNVS_LPGPR);
+ 	}
+ 
+ 	return flag_set;
+@@ -1168,14 +1168,15 @@ int fastboot_check_and_clean_flag(void)
+ {
+ 	int flag_set = 0;
+ 	u32 reg;
+-	reg = readl(SRC_BASE_ADDR + SRC_GPR10);
++
++	reg = readl(SNVS_BASE_ADDR + SNVS_LPGPR);
+ 
+ 	flag_set = !!(reg & ANDROID_FASTBOOT_BOOT);
+ 
+ 	/* clean it in case looping infinite here.... */
+ 	if (flag_set) {
+ 		reg &= ~ANDROID_FASTBOOT_BOOT;
+-		writel(reg, SRC_BASE_ADDR + SRC_GPR10);
++		writel(reg, SNVS_BASE_ADDR + SNVS_LPGPR);
+ 	}
+ 
+ 	return flag_set;
+diff --git a/include/asm-arm/arch-mx6/mx6.h b/include/asm-arm/arch-mx6/mx6.h
+index efb90c2..45381e2 100644
+--- a/include/asm-arm/arch-mx6/mx6.h
++++ b/include/asm-arm/arch-mx6/mx6.h
+@@ -732,6 +732,8 @@
+ #define SRC_GPR9		0x40
+ #define SRC_GPR10		0x44
+ 
++#define SNVS_LPGPR              0x68
++
+ /* Get Board ID */
+ #define board_is_rev(system_rev, rev) (((system_rev & 0x0F00) == rev) ? 1 : 0)
+ #define chip_is_type(system_rev, rev) \
+-- 
+1.7.7.4
+

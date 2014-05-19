@@ -1,0 +1,244 @@
+From 07a5dceee3891fd56d82f98d9b3547f16d36e2f6 Mon Sep 17 00:00:00 2001
+From: LiGang <b41990@freescale.com>
+Date: Tue, 30 Oct 2012 13:47:15 +0800
+Subject: [PATCH 623/678] ENGR00230967 Enable recovery mode by keys when boot
+
+1. Add matrix key support
+2. Add recovery mode support by pressing power key and  volume down key
+    when boot
+    SW10 on MX6SL-EVK board configed as volume down key.
+    SW1 on MX6SL-EVK board configed as power key
+
+Signed-off-by: LiGang <b41990@freescale.com>
+---
+ board/freescale/common/recovery.c     |   55 ++++++++++++++++++++++-----------
+ board/freescale/mx6sl_evk/mx6sl_evk.c |   31 ++++++++++++++++++
+ include/asm-arm/arch-mx6/mx6sl_pins.h |   13 +++++---
+ include/configs/mx6sl_evk_android.h   |   16 +++++++++
+ 4 files changed, 92 insertions(+), 23 deletions(-)
+
+diff --git a/board/freescale/common/recovery.c b/board/freescale/common/recovery.c
+index df3f367..5704e09 100644
+--- a/board/freescale/common/recovery.c
++++ b/board/freescale/common/recovery.c
+@@ -25,6 +25,7 @@
+ #include <mxc_keyb.h>
+ #endif
+ 
++extern int check_powerkey_pressed(void);
+ extern int check_recovery_cmd_file(void);
+ extern enum boot_device get_boot_device(void);
+ 
+@@ -41,31 +42,49 @@ inline int test_key(int value, struct kpp_key_info *ki)
+ 
+ int check_key_pressing(void)
+ {
+-	struct kpp_key_info *key_info;
++	struct kpp_key_info *key_info = NULL;
+ 	int state = 0, keys, i;
+ 
++	int ret = 0;
++
+ 	mxc_kpp_init();
++	/* due to glitch suppression circuit,
++	   wait sometime to let all keys scanned. */
++	udelay(1000);
++	keys = mxc_kpp_getc(&key_info);
+ 
++	if (!check_powerkey_pressed())
++		keys = 0;
++
++#ifdef CONFIG_MX6SL_EVK
++	/* For mx6sl-evk, hold power+vol_down when boot
++	   will enter recovery mode */
++	printf("Detecting VOL_DOWN+POWER key for recovery(%d:%d) ...\n",
++		keys, keys ? key_info->val : 0);
++	if (keys > 0) {
++		for (i = 0; i < keys; i++) {
++			if (test_key(CONFIG_VOL_DOWN_KEY, &key_info[i])) {
++				ret = 1;
++				break;
++			}
++		}
++	}
++#else
+ 	puts("Detecting HOME+POWER key for recovery ...\n");
+-
+-	/* Check for home + power */
+-	keys = mxc_kpp_getc(&key_info);
+-	if (keys < 2)
+-		return 0;
+-
+-	for (i = 0; i < keys; i++) {
+-		if (test_key(CONFIG_POWER_KEY, &key_info[i]))
+-			state |= PRESSED_HOME;
+-		else if (test_key(CONFIG_HOME_KEY, &key_info[i]))
+-			state |= PRESSED_POWER;
++	if (keys > 1) {
++		for (i = 0; i < keys; i++) {
++			if (test_key(CONFIG_POWER_KEY, &key_info[i]))
++				state |= PRESSED_HOME;
++			else if (test_key(CONFIG_HOME_KEY, &key_info[i]))
++				state |= PRESSED_POWER;
++		}
+ 	}
+-
+-	free(key_info);
+-
+ 	if ((state & RECOVERY_KEY_MASK) == RECOVERY_KEY_MASK)
+-		return 1;
+-
+-	return 0;
++		ret = 1;
++#endif
++	if (key_info)
++		free(key_info);
++	return ret;
+ }
+ #else
+ /* If not using mxc keypad, currently we will detect power key on board */
+diff --git a/board/freescale/mx6sl_evk/mx6sl_evk.c b/board/freescale/mx6sl_evk/mx6sl_evk.c
+index 45d5dd2..3570601 100644
+--- a/board/freescale/mx6sl_evk/mx6sl_evk.c
++++ b/board/freescale/mx6sl_evk/mx6sl_evk.c
+@@ -69,6 +69,8 @@ static enum boot_device boot_dev;
+ 
+ #define USB_OTG_PWR IMX_GPIO_NR(4, 0)
+ #define USB_H1_PWR IMX_GPIO_NR(4, 2)
++#define GPIO_POWER_KEY IMX_GPIO_NR(3, 18)
++
+ 
+ static inline void setup_boot_device(void)
+ {
+@@ -993,6 +995,35 @@ static int setup_pmic_voltages(void)
+ }
+ #endif
+ 
++#ifdef CONFIG_MXC_KPD
++int setup_mxc_kpd(void)
++{
++	mxc_iomux_v3_setup_pad(MX6SL_PAD_KEY_COL0__KPP_COL_0);
++	mxc_iomux_v3_setup_pad(MX6SL_PAD_KEY_COL1__KPP_COL_1);
++	mxc_iomux_v3_setup_pad(MX6SL_PAD_KEY_COL2__KPP_COL_2);
++	mxc_iomux_v3_setup_pad(MX6SL_PAD_KEY_COL3__KPP_COL_3);
++
++	mxc_iomux_v3_setup_pad(MX6SL_PAD_KEY_ROW0__KPP_ROW_0);
++	mxc_iomux_v3_setup_pad(MX6SL_PAD_KEY_ROW1__KPP_ROW_1);
++	mxc_iomux_v3_setup_pad(MX6SL_PAD_KEY_ROW2__KPP_ROW_2);
++	mxc_iomux_v3_setup_pad(MX6SL_PAD_KEY_ROW3__KPP_ROW_3);
++
++	return 0;
++}
++
++int check_powerkey_pressed(void)
++{
++	mxc_iomux_v3_setup_pad(MX6SL_PAD_WDOG_B__GPIO_3_18);
++	gpio_direction_input(GPIO_POWER_KEY);
++	udelay(5);
++	if (gpio_get_value(GPIO_POWER_KEY) == 0)
++		return 1;
++	return 0;
++}
++
++#endif
++
++
+ int board_init(void)
+ {
+ 	mxc_iomux_v3_init((void *)IOMUXC_BASE_ADDR);
+diff --git a/include/asm-arm/arch-mx6/mx6sl_pins.h b/include/asm-arm/arch-mx6/mx6sl_pins.h
+index fbb966d..fa1fe98 100644
+--- a/include/asm-arm/arch-mx6/mx6sl_pins.h
++++ b/include/asm-arm/arch-mx6/mx6sl_pins.h
+@@ -59,6 +59,9 @@
+ #define MX6SL_ECSPI_PAD_CTRL (PAD_CTL_SRE_FAST | PAD_CTL_SPEED_MED |	\
+ 		PAD_CTL_DSE_40ohm   | PAD_CTL_HYS)
+ 
++#define MX6SL_KEYPAD_CTRL	(PAD_CTL_HYS | PAD_CTL_PKE | PAD_CTL_PUE | \
++				PAD_CTL_PUS_100K_UP | PAD_CTL_DSE_120ohm)
++
+ #define MX6SL_PAD_AUD_MCLK__AUDMUX_AUDIO_CLK_OUT                              \
+ 		IOMUX_PAD(0x02A4, 0x004C, 0, 0x0000, 0, NO_PAD_CTRL)
+ #define MX6SL_PAD_AUD_MCLK__PWM4_PWMO                                         \
+@@ -1696,7 +1699,7 @@
+ 		IOMUX_PAD(0x0490, 0x0188, 7, 0x0000, 0, NO_PAD_CTRL)
+ 
+ #define MX6SL_PAD_KEY_ROW0__KPP_ROW_0                                         \
+-		IOMUX_PAD(0x0494, 0x018C, 0, 0x0754, 0, NO_PAD_CTRL)
++		IOMUX_PAD(0x0494, 0x018C, 0, 0x0754, 0, MX6SL_KEYPAD_CTRL)
+ #define MX6SL_PAD_KEY_ROW0__I2C2_SDA                                          \
+ 		IOMUX_PAD(0x0494, 0x018C, 1 | IOMUX_CONFIG_SION, 0x0728, 2, MX6SL_I2C_PAD_CTRL)
+ #define MX6SL_PAD_KEY_ROW0__LCDIF_DAT_1                                       \
+@@ -1713,7 +1716,7 @@
+ 		IOMUX_PAD(0x0494, 0x018C, 7, 0x0000, 0, NO_PAD_CTRL)
+ 
+ #define MX6SL_PAD_KEY_ROW1__KPP_ROW_1                                         \
+-		IOMUX_PAD(0x0498, 0x0190, 0, 0x0758, 0, NO_PAD_CTRL)
++		IOMUX_PAD(0x0498, 0x0190, 0, 0x0758, 0, MX6SL_KEYPAD_CTRL)
+ #define MX6SL_PAD_KEY_ROW1__ECSPI4_MISO                                       \
+ 		IOMUX_PAD(0x0498, 0x0190, 1, 0x06D4, 2, NO_PAD_CTRL)
+ #define MX6SL_PAD_KEY_ROW1__LCDIF_DAT_3                                       \
+@@ -1730,7 +1733,7 @@
+ 		IOMUX_PAD(0x0498, 0x0190, 7, 0x0000, 0, NO_PAD_CTRL)
+ 
+ #define MX6SL_PAD_KEY_ROW2__KPP_ROW_2                                         \
+-		IOMUX_PAD(0x049C, 0x0194, 0, 0x075C, 0, NO_PAD_CTRL)
++		IOMUX_PAD(0x049C, 0x0194, 0, 0x075C, 0, MX6SL_KEYPAD_CTRL)
+ #define MX6SL_PAD_KEY_ROW2__ECSPI4_SCLK                                       \
+ 		IOMUX_PAD(0x049C, 0x0194, 1, 0x06D0, 2, NO_PAD_CTRL)
+ #define MX6SL_PAD_KEY_ROW2__LCDIF_DAT_5                                       \
+@@ -1747,7 +1750,7 @@
+ 		IOMUX_PAD(0x049C, 0x0194, 7, 0x0000, 0, NO_PAD_CTRL)
+ 
+ #define MX6SL_PAD_KEY_ROW3__KPP_ROW_3                                         \
+-		IOMUX_PAD(0x04A0, 0x0198, 0, 0x0760, 0, NO_PAD_CTRL)
++		IOMUX_PAD(0x04A0, 0x0198, 0, 0x0760, 0, MX6SL_KEYPAD_CTRL)
+ #define MX6SL_PAD_KEY_ROW3__AUDMUX_AUD6_RXC                                   \
+ 		IOMUX_PAD(0x04A0, 0x0198, 1, 0x061C, 1, NO_PAD_CTRL)
+ #define MX6SL_PAD_KEY_ROW3__LCDIF_DAT_7                                       \
+@@ -2949,7 +2952,7 @@
+ #define MX6SL_PAD_WDOG_B__UART5_RI                                            \
+ 		IOMUX_PAD(0x05A8, 0x02A0, 2, 0x0000, 0, MX6SL_UART_PAD_CTRL)
+ #define MX6SL_PAD_WDOG_B__GPIO_3_18                                           \
+-		IOMUX_PAD(0x05A8, 0x02A0, 5, 0x0000, 0, NO_PAD_CTRL)
++		IOMUX_PAD(0x05A8, 0x02A0, 5, 0x0000, 0, MX6SL_KEYPAD_CTRL)
+ #define MX6SL_PAD_WDOG_B__OBSERVE_MUX_OUT_2                                   \
+ 		IOMUX_PAD(0x05A8, 0x02A0, 7, 0x0000, 0, NO_PAD_CTRL)
+ 
+diff --git a/include/configs/mx6sl_evk_android.h b/include/configs/mx6sl_evk_android.h
+index a7f782b..ded9345 100644
+--- a/include/configs/mx6sl_evk_android.h
++++ b/include/configs/mx6sl_evk_android.h
+@@ -23,6 +23,7 @@
+ #define MX6SL_EVK_ANDROID_H
+ 
+ #include <configs/mx6sl_evk.h>
++#include <asm/mxc_key_defs.h>
+ 
+ #define CONFIG_USB_DEVICE
+ #define CONFIG_IMX_UDC		       1
+@@ -48,6 +49,21 @@
+ 
+ #define CONFIG_CMD_BOOTI
+ #define CONFIG_ANDROID_RECOVERY
++
++#define CONFIG_VOL_DOWN_KEY     KEY_4
++
++#define CONFIG_MXC_KPD
++#define CONFIG_MXC_KEYMAPPING \
++	{       \
++		KEY_SELECT, KEY_BACK, KEY_1,     KEY_2, \
++		KEY_3,      KEY_4,    KEY_5,     KEY_MENU, \
++		KEY_6,      KEY_7,    KEY_8,     KEY_9, \
++		KEY_UP,     KEY_LEFT, KEY_RIGHT, KEY_DOWN, \
++	}
++#define CONFIG_MXC_KPD_COLMAX 4
++#define CONFIG_MXC_KPD_ROWMAX 4
++
++
+ /* which mmc bus is your main storage ? */
+ #define CONFIG_ANDROID_MAIN_MMC_BUS 0
+ #define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
+-- 
+1.7.7.4
+

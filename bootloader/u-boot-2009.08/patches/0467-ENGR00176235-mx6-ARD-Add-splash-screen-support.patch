@@ -1,0 +1,75 @@
+From d80db149d9050853b913b20305801abc557af148 Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Tue, 6 Mar 2012 20:57:49 +0800
+Subject: [PATCH 467/678] ENGR00176235 mx6 ARD: Add splash screen support
+
+This patch adds splash screen support for MX6 ARD.
+Changes:
+- Configure GPIO_3 as I2C3_SCL
+- Change MAX7310 I2C address as 0x30
+- Enable LVDS power
+Usage:
+1. To enable splash screen by default, define
+CONFIG_SPLASH_SCREEN in mx6q_sabreauto.h
+2. Config U-boot with followed command:()
+	setenv splashimage '0x30000000'
+	#Set splash position as Center
+	setenv splashpos 'm,m'
+	#Set LVDS via LVDS bridge 0
+	setenv lvds_num 0
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |   12 ++++++------
+ include/configs/mx6q_sabreauto.h                |    2 +-
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index 89886d2..6fa6d9a 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -317,8 +317,8 @@ static void setup_i2c(unsigned int module_base)
+ 
+ 		break;
+ 	case I2C3_BASE_ADDR:
+-		/* GPIO_5 for I2C3_SCL */
+-		mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_5__I2C3_SCL);
++		/* GPIO_3 for I2C3_SCL */
++		mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_3__I2C3_SCL);
+ 
+ 		/* GPIO_16 for I2C3_SDA */
+ 		mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_16__I2C3_SDA);
+@@ -340,13 +340,13 @@ void setup_lvds_poweron(void)
+ 	uchar value;
+ 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+ 
+-	i2c_read(0x1f, 3, 1, &value, 1);
++	i2c_read(0x30, 3, 1, &value, 1);
+ 	value &= ~0x2;
+-	i2c_write(0x1f, 3, 1, &value, 1);
++	i2c_write(0x30, 3, 1, &value, 1);
+ 
+-	i2c_read(0x1f, 1, 1, &value, 1);
++	i2c_read(0x30, 1, 1, &value, 1);
+ 	value |= 0x2;
+-	i2c_write(0x1f, 1, 1, &value, 1);
++	i2c_write(0x30, 1, 1, &value, 1);
+ }
+ #endif
+ #endif
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index 1c0590e..e304b5a 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -191,7 +191,7 @@
+ 	#define CONFIG_I2C_MXC          1
+ 	#define CONFIG_SYS_I2C_PORT             I2C3_BASE_ADDR
+ 	#define CONFIG_SYS_I2C_SPEED            100000
+-	#define CONFIG_SYS_I2C_SLAVE            0x1f
++	#define CONFIG_SYS_I2C_SLAVE            0x30
+ #endif
+ 
+ /*
+-- 
+1.7.7.4
+

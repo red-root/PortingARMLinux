@@ -1,0 +1,80 @@
+From 4379503e39f059fed62c1f5041e9b99ecb7dd354 Mon Sep 17 00:00:00 2001
+From: Anson Huang <b20788@freescale.com>
+Date: Mon, 22 Aug 2011 15:32:10 +0800
+Subject: [PATCH 333/678] ENGR00155156 [MX6]Clean up debug info in uboot
+
+1. ENET don't need to enable ENET pll clock;
+2. Enable cpu debug clock in case of using JTAG;
+3. Clean up some debug info during bring up.
+
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/lowlevel_init.S  |    2 +-
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |    1 -
+ cpu/arm_cortexa8/mx6/generic.c                  |   23 -----------------------
+ 3 files changed, 1 insertions(+), 25 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/lowlevel_init.S b/board/freescale/mx6q_sabreauto/lowlevel_init.S
+index a12a61a..fed880a 100644
+--- a/board/freescale/mx6q_sabreauto/lowlevel_init.S
++++ b/board/freescale/mx6q_sabreauto/lowlevel_init.S
+@@ -71,7 +71,7 @@
+ 
+ 	/* Restore the default values in the Gate registers */
+ 	ldr r0, CCM_BASE_ADDR_W
+-	ldr r1, =0x3F
++	ldr r1, =0xC0003F
+ 	str r1, [r0, #CLKCTL_CCGR0]
+ 	ldr r1, =0x30FC00
+ 	str r1, [r0, #CLKCTL_CCGR1]
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index 60820a9..95e2fbc 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -341,7 +341,6 @@ int board_init(void)
+ 
+ int board_late_init(void)
+ {
+-	printf("board_late_init\n");
+ 	return 0;
+ }
+ 
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index c2540e1..fb0ef94 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -741,31 +741,8 @@ int cpu_eth_init(bd_t *bis)
+ {
+ 	int rc = -ENODEV;
+ #if defined(CONFIG_MXC_FEC)
+-	printf("cpu_eth_init\n");
+ 	rc = mxc_fec_initialize(bis);
+ 
+-	/* Set up ENET PLL for 50 MHz */
+-
+-	/* Clear power down bit */
+-	REG_CLR(ANATOP_BASE_ADDR, HW_ANADIG_PLL_ENET,
+-		BM_ANADIG_PLL_ENET_POWERDOWN);
+-	/* Set ENET clock to 50M, Anson need to check */
+-	REG_SET(ANATOP_BASE_ADDR, HW_ANADIG_PLL_ENET,
+-		BF_ANADIG_PLL_ENET_DIV_SELECT(0x11));
+-	/* Enable ENET PLL */
+-	REG_SET(ANATOP_BASE_ADDR, HW_ANADIG_PLL_ENET,
+-		BM_ANADIG_PLL_ENET_ENABLE);
+-	printf("before while\n");
+-	/* Wait for PLL lock */
+-	while ((REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_PLL_ENET) &
+-		BM_ANADIG_PLL_ENET_LOCK) == 0)
+-		udelay(100);
+-	/* Clear bypass bit */
+-	REG_CLR(ANATOP_BASE_ADDR, HW_ANADIG_PLL_ENET,
+-		BM_ANADIG_PLL_ENET_BYPASS);
+-
+-	printf("before enent_board_init\n");
+-
+ 	/* Board level init */
+ 	enet_board_init();
+ 
+-- 
+1.7.7.4
+

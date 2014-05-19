@@ -1,0 +1,46 @@
+From 19b798d05f50892eaddaf338b899ff6842be9c86 Mon Sep 17 00:00:00 2001
+From: Wayne Zou <b36644@freescale.com>
+Date: Mon, 26 Sep 2011 16:55:48 +0800
+Subject: [PATCH 359/678] ENGR00158184 mx53 smd:  use highest value for
+ unknown board revision value
+
+mx53 smd:  use highest value for unknown board revision value
+
+Signed-off-by: Wayne Zou <b36644@freescale.com>
+---
+ board/freescale/mx53_smd/mx53_smd.c |    5 ++++-
+ include/asm-arm/arch-mx53/mx53.h    |    1 +
+ 2 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/board/freescale/mx53_smd/mx53_smd.c b/board/freescale/mx53_smd/mx53_smd.c
+index af69a2d..1266cfa 100644
+--- a/board/freescale/mx53_smd/mx53_smd.c
++++ b/board/freescale/mx53_smd/mx53_smd.c
+@@ -210,8 +210,11 @@ static inline void setup_soc_rev(void)
+ 		system_rev |= BOARD_REV_5;
+ 		break;
+ 	case 0x01:
+-	default:
++	case 0x00:
+ 		system_rev |= BOARD_REV_4;
++		break;
++	default:
++		system_rev |= BOARD_REV_UNKNOWN;
+ 	}
+ }
+ 
+diff --git a/include/asm-arm/arch-mx53/mx53.h b/include/asm-arm/arch-mx53/mx53.h
+index a0b1a78..f186601 100644
+--- a/include/asm-arm/arch-mx53/mx53.h
++++ b/include/asm-arm/arch-mx53/mx53.h
+@@ -355,6 +355,7 @@
+ #define BOARD_REV_3             0x200
+ #define BOARD_REV_4             0x300
+ #define BOARD_REV_5             0x400
++#define BOARD_REV_UNKNOWN       0xf00
+ 
+ #define PLATFORM_ICGC           0x14
+ 
+-- 
+1.7.7.4
+

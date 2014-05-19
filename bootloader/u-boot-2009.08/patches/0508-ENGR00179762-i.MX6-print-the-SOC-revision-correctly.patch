@@ -1,0 +1,62 @@
+From 7b0cbbd4d074a2a25ff5dbdac554260c06088bc0 Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Tue, 17 Apr 2012 11:06:52 +0800
+Subject: [PATCH 508/678] ENGR00179762: i.MX6: print the SOC revision
+ correctly
+
+For example: The soc rev on i.mx6dl rev 1.0 not print correctly:
+CPU:   Freescale i.MX 6 family 0.0V at 792 MHz
+
+This patch help u-boot print out the SOC revision correctly:
+CPU: Freescale i.MX6 family TO1.0 at 792 MHz
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ board/freescale/common/fsl_sys_rev.c |   13 ++++++++++---
+ cpu/arm_cortexa8/mx6/generic.c       |    2 +-
+ 2 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/board/freescale/common/fsl_sys_rev.c b/board/freescale/common/fsl_sys_rev.c
+index 26f9f17..ba4c367 100644
+--- a/board/freescale/common/fsl_sys_rev.c
++++ b/board/freescale/common/fsl_sys_rev.c
+@@ -63,13 +63,20 @@ void fsl_set_system_rev(void)
+ 	 * i.MX6Q1.0:       6300     00
+ 	 * i.MX6Q1.1:       6300     01
+ 	 * i.MX6Solo1.0:    6100     00
++
++	 * Thus the system_rev will be the following layout:
++	 * | 31 - 20 | 19 - 12 | 11 - 8 | 7 - 0 |
++	 * | resverd | CHIP ID | BD REV | SI REV |
+ 	 */
+ 	u32 cpu_type = readl(ANATOP_BASE_ADDR + 0x260);
+ 	u32 board_type = 0;
+ 	/* Chip Silicon ID */
+-	fsl_system_rev = (cpu_type >> 4) & 0xFF000;
+-	/* Chip Revision ID */
+-	fsl_system_rev |= (cpu_type & 0xFF);
++	fsl_system_rev = ((cpu_type >> 16) & 0xFF) << 12;
++	/* Chip silicon major revision */
++	fsl_system_rev |= ((cpu_type >> 8) & 0xFF) << 4;
++	fsl_system_rev += 0x10;
++	/* Chip silicon minor revision */
++	fsl_system_rev |= cpu_type & 0xFF;
+ 
+ 	/* Get Board ID information from OCOTP_GP1[15:8]
+ 	 * bit 12-15: Board type
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 58e4966..fa4eab3 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -896,7 +896,7 @@ static void check_cpu_temperature(void)
+ #if defined(CONFIG_DISPLAY_CPUINFO)
+ int print_cpuinfo(void)
+ {
+-	printf("CPU:   Freescale i.MX 6 family %d.%dV at %d MHz\n",
++	printf("CPU: Freescale i.MX6 family TO%d.%d at %d MHz\n",
+ 	       (get_board_rev() & 0xFF) >> 4,
+ 	       (get_board_rev() & 0xF),
+ 		__get_mcu_main_clk() / SZ_DEC_1M);
+-- 
+1.7.7.4
+

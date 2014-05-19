@@ -1,0 +1,482 @@
+From 500e69df9073a8bc2773274c1139bb036b1a4195 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Fri, 18 May 2012 11:08:05 +0800
+Subject: [PATCH 533/678] ENGR00209899-1 mx6x: add generic gpio interface.
+
+Add generic gpio interface in uboot.
+
+Seems more and more gpio operation invoke in uboot,
+without RAW register operation, we should
+use generic gpio interface.
+
+you should define the CONFIG_MXC_GPIO
+
+use generic gpio interface:
+gpio_request,
+gpio_direction_output,
+gpio_direction_input,
+gpio_set_value,
+gpio_get_value, etc.
+
+Test on MX6Q, MX6DL.
+Other MX6X should also define this config.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |   57 +++++++--------------
+ drivers/gpio/Makefile                       |    1 +
+ drivers/gpio/mxc_gpio.c                     |   10 ++--
+ include/asm-arm/arch-mx6/gpio.h             |   41 +++++++++++++++
+ include/asm-arm/arch-mx6/imx-regs.h         |   31 +++++++++++
+ include/asm-arm/arch-mx6/iomux-v3.h         |    9 +++
+ include/asm-arm/arch-mx6/iomux.h            |   22 ++++++++
+ include/asm-arm/gpio.h                      |   75 +++++++++++++++++++++++++++
+ include/configs/mx6dl_arm2.h                |    1 +
+ include/configs/mx6dl_sabresd.h             |    2 +-
+ include/configs/mx6dl_sabresd_mfg.h         |    2 +
+ include/configs/mx6q_sabrelite_android.h    |    1 +
+ include/configs/mx6q_sabresd.h              |    1 +
+ include/configs/mx6q_sabresd_mfg.h          |    1 +
+ 14 files changed, 210 insertions(+), 44 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 2af4f6f..ff2a1b2 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -65,6 +65,11 @@
+ #include <imx_otp.h>
+ #endif
+ 
++#ifdef CONFIG_MXC_GPIO
++#include <asm/gpio.h>
++#include <asm/arch/gpio.h>
++#endif
++
+ #ifdef CONFIG_ANDROID_RECOVERY
+ #include "../common/recovery.h"
+ #include <part.h>
+@@ -78,6 +83,10 @@ DECLARE_GLOBAL_DATA_PTR;
+ 
+ static enum boot_device boot_dev;
+ 
++#define GPIO_VOL_DN_KEY IMX_GPIO_NR(1, 5)
++#define USB_OTG_PWR IMX_GPIO_NR(3, 22)
++#define USB_H1_POWER IMX_GPIO_NR(1, 29)
++
+ #ifdef CONFIG_VIDEO_MX5
+ extern unsigned char fsl_bmp_600x400[];
+ extern int fsl_bmp_600x400_size;
+@@ -1235,16 +1244,12 @@ int check_recovery_cmd_file(void)
+ 	recovery_mode = check_and_clean_recovery_flag();
+ 
+ 	/* Check Recovery Combo Button press or not. */
+-#if defined CONFIG_MX6Q
+-	mxc_iomux_v3_setup_pad(MX6Q_PAD_GPIO_5__GPIO_1_5);
+-#elif defined CONFIG_MX6DL
+-	mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_5__GPIO_1_5);
+-#endif
+-	reg = readl(GPIO1_BASE_ADDR + GPIO_GDIR);
+-	reg &= ~(1<<5);
+-	writel(reg, GPIO1_BASE_ADDR + GPIO_GDIR);
+-	reg = readl(GPIO1_BASE_ADDR + GPIO_PSR);
+-	if (!(reg & (1 << 5))) { /* VOL_DN key is low assert */
++	mxc_iomux_v3_setup_pad(MX6X_IOMUX(PAD_GPIO_5__GPIO_1_5));
++
++	gpio_request(GPIO_VOL_DN_KEY);
++	gpio_direction_input(GPIO_VOL_DN_KEY);
++
++	if (gpio_get_value(GPIO_VOL_DN_KEY) == 0) { /* VOL_DN key is low assert */
+ 		button_pressed = 1;
+ 		printf("Recovery key pressed\n");
+ 	}
+@@ -1444,43 +1449,19 @@ int checkboard(void)
+ 	return 0;
+ }
+ 
+-#if defined CONFIG_MX6Q
+-#define MX6X_IOMUX(s) MX6Q_##s
+-#elif defined CONFIG_MX6DL
+-#define MX6X_IOMUX(s) MX6DL_##s
+-#endif
+ 
+ #ifdef CONFIG_IMX_UDC
+ 
+ void udc_pins_setting(void)
+ {
+-#define GPIO_3_22_BIT_MASK (1<<22)
+-#define GPIO_1_29_BIT_MASK (1<<29)
+-	u32 reg;
+-
+ 	mxc_iomux_v3_setup_pad(MX6X_IOMUX(PAD_ENET_RX_ER__ANATOP_USBOTG_ID));
+ 	mxc_iomux_v3_setup_pad(MX6X_IOMUX(PAD_EIM_D22__GPIO_3_22));
+ 	mxc_iomux_v3_setup_pad(MX6X_IOMUX(PAD_ENET_TXD1__GPIO_1_29));
+ 
+-	reg = readl(GPIO3_BASE_ADDR + GPIO_GDIR);
+-	/* set gpio_3_22 as output */
+-	reg |= GPIO_3_22_BIT_MASK;
+-	writel(reg, GPIO3_BASE_ADDR + GPIO_GDIR);
+-
+-	/* set USB_OTG_PWR to 0 */
+-	reg = readl(GPIO3_BASE_ADDR + GPIO_DR);
+-	reg &= ~GPIO_3_22_BIT_MASK;
+-	writel(reg, GPIO3_BASE_ADDR + GPIO_DR);
+-
+-	reg = readl(GPIO1_BASE_ADDR + GPIO_GDIR);
+-	/* set gpio_1_29 as output */
+-	reg |= GPIO_1_29_BIT_MASK;
+-	writel(reg, GPIO1_BASE_ADDR + GPIO_GDIR);
+-
+-	/* set USB_H1_POWER to 1 */
+-	reg = readl(GPIO1_BASE_ADDR + GPIO_DR);
+-	reg |= GPIO_1_29_BIT_MASK;
+-	writel(reg, GPIO1_BASE_ADDR + GPIO_DR);
++	/* USB_OTG_PWR = 0 */
++	gpio_direction_output(USB_OTG_PWR, 0);
++	/* USB_H1_POWER = 1 */
++	gpio_direction_output(USB_H1_POWER, 1);
+ 
+ 	mxc_iomux_set_gpr_register(1, 13, 1, 0);
+ 
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index acba56c..d07225d 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -28,6 +28,7 @@ LIB 	:= $(obj)libgpio.a
+ COBJS-$(CONFIG_KIRKWOOD_GPIO)	+= kw_gpio.o
+ COBJS-$(CONFIG_MX31_GPIO)	+= mx31_gpio.o
+ COBJS-$(CONFIG_PCA953X)		+= pca953x.o
++COBJS-$(CONFIG_MXC_GPIO)        += mxc_gpio.o
+ 
+ COBJS	:= $(COBJS-y)
+ SRCS 	:= $(COBJS:.o=.c)
+diff --git a/drivers/gpio/mxc_gpio.c b/drivers/gpio/mxc_gpio.c
+index a7f36b2..dde079f 100644
+--- a/drivers/gpio/mxc_gpio.c
++++ b/drivers/gpio/mxc_gpio.c
+@@ -25,9 +25,9 @@
+  */
+ #include <common.h>
+ #include <asm/arch/imx-regs.h>
+-#include <asm/gpio.h>
++#include <asm/arch/gpio.h>
+ #include <asm/io.h>
+-#include <errno.h>
++#include <asm/errno.h>
+ 
+ enum mxc_gpio_direction {
+ 	MXC_GPIO_DIRECTION_IN,
+@@ -40,14 +40,14 @@ static unsigned long gpio_ports[] = {
+ 	[0] = GPIO1_BASE_ADDR,
+ 	[1] = GPIO2_BASE_ADDR,
+ 	[2] = GPIO3_BASE_ADDR,
+-#if defined(CONFIG_MX51) || defined(CONFIG_MX53)
++#if defined(CONFIG_MX51) || defined(CONFIG_MX53) || defined(CONFIG_MX6Q) || defined(CONFIG_MX6DL)
+ 	[3] = GPIO4_BASE_ADDR,
+-#endif
+-#if defined(CONFIG_MX53)
++#if !defined(CONFIG_MX51)
+ 	[4] = GPIO5_BASE_ADDR,
+ 	[5] = GPIO6_BASE_ADDR,
+ 	[6] = GPIO7_BASE_ADDR,
+ #endif
++#endif
+ };
+ 
+ static int mxc_gpio_direction(unsigned int gpio,
+diff --git a/include/asm-arm/arch-mx6/gpio.h b/include/asm-arm/arch-mx6/gpio.h
+new file mode 100644
+index 0000000..1f292f8
+--- /dev/null
++++ b/include/asm-arm/arch-mx6/gpio.h
+@@ -0,0 +1,41 @@
++/*
++ * Copyright (C) 2012 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Auto Generate file, please don't edit it
++ *
++ */
++
++#ifndef __MACH_MX6_GPIO_H__
++#define __MACH_MX6_GPIO_H__
++
++#include <asm/arch/mx6.h>
++#include <asm/arch/iomux.h>
++
++#define IMX_GPIO_NR(bank, nr)		(((bank) - 1) * 32 + (nr))
++
++void mxc_set_gpio_direction(iomux_pin_name_t pin, int is_input);
++
++void mxc_set_gpio_dataout(iomux_pin_name_t pin, u32 data);
++
++/*!
++ * @file mach-mx6/gpio.h
++ *
++ * @brief Simple GPIO definitions and functions
++ *
++ * @ingroup GPIO_MX6
++ */
++#endif
+diff --git a/include/asm-arm/arch-mx6/imx-regs.h b/include/asm-arm/arch-mx6/imx-regs.h
+new file mode 100644
+index 0000000..04abbb0
+--- /dev/null
++++ b/include/asm-arm/arch-mx6/imx-regs.h
+@@ -0,0 +1,31 @@
++/*
++ * Copyright (C) 2012 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Auto Generate file, please don't edit it
++ *
++ */
++
++
++struct gpio_regs {
++	u32 gpio_dr;
++	u32 gpio_dir;
++	u32 gpio_psr;
++	u32 gpio_icr1;
++	u32 gpio_icr2;
++	u32 gpio_imr;
++	u32 gpio_isr;
++};
+diff --git a/include/asm-arm/arch-mx6/iomux-v3.h b/include/asm-arm/arch-mx6/iomux-v3.h
+index 50612ee..4ce38a5 100644
+--- a/include/asm-arm/arch-mx6/iomux-v3.h
++++ b/include/asm-arm/arch-mx6/iomux-v3.h
+@@ -55,6 +55,7 @@
+ */
+ 
+ typedef u64 iomux_v3_cfg_t;
++typedef unsigned int iomux_pin_name_t;
+ 
+ #define MUX_CTRL_OFS_SHIFT	0
+ #define MUX_CTRL_OFS_MASK	((iomux_v3_cfg_t)0xfff << MUX_CTRL_OFS_SHIFT)
+@@ -84,6 +85,14 @@ typedef u64 iomux_v3_cfg_t;
+ 			MUX_SEL_INPUT_OFS_SHIFT) | \
+ 		((iomux_v3_cfg_t)(_sel_input) << MUX_SEL_INPUT_SHIFT))
+ 
++#if defined CONFIG_MX6Q
++#define MX6X_IOMUX(s) MX6Q_##s
++#elif defined CONFIG_MX6DL
++#define MX6X_IOMUX(s) MX6DL_##s
++#elif defined CONFIG_MX6SL
++#define MX6X_IOMUX(s) MX6SL_##s
++#endif
++
+ /*
+  * Use to set PAD control
+  */
+diff --git a/include/asm-arm/arch-mx6/iomux.h b/include/asm-arm/arch-mx6/iomux.h
+new file mode 100644
+index 0000000..9c1e053
+--- /dev/null
++++ b/include/asm-arm/arch-mx6/iomux.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright (C) 2012 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Auto Generate file, please don't edit it
++ *
++ */
++
++#include "iomux-v3.h"
+diff --git a/include/asm-arm/gpio.h b/include/asm-arm/gpio.h
+new file mode 100644
+index 0000000..b0f3f98
+--- /dev/null
++++ b/include/asm-arm/gpio.h
+@@ -0,0 +1,75 @@
++/*
++ * Copyright (c) 2011 The Chromium OS Authors.
++ * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++/*
++ * Generic GPIO API for U-Boot
++ *
++ * GPIOs are numbered from 0 to GPIO_COUNT-1 which value is defined
++ * by the SOC/architecture.
++ *
++ * Each GPIO can be an input or output. If an input then its value can
++ * be read as 0 or 1. If an output then its value can be set to 0 or 1.
++ * If you try to write an input then the value is undefined. If you try
++ * to read an output, barring something very unusual,  you will get
++ * back the value of the output that you previously set.
++ *
++ * In some cases the operation may fail, for example if the GPIO number
++ * is out of range, or the GPIO is not available because its pin is
++ * being used by another function. In that case, functions may return
++ * an error value of -1.
++ */
++
++/**
++ * Make a GPIO an input.
++ *
++ * @param gp	GPIO number
++ * @return 0 if ok, -1 on error
++ */
++int gpio_direction_input(int gp);
++
++/**
++ * Make a GPIO an output, and set its value.
++ *
++ * @param gp	GPIO number
++ * @param value	GPIO value (0 for low or 1 for high)
++ * @return 0 if ok, -1 on error
++ */
++int gpio_direction_output(int gp, int value);
++
++/**
++ * Get a GPIO's value. This will work whether the GPIO is an input
++ * or an output.
++ *
++ * @param gp	GPIO number
++ * @return 0 if low, 1 if high, -1 on error
++ */
++int gpio_get_value(int gp);
++
++/**
++ * Set an output GPIO's value. The GPIO must already be an output of
++ * this function may have no effect.
++ *
++ * @param gp	GPIO number
++ * @param value	GPIO value (0 for low or 1 for high)
++ * @return 0 if ok, -1 on error
++ */
++int gpio_set_value(int gp, int value);
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index 5c3ba3b..8b1d50c 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -55,6 +55,7 @@
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+ 
++#define CONFIG_MXC_GPIO
+ /*
+  * Size of malloc() pool
+  */
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index 3df2a34..5a9bde3 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -54,7 +54,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+-
++#define CONFIG_MXC_GPIO
+ /*
+  * Size of malloc() pool
+  */
+diff --git a/include/configs/mx6dl_sabresd_mfg.h b/include/configs/mx6dl_sabresd_mfg.h
+index 094655b..11e7189 100644
+--- a/include/configs/mx6dl_sabresd_mfg.h
++++ b/include/configs/mx6dl_sabresd_mfg.h
+@@ -56,6 +56,8 @@
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+ 
++#define CONFIG_MXC_GPIO
++
+ /*
+  * Size of malloc() pool
+  */
+diff --git a/include/configs/mx6q_sabrelite_android.h b/include/configs/mx6q_sabrelite_android.h
+index 4c76480..4aff72a 100644
+--- a/include/configs/mx6q_sabrelite_android.h
++++ b/include/configs/mx6q_sabrelite_android.h
+@@ -52,6 +52,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index a5d6363..fbf549a 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -52,6 +52,7 @@
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
++#define CONFIG_MXC_GPIO
+ 
+ /*
+  * Size of malloc() pool
+diff --git a/include/configs/mx6q_sabresd_mfg.h b/include/configs/mx6q_sabresd_mfg.h
+index 16fc9e8..9c2572e 100644
+--- a/include/configs/mx6q_sabresd_mfg.h
++++ b/include/configs/mx6q_sabresd_mfg.h
+@@ -79,6 +79,7 @@
+ 
+ #include <config_cmd_default.h>
+ 
++#define CONFIG_MXC_GPIO
+ #define CONFIG_CMD_PING
+ #define CONFIG_CMD_DHCP
+ #define CONFIG_CMD_MII
+-- 
+1.7.7.4
+

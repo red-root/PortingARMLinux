@@ -1,0 +1,723 @@
+From e7cdad7018f5921a651d06ef84a01b0c0dd7a5f1 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Fri, 16 Sep 2011 16:48:44 +0800
+Subject: [PATCH 366/678] ENGR00156930: Update MX35 DDR2 scripts
+
+Update MX35 DDR2 scripts for that when enabling 256MB, the CSD1 is not
+stable.
+1. Add CSD1 configs to support 256M RAM.
+2. Add mx35 TO2 256M RAM configs.
+3. Update DDR init code in lowlevel_init.S for external boot.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ board/freescale/mx35_3stack/board-mx35_3stack.h |   16 +-
+ board/freescale/mx35_3stack/flash_header.S      |   58 +++-
+ board/freescale/mx35_3stack/lowlevel_init.S     |  400 ++++++++++++++++++++---
+ board/freescale/mx35_3stack/mx35_3stack.c       |    9 +-
+ include/asm-arm/arch-mx35/mmu.h                 |   17 +-
+ include/configs/mx35_3stack.h                   |   16 +-
+ include/configs/mx35_3stack_mmc.h               |   16 +-
+ 7 files changed, 451 insertions(+), 81 deletions(-)
+
+diff --git a/board/freescale/mx35_3stack/board-mx35_3stack.h b/board/freescale/mx35_3stack/board-mx35_3stack.h
+index 520d89b..bbe32b0 100644
+--- a/board/freescale/mx35_3stack/board-mx35_3stack.h
++++ b/board/freescale/mx35_3stack/board-mx35_3stack.h
+@@ -84,6 +84,20 @@
+ #define CCM_PPLL_300_HZ _PLL_SETTING(0, 1, 4, 6, 1)
+ 
+ /*MEMORY SETING*/
++/*
++ * ESDCTL constants
++ */
++#define ESDCTL_ESDCTL0_OFFSET		0x0000
++#define ESDCTL_ESDCFG0_OFFSET		0x0004
++#define ESDCTL_ESDCTL1_OFFSET		0x0008
++#define ESDCTL_ESDCFG1_OFFSET		0x000C
++#define ESDCTL_ESDMISC_OFFSET		0x0010
++#define ESDCTL_ESDDLY1_OFFSET		0x0020
++#define ESDCTL_ESDDLY2_OFFSET		0x0024
++#define ESDCTL_ESDDLY3_OFFSET		0x0028
++#define ESDCTL_ESDDLY4_OFFSET		0x002C
++#define ESDCTL_ESDDLY5_OFFSET		0x0030
++
+ #define ESDCTL_0x92220000	0x92220000
+ #define ESDCTL_0xA2220000	0xA2220000
+ #define ESDCTL_0xB2220000	0xB2220000
+@@ -96,7 +110,7 @@
+ #define ESDCTL_MDDR_MR		0x00000033
+ #define ESDCTL_MDDR_EMR		0x02000000
+ 
+-#define ESDCTL_DDR2_CONFIG 	0x007FFC3F
++#define ESDCTL_DDR2_CONFIG	0x0079542A
+ #define ESDCTL_DDR2_EMR2	0x04000000
+ #define ESDCTL_DDR2_EMR3	0x06000000
+ #define ESDCTL_DDR2_EN_DLL	0x02000400
+diff --git a/board/freescale/mx35_3stack/flash_header.S b/board/freescale/mx35_3stack/flash_header.S
+index b662669..860ef53 100644
+--- a/board/freescale/mx35_3stack/flash_header.S
++++ b/board/freescale/mx35_3stack/flash_header.S
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2009 Freescale Semiconductor, Inc.
++ * Copyright (C) 2009-2011 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -74,7 +74,7 @@ DCDGEN(16, 4, 0xB8001010, 0x00000004)
+ DCDGEN(17, 4, 0xB8001008, 0x00002000)
+ 
+ #else
+-                    .long 240
++                    .long (dcd_data_end - dcd_data - 8)
+ 
+ //WEIM config-CS5 init
+ DCDGEN(1, 4, 0xB8002050, 0x0000d843)
+@@ -83,22 +83,44 @@ DCDGEN(1_2, 4, 0xB8002058, 0x22220a00)
+ 
+ //DDR2 init
+ DCDGEN(2, 4, 0xB8001010, 0x00000304)
+-DCDGEN(3, 4, 0xB8001010, 0x0000030C)
+-DCDGEN(4, 4, 0xB8001004, 0x007ffc3f)
+-DCDGEN(5, 4, 0xB8001000, 0x92220000)
+-DCDGEN(6, 4, 0x80000400, 0x12345678)
+-DCDGEN(7, 4, 0xB8001000, 0xA2220000)
+-DCDGEN(8, 4, 0x80000000, 0x87654321)
+-DCDGEN(9, 4, 0x80000000, 0x87654321)
+-DCDGEN(10, 4, 0xB8001000, 0xB2220000)
+-DCDGEN(11, 1, 0x80000233, 0xda)
+-DCDGEN(12, 1, 0x82000780, 0xda)
+-DCDGEN(13, 1, 0x82000400, 0xda)
+-DCDGEN(14, 4, 0xB8001000, 0x82226080)
+-DCDGEN(15, 4, 0xB8001004, 0x007ffc3f)
+-DCDGEN(16, 4, 0xB800100C, 0x007ffc3f)
+-DCDGEN(17, 4, 0xB8001010, 0x00000304)
+-DCDGEN(18, 4, 0xB8001008, 0x00002000)
++	DCDGEN(3, 4, 0xB8001004, 0x0079542A)
++	DCDGEN(4, 4, 0xB8001000, 0x92220000)
++	DCDGEN(5, 1, 0x80000400, 0x00)
++	DCDGEN(6, 4, 0xB8001000, 0xB2220000)
++	DCDGEN(7, 1, 0x84000000, 0x00)
++	DCDGEN(8, 1, 0x86000000, 0x00)
++	DCDGEN(9, 1, 0x82000400, 0x00)
++	DCDGEN(10, 1, 0x80000333, 0x00)
++	DCDGEN(11, 4, 0xB8001000, 0x92220000)
++	DCDGEN(12, 1, 0x80000400, 0x00)
++	DCDGEN(13, 4, 0xB8001000, 0xA2220000)
++	DCDGEN(14, 1, 0x80000000, 0x00)
++	DCDGEN(15, 1, 0x80000000, 0x00)
++	DCDGEN(16, 4, 0xB8001000, 0xB2220000)
++	DCDGEN(17, 1, 0x80000233, 0x00)
++	DCDGEN(18, 1, 0x82000780, 0x00)
++	DCDGEN(19, 1, 0x82000400, 0x00)
++	DCDGEN(20, 4, 0xB8001000, 0x82226080)
++#ifdef CONFIG_MX35_256M_RAM
++	DCDGEN(22, 4, 0xB800100C, 0x0079542A)
++	DCDGEN(23, 4, 0xB8001008, 0x92220000)
++	DCDGEN(24, 1, 0x90000400, 0x00)
++	DCDGEN(25, 4, 0xB8001008, 0xB2220000)
++	DCDGEN(26, 1, 0x84000000, 0x00)
++	DCDGEN(27, 1, 0x86000000, 0x00)
++	DCDGEN(28, 1, 0x82000400, 0x00)
++	DCDGEN(29, 1, 0x90000333, 0x00)
++	DCDGEN(30, 4, 0xB8001008, 0x92220000)
++	DCDGEN(31, 1, 0x82000400, 0x00)
++	DCDGEN(32, 4, 0xB8001008, 0xA2220000)
++	DCDGEN(33, 1, 0x90000000, 0x00)
++	DCDGEN(34, 1, 0x90000000, 0x00)
++	DCDGEN(35, 4, 0xB8001008, 0xB2220000)
++	DCDGEN(36, 1, 0x90000233, 0x00)
++	DCDGEN(37, 1, 0x82000780, 0x00)
++	DCDGEN(38, 1, 0x82000400, 0x00)
++	DCDGEN(39, 4, 0xB8001008, 0x82226080)
++#endif
+ 
+ #endif
+ dcd_data_end:
+diff --git a/board/freescale/mx35_3stack/lowlevel_init.S b/board/freescale/mx35_3stack/lowlevel_init.S
+index bae5964..f1458b8 100644
+--- a/board/freescale/mx35_3stack/lowlevel_init.S
++++ b/board/freescale/mx35_3stack/lowlevel_init.S
+@@ -240,13 +240,11 @@
+         mov fp, lr
+ 
+ 	mov r5, #0x00
+-        mov r2, #0x00
+         mov r1, #CSD0_BASE_ADDR
+-        bl setup_sdram_bank
++        bl setup_sdram_ddr2_bank
+         cmp r3, #0x0
+         orreq r5, r5, #1
+-        eorne r2, r2, #0x1
+-        blne setup_sdram_bank
++        blne setup_sdram_mddr_bank
+ 
+         mov lr, fp
+ 
+@@ -347,22 +345,360 @@ skip_sdram_setup:
+  * r0: ESDCTL control base, r1: sdram slot base
+  * r2: DDR type(0:DDR2, 1:MDDR) r3, r4:working base
+  */
+-setup_sdram_bank:
++setup_sdram_ddr2_bank:
++	/*
++	 * DDR2 initialization
++	 */
++	ldr	r0, =ESDCTL_BASE_ADDR
++
++	/* Configure for DDR2 */
++	ldr     r3, =0x30E      /* bit 9 is DDR2_EN */
++	str     r3, [r0, #ESDCTL_ESDMISC_OFFSET]
++	ldr	r3, =0x304
++	str     r3, [r0, #ESDCTL_ESDMISC_OFFSET]
++
++	/*----------------------------------------
++	 * Configure DDR2 memory on CSD0
++	 *----------------------------------------*/
++	ldr     r1, =CSD0_BASE_ADDR
++
++	/* Configure timing parameters */
++	ldr     r3, =ESDCTL_DDR2_CONFIG // Moderate
++	str     r3, [r0, #ESDCTL_ESDCFG0_OFFSET]
++
++	/*
++	 * Set precharge command
++	 *
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Precharge command (1 << 28)             = 0x10000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0x92220000
++	 */
++	ldr     r3, =ESDCTL_0x92220000
++	str     r3, [r0, #ESDCTL_ESDCTL0_OFFSET]
++
++	/* Access SDRAM with A10 high to precharge all banks */
++	ldr     r3, =0x0
++	strb    r3, [r1, #ESDCTL_PRECHARGE]
++
++	/*
++	 * Set load mode command
++	 *
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Load mode command (3 << 28)             = 0x30000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0xB2220000
++	 */
++	ldr     r3, =ESDCTL_0xB2220000
++	str     r3, [r0, #ESDCTL_ESDCTL0_OFFSET]
++
++	/* DDR2 EMR2 */
++	ldr     r3, =0x0
++	ldr     r4, =ESDCTL_DDR2_EMR2
++	strb    r3, [r1, r4]
++
++	/* DDR2 EMR3 */
++	ldr     r3, =0x0
++	ldr     r4, =ESDCTL_DDR2_EMR3
++	strb    r3, [r1, r4]
++
++	/* DDR2 EMR1: enable DLL, disable /DQS */
++	ldr     r3, =0x0
++	ldr     r4, =ESDCTL_DDR2_EN_DLL
++	strb    r3, [r1, r4]
++
++	/* DDR2 MR: reset DLL, BL=8, CL=3 */
++	ldr     r3, =0x0
++	ldr	r4, =ESDCTL_DDR2_RESET_DLL
++	strb    r3, [r1, r4]
++
++	/*
++	 * Set precharge command
++	 *
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Precharge command (1 << 28)             = 0x10000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0x92220000
++	 */
++	ldr     r3, =ESDCTL_0x92220000
++	str     r3, [r0, #ESDCTL_ESDCTL0_OFFSET]
++
++	/* Access SDRAM with A10 high to precharge all banks */
++	ldr     r3, =0x0
++	ldr	r4, =ESDCTL_DDR2_EN_DLL
++	strb    r3, [r1, r4]
++
++	/*
++	 * Set autorefresh command
++	 *
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Autorefresh command (2 << 28)           = 0x20000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0xA2220000
++	 */
++	ldr     r3, =ESDCTL_0xA2220000
++	str     r3, [r1, #ESDCTL_ESDCTL0_OFFSET]
++
++	/* Use writes to refresh all banks of SDRAM */
++	ldr     r3, =0x0
++	strb    r3, [r1]
++	strb    r3, [r1]
++
++	/*
++	 * Set load mode command
++	 *
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Load mode command (3 << 28)             = 0x30000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0xB2220000
++	 */
++	ldr     r3, =ESDCTL_0xB2220000
++	str     r3, [r0, #ESDCTL_ESDCTL0_OFFSET]
++
++	/* DDR2 MR: end DLL reset, BL=8, CL=3 */
++	ldr     r3, =0x0
++	strb    r3, [r1, #ESDCTL_DDR2_MR]
++
++	/* Hold for more than 200 cycles */
++	ldr     r3, =0x100
++hold_1:
++	subs    r3, r3, #1
++	bne     hold_1
++
++	/* DDR2 EMR1: OCD calibration default */
++	ldr     r3, =0x0
++	ldr     r4, =ESDCTL_DDR2_OCD_DEFAULT
++	strb    r3, [r1, r4]
++
++	/* DDR2 EMR1: OCD calibration exit, enable DLL, disable /DQS */
++	ldr     r3, =0x0
++	ldr     r4, =ESDCTL_DDR2_EN_DLL
++	strb    r3, [r1, r4]
++
++	/*
++	 * Set normal mode command
++	 *
++	 *   PRCT - Precharge timer disabled (0 << 5)        = 0x00000000
++	 *   BL - Burst of 8 for SDR/DDR (1 << 7)            = 0x00000080
++	 *   FP - No full page mode (0 << 8)                 = 0x00000000
++	 *   PWDT - Power down timeout disabled (3 << 10)    = 0x00000000
++	 *   SREFR - 4 rows refreshed each clock (3 << 13)   = 0x00006000
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Normal mode command (0 << 28)           = 0x00000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0x82226080
++	 */
++	ldr     r3, =ESDCTL_0x82226080
++	str     r3, [r0, #ESDCTL_ESDCTL0_OFFSET]
++
++#ifdef CONFIG_MX35_256M_RAM
++	/*----------------------------------------
++	 * Configure DDR2 memory on CSD1
++	 *----------------------------------------*/
++	ldr     r1, =CSD1_BASE_ADDR
++	/* Configure timing parameters */
++	ldr     r3, =ESDCTL_DDR2_CONFIG /* Moderate */
++	str     r3, [r0, #ESDCTL_ESDCFG1_OFFSET]
++
++	/*
++	 * Set precharge command
++	 *
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Precharge command (1 << 28)             = 0x10000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0x92220000
++	 */
++	ldr     r3, =ESDCTL_0x92220000
++	str     r3, [r0, #ESDCTL_ESDCTL1_OFFSET]
++
++	/* Access SDRAM with A10 high to precharge all banks */
++	ldr     r3, =0x0
++	ldr	r4, =ESDCTL_DDR2_EN_DLL
++	strb    r3, [r1, r4]
++
++	/*
++	 * Set load mode command
++	 *
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Load mode command (3 << 28)             = 0x30000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0xB2220000
++	 */
++	ldr     r3, =ESDCTL_0xB2220000
++	str     r3, [r0, #ESDCTL_ESDCTL1_OFFSET]
++
++	/* DDR2 EMR2 */
++	ldr     r3, =0x0
++	ldr     r4, =ESDCTL_DDR2_EMR2
++	strb    r3, [r1, r4]
++
++	/* DDR2 EMR3 */
++	ldr     r3, =0x0
++	ldr     r4, =ESDCTL_DDR2_EMR3
++	strb    r3, [r1, r4]
++
++	/* DDR2 EMR1: enable DLL, disable /DQS */
++	ldr     r3, =0x0
++	ldr     r4, =ESDCTL_DDR2_EN_DLL
++	strb    r3, [r1, r4]
++
++	/* DDR2 MR: reset DLL, BL=8, CL=3 */
++	ldr     r3, =0x0
++	strb    r3, [r1, #ESDCTL_DDR2_RESET_DLL]
++
++	/*
++	 * Set precharge command
++	 *
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Precharge command (1 << 28)             = 0x10000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0x92220000
++	 */
++	ldr     r3, =ESDCTL_0x92220000
++	str     r3, [r0, #ESDCTL_ESDCTL1_OFFSET]
++
++	/* Access SDRAM with A10 high to precharge all banks */
++	ldr     r3, =0x0
++	strb    r3, [r1, #ESDCTL_PRECHARGE]
++
++	/*
++	 * Set autorefresh command
++	 *
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Autorefresh command (2 << 28)           = 0x20000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0xA2220000
++	 */
++	ldr     r3, =ESDCTL_0xA2220000
++	str     r3, [r0, #ESDCTL_ESDCTL1_OFFSET]
++
++	/* Use writes to refresh all banks of SDRAM */
++	ldr     r3, =0x0
++	strb    r3, [r1]
++	strb    r3, [r1]
++
++	/*
++	 * Set load mode command
++	 *
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Load mode command (3 << 28)             = 0x30000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0xB2220000
++	 *
++	 */
++	ldr     r3, =ESDCTL_0xB2220000
++	str     r3, [r0, #ESDCTL_ESDCTL1_OFFSET]
++
++	/* DDR2 MR: end DLL reset, BL=8, CL=3 */
++	ldr     r3, =0x0
++	strb    r3, [r1, #ESDCTL_DDR2_MR]
++
++	/* Hold for more than 200 cycles */
++	ldr     r3, =0x100
++hold1:
++	subs    r3, r3, #1
++	bne     hold1
++
++	/* DDR2 EMR1: OCD calibration default */
++	ldr     r3, =0x0
++	ldr     r4, =ESDCTL_DDR2_OCD_DEFAULT
++	strb    r3, [r1, r4]
++
++	/* DDR2 EMR1: OCD calibration exit, enable DLL, disable /DQS */
++	ldr     r3, =0x0
++	ldr     r4, =ESDCTL_DDR2_EN_DLL
++	strb    r3, [r1, r4]
++
++	/*
++	 * Set normal mode command
++	 *
++	 *   PRCT - Precharge timer disabled (0 << 5)        = 0x00000000
++	 *   BL - Burst of 8 for SDR/DDR (1 << 7)            = 0x00000080
++	 *   FP - No full page mode (0 << 8)                 = 0x00000000
++	 *   PWDT - Power down timeout disabled (3 << 10)    = 0x00000000
++	 *   SREFR - 4 rows refreshed each clock (3 << 13)   = 0x00006000
++	 *   DSIZ - 32-bit memory width (2 << 16)            = 0x00020000
++	 *   COL - 10 column addresses (2 << 20)             = 0x00200000
++	 *   ROW - 13 Row addresses (2 << 24)                = 0x02000000
++	 *   SP - User mode access (0 << 27)                 = 0x00000000
++	 *   SMODE - Normal mode command (0 << 28)           = 0x00000000
++	 *   SDE - Enable controller (1 << 31)               = 0x80000000
++	 *                                                   ------------
++	 *                                                     0x82226080
++	 */
++	ldr     r3, =ESDCTL_0x82226080
++	str     r3, [r0, #ESDCTL_ESDCTL1_OFFSET]
++#endif
++
++	str r3, [r1, #0x100]
++	ldr r4, [r1, #0x100]
++	cmp r3, r4
++	movne r3, #1
++	moveq r3, #0
++
++	mov pc, lr
++
++/*
++ * r0: ESDCTL control base, r1: sdram slot base
++ * r2: DDR type(0:DDR2, 1:MDDR) r3, r4:working base
++ */
++setup_sdram_mddr_bank:
+         mov r3, #0xE /*0xA + 0x4*/
+-        tst r2, #0x1
+-        orreq r3, r3, #0x300 /*DDR2*/
+         str r3, [r0, #0x10]
+         bic r3, r3, #0x00A
+         str r3, [r0, #0x10]
+-        beq 2f
+ 
+         mov r3, #0x20000
+-1:      subs r3, r3, #1
++1:
++	subs r3, r3, #1
+         bne 1b
+ 
+-2:      tst r2, #0x1
+-        ldreq r3, =ESDCTL_DDR2_CONFIG
+-        ldrne r3, =ESDCTL_MDDR_CONFIG
++2:
++        ldr r3, =ESDCTL_MDDR_CONFIG
+         cmp r1, #CSD1_BASE_ADDR
+         strlo r3, [r0, #0x4]
+         strhs r3, [r0, #0xC]
+@@ -374,32 +710,6 @@ setup_sdram_bank:
+         ldr r4, =ESDCTL_PRECHARGE
+         strb r3, [r1, r4]
+ 
+-        tst r2, #0x1
+-        bne skip_set_mode
+-
+-        cmp r1, #CSD1_BASE_ADDR
+-        ldr r3, =ESDCTL_0xB2220000
+-        strlo r3, [r0, #0x0]
+-        strhs r3, [r0, #0x8]
+-        mov r3, #0xDA
+-        ldr r4, =ESDCTL_DDR2_EMR2
+-        strb r3, [r1, r4]
+-        ldr r4, =ESDCTL_DDR2_EMR3
+-        strb r3, [r1, r4]
+-        ldr r4, =ESDCTL_DDR2_EN_DLL
+-        strb r3, [r1, r4]
+-        ldr r4, =ESDCTL_DDR2_RESET_DLL
+-        strb r3, [r1, r4]
+-
+-        ldr r3, =ESDCTL_0x92220000
+-        strlo r3, [r0, #0x0]
+-        strhs r3, [r0, #0x8]
+-        mov r3, #0xDA
+-        ldr r4, =ESDCTL_PRECHARGE
+-        strb r3, [r1, r4]
+-
+-skip_set_mode:
+-        cmp r1, #CSD1_BASE_ADDR
+         ldr r3, =ESDCTL_0xA2220000
+         strlo r3, [r0, #0x0]
+         strhs r3, [r0, #0x8]
+@@ -410,25 +720,17 @@ skip_set_mode:
+         ldr r3, =ESDCTL_0xB2220000
+         strlo r3, [r0, #0x0]
+         strhs r3, [r0, #0x8]
+-        tst r2, #0x1
+-        ldreq r4, =ESDCTL_DDR2_MR
+-        ldrne r4, =ESDCTL_MDDR_MR
++        ldr r4, =ESDCTL_MDDR_MR
+        	mov r3, #0xDA
+         strb r3, [r1, r4]
+-        ldreq r4, =ESDCTL_DDR2_OCD_DEFAULT
+-        streqb r3, [r1, r4]
+-        ldreq r4, =ESDCTL_DDR2_EN_DLL
+-        ldrne r4, =ESDCTL_MDDR_EMR
++        ldr r4, =ESDCTL_MDDR_EMR
+         strb r3, [r1, r4]
+ 
+-        cmp r1, #CSD1_BASE_ADDR
+         ldr r3, =ESDCTL_0x82226080
+         strlo r3, [r0, #0x0]
+         strhs r3, [r0, #0x8]
+ 
+-        tst r2, #0x1
+-        moveq r4, #0x20000
+-        movne r4, #0x200
++        mov r4, #0x200
+ 1:      subs r4, r4, #1
+         bne 1b
+ 
+diff --git a/board/freescale/mx35_3stack/mx35_3stack.c b/board/freescale/mx35_3stack/mx35_3stack.c
+index c3c9683..d7fe982 100644
+--- a/board/freescale/mx35_3stack/mx35_3stack.c
++++ b/board/freescale/mx35_3stack/mx35_3stack.c
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2008-2010 Freescale Semiconductor, Inc.
++ * Copyright (C) 2008-2011 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -121,6 +121,9 @@ void board_mmu_init(void)
+ 	X_ARM_MMU_SECTION(0x900, 0x900, 0x80,
+ 			  ARM_CACHEABLE, ARM_BUFFERABLE,
+ 			  ARM_ACCESS_PERM_RW_RW); /* SDRAM 1:128M*/
++	X_ARM_MMU_SECTION(0x900, 0x980, 0x80,
++			  ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
++			  ARM_ACCESS_PERM_RW_RW); /* SDRAM 1:128M*/
+ 	X_ARM_MMU_SECTION(0xA00, 0xA00, 0x40,
+ 			  ARM_CACHEABLE, ARM_BUFFERABLE,
+ 			  ARM_ACCESS_PERM_RW_RW); /* Flash */
+@@ -141,6 +144,10 @@ int dram_init(void)
+ {
+ 	gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
+ 	gd->bd->bi_dram[0].size = PHYS_SDRAM_1_SIZE;
++#ifdef CONFIG_MX35_256M_RAM
++	gd->bd->bi_dram[1].start = PHYS_SDRAM_2;
++	gd->bd->bi_dram[1].size = PHYS_SDRAM_2_SIZE;
++#endif
+ 
+ 	return 0;
+ }
+diff --git a/include/asm-arm/arch-mx35/mmu.h b/include/asm-arm/arch-mx35/mmu.h
+index 1b15dba..6cdc44c 100644
+--- a/include/asm-arm/arch-mx35/mmu.h
++++ b/include/asm-arm/arch-mx35/mmu.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2004-2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright (C) 2004-2011 Freescale Semiconductor, Inc. All Rights Reserved.
+  */
+ 
+ /*
+@@ -138,10 +138,11 @@ union ARM_MMU_FIRST_LEVEL_DESCRIPTOR {
+  */
+ inline unsigned long iomem_to_phys(unsigned long virt)
+ {
+-	if (virt < 0x08000000)
+-		return (unsigned long)(virt | PHYS_SDRAM_1);
+-
+-	if ((virt & 0xF0000000) == PHYS_SDRAM_1)
++	if (((virt & 0xF0000000) == PHYS_SDRAM_1)
++#ifdef CONFIG_MX35_256M_RAM
++		|| ((virt & 0xF0000000) == PHYS_SDRAM_2)
++#endif
++		)
+ 		return (unsigned long)(virt & (~0x08000000));
+ 
+ 	return (unsigned long)virt;
+@@ -161,7 +162,11 @@ void *__ioremap(unsigned long offset, size_t size, unsigned long flags)
+ 	if (1 == flags) {
+ 		/* 0x88000000~0x87FFFFFF is uncacheable meory
+ 		space which is mapped to SDRAM */
+-		if ((offset & 0xF0000000) == PHYS_SDRAM_1)
++		if ((offset & 0xF0000000) == PHYS_SDRAM_1
++#ifdef CONFIG_MX35_256M_RAM
++			|| ((offset & 0xF0000000) == PHYS_SDRAM_2)
++#endif
++			)
+ 			return (void *)(offset | 0x08000000);
+ 		else
+ 			return NULL;
+diff --git a/include/configs/mx35_3stack.h b/include/configs/mx35_3stack.h
+index 40bf5f8..d337e5d 100644
+--- a/include/configs/mx35_3stack.h
++++ b/include/configs/mx35_3stack.h
+@@ -185,11 +185,21 @@
+ /*-----------------------------------------------------------------------
+  * Physical Memory Map
+  */
+-#define CONFIG_NR_DRAM_BANKS	1
++#define CONFIG_MX35_256M_RAM
+ #define PHYS_SDRAM_1		CSD0_BASE_ADDR
+ #define PHYS_SDRAM_1_SIZE	(128 * 1024 * 1024)
+-#define iomem_valid_addr(addr, size) \
+-	(addr >= PHYS_SDRAM_1 && addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE))
++#ifdef CONFIG_MX35_256M_RAM
++	#define CONFIG_NR_DRAM_BANKS	2
++	#define PHYS_SDRAM_2		CSD1_BASE_ADDR
++	#define PHYS_SDRAM_2_SIZE	(128 * 1024 * 1024)
++	#define iomem_valid_addr(addr, size) \
++		((addr >= PHYS_SDRAM_1 && addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE)) \
++		|| (addr >= PHYS_SDRAM_2 && addr <= (PHYS_SDRAM_2 + PHYS_SDRAM_2_SIZE)))
++#else
++	#define CONFIG_NR_DRAM_BANKS	1
++	#define iomem_valid_addr(addr, size) \
++		(addr >= PHYS_SDRAM_1 && addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE))
++#endif
+ 
+ /*-----------------------------------------------------------------------
+  * FLASH and environment organization
+diff --git a/include/configs/mx35_3stack_mmc.h b/include/configs/mx35_3stack_mmc.h
+index 727f926..5c2ebf6 100644
+--- a/include/configs/mx35_3stack_mmc.h
++++ b/include/configs/mx35_3stack_mmc.h
+@@ -187,11 +187,21 @@
+ /*-----------------------------------------------------------------------
+  * Physical Memory Map
+  */
+-#define CONFIG_NR_DRAM_BANKS	1
++#define CONFIG_MX35_256M_RAM
+ #define PHYS_SDRAM_1		CSD0_BASE_ADDR
+ #define PHYS_SDRAM_1_SIZE	(128 * 1024 * 1024)
+-#define iomem_valid_addr(addr, size) \
+-	(addr >= PHYS_SDRAM_1 && addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE))
++#ifdef CONFIG_MX35_256M_RAM
++	#define CONFIG_NR_DRAM_BANKS	2
++	#define PHYS_SDRAM_2		CSD1_BASE_ADDR
++	#define PHYS_SDRAM_2_SIZE	(128 * 1024 * 1024)
++	#define iomem_valid_addr(addr, size) \
++		((addr >= PHYS_SDRAM_1 && addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE)) \
++		|| (addr >= PHYS_SDRAM_2 && addr <= (PHYS_SDRAM_2 + PHYS_SDRAM_2_SIZE)))
++#else
++	#define CONFIG_NR_DRAM_BANKS	1
++	#define iomem_valid_addr(addr, size) \
++		(addr >= PHYS_SDRAM_1 && addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE))
++#endif
+ 
+ /*
+  * MMC Configs
+-- 
+1.7.7.4
+

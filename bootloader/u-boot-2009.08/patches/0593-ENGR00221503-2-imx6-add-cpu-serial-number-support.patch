@@ -1,0 +1,469 @@
+From 794288699c9b66afdb1a39c84e65066c0c44d5f0 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Mon, 27 Aug 2012 17:53:59 +0800
+Subject: [PATCH 593/678] ENGR00221503-2 imx6: add cpu serial number support.
+
+add cpu serial number tag, kernel will read this
+number and put it in /proc/cpuinfo, as 'Serial' part
+it can be used as a UUID source in software.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/generic.c                  |   12 ++++++++++++
+ include/asm-arm/arch-mx6/mx6.h                  |   10 ++++++++++
+ include/configs/mx6dl_arm2.h                    |    1 +
+ include/configs/mx6dl_arm2_iram.h               |    1 +
+ include/configs/mx6dl_arm2_lpddr2.h             |    1 +
+ include/configs/mx6dl_arm2_mfg.h                |    1 +
+ include/configs/mx6dl_sabresd.h                 |    1 +
+ include/configs/mx6dl_sabresd_mfg.h             |    1 +
+ include/configs/mx6q_arm2.h                     |    1 +
+ include/configs/mx6q_arm2_iram.h                |    1 +
+ include/configs/mx6q_arm2_lpddr2.h              |    1 +
+ include/configs/mx6q_arm2_lpddr2pop.h           |    1 +
+ include/configs/mx6q_arm2_mfg.h                 |    1 +
+ include/configs/mx6q_sabreauto.h                |    1 +
+ include/configs/mx6q_sabreauto_mfg.h            |    1 +
+ include/configs/mx6q_sabreauto_nand.h           |    1 +
+ include/configs/mx6q_sabreauto_weimnor.h        |    1 +
+ include/configs/mx6q_sabreauto_weimnor_mfg.h    |    1 +
+ include/configs/mx6q_sabrelite.h                |    1 +
+ include/configs/mx6q_sabrelite_android.h        |    1 +
+ include/configs/mx6q_sabrelite_mfg.h            |    1 +
+ include/configs/mx6q_sabresd.h                  |    1 +
+ include/configs/mx6q_sabresd_iram.h             |    1 +
+ include/configs/mx6q_sabresd_mfg.h              |    1 +
+ include/configs/mx6sl_arm2.h                    |    1 +
+ include/configs/mx6sl_arm2_iram.h               |    1 +
+ include/configs/mx6sl_arm2_mfg.h                |    1 +
+ include/configs/mx6sl_evk.h                     |    1 +
+ include/configs/mx6sl_evk_iram.h                |    1 +
+ include/configs/mx6solo_sabreauto.h             |    1 +
+ include/configs/mx6solo_sabreauto_mfg.h         |    1 +
+ include/configs/mx6solo_sabreauto_weimnor.h     |    1 +
+ include/configs/mx6solo_sabreauto_weimnor_mfg.h |    1 +
+ 33 files changed, 53 insertions(+), 0 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index f0a9ce2..60c87c7 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -51,6 +51,10 @@
+ #include <asm/arch/mx6_secure.h>
+ #endif
+ 
++#ifdef CONFIG_SERIAL_TAG
++#include <imx_otp.h>
++#endif
++
+ enum pll_clocks {
+ 	CPU_PLL1,	/* System PLL */
+ 	BUS_PLL2,	/* System Bus PLL*/
+@@ -1426,3 +1430,11 @@ struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+ 	},
+ };
+ #endif
++
++#ifdef CONFIG_SERIAL_TAG
++void get_board_serial(struct tag_serialnr *serialnr)
++{
++	imx_otp_read_one_u32(CPU_UID_LOW_FUSE_INDEX, &serialnr->low);
++	imx_otp_read_one_u32(CPU_UID_HIGH_FUSE_INDEX, &serialnr->high);
++}
++#endif
+diff --git a/include/asm-arm/arch-mx6/mx6.h b/include/asm-arm/arch-mx6/mx6.h
+index d03adc9..efb90c2 100644
+--- a/include/asm-arm/arch-mx6/mx6.h
++++ b/include/asm-arm/arch-mx6/mx6.h
+@@ -105,6 +105,16 @@
+  */
+ #define DVFS_MAX_PIX_CLK	54000000
+ 
++/*!
++ * The Low 32 bits of CPU Serial Number Fuse Index
++ */
++#define CPU_UID_LOW_FUSE_INDEX         1
++
++/*!
++ * The High 32 bits of CPU Serial Number Fuse Index
++ */
++#define CPU_UID_HIGH_FUSE_INDEX         2
++
+ 
+ /* IROM
+  */
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index 8e15535..fc44c51 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -56,6 +56,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6dl_arm2_iram.h b/include/configs/mx6dl_arm2_iram.h
+index 6bd3044..6f64273 100644
+--- a/include/configs/mx6dl_arm2_iram.h
++++ b/include/configs/mx6dl_arm2_iram.h
+@@ -51,6 +51,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6dl_arm2_lpddr2.h b/include/configs/mx6dl_arm2_lpddr2.h
+index 1e1dbb7..420d538 100644
+--- a/include/configs/mx6dl_arm2_lpddr2.h
++++ b/include/configs/mx6dl_arm2_lpddr2.h
+@@ -53,6 +53,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6dl_arm2_mfg.h b/include/configs/mx6dl_arm2_mfg.h
+index 4baf4c6..aa6d0dc 100644
+--- a/include/configs/mx6dl_arm2_mfg.h
++++ b/include/configs/mx6dl_arm2_mfg.h
+@@ -51,6 +51,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index 60d8695..1d32ffb 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -51,6 +51,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6dl_sabresd_mfg.h b/include/configs/mx6dl_sabresd_mfg.h
+index ea45d50..aee4f38 100644
+--- a/include/configs/mx6dl_sabresd_mfg.h
++++ b/include/configs/mx6dl_sabresd_mfg.h
+@@ -52,6 +52,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index 39f49fc..baea880 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -54,6 +54,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_arm2_iram.h b/include/configs/mx6q_arm2_iram.h
+index 3a35720..a027b02 100644
+--- a/include/configs/mx6q_arm2_iram.h
++++ b/include/configs/mx6q_arm2_iram.h
+@@ -49,6 +49,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_arm2_lpddr2.h b/include/configs/mx6q_arm2_lpddr2.h
+index 826f762..9a92c76 100644
+--- a/include/configs/mx6q_arm2_lpddr2.h
++++ b/include/configs/mx6q_arm2_lpddr2.h
+@@ -50,6 +50,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_arm2_lpddr2pop.h b/include/configs/mx6q_arm2_lpddr2pop.h
+index e09752c..eac4799 100755
+--- a/include/configs/mx6q_arm2_lpddr2pop.h
++++ b/include/configs/mx6q_arm2_lpddr2pop.h
+@@ -51,6 +51,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_arm2_mfg.h b/include/configs/mx6q_arm2_mfg.h
+index 6890832..fe0b3aa 100644
+--- a/include/configs/mx6q_arm2_mfg.h
++++ b/include/configs/mx6q_arm2_mfg.h
+@@ -50,6 +50,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabreauto.h b/include/configs/mx6q_sabreauto.h
+index 8aa7a30..5f8f02c 100644
+--- a/include/configs/mx6q_sabreauto.h
++++ b/include/configs/mx6q_sabreauto.h
+@@ -49,6 +49,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabreauto_mfg.h b/include/configs/mx6q_sabreauto_mfg.h
+index 4cafba4..29a1afb 100644
+--- a/include/configs/mx6q_sabreauto_mfg.h
++++ b/include/configs/mx6q_sabreauto_mfg.h
+@@ -50,6 +50,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabreauto_nand.h b/include/configs/mx6q_sabreauto_nand.h
+index 5232647..ac344d2 100644
+--- a/include/configs/mx6q_sabreauto_nand.h
++++ b/include/configs/mx6q_sabreauto_nand.h
+@@ -51,6 +51,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabreauto_weimnor.h b/include/configs/mx6q_sabreauto_weimnor.h
+index 058b515..725d9ac 100644
+--- a/include/configs/mx6q_sabreauto_weimnor.h
++++ b/include/configs/mx6q_sabreauto_weimnor.h
+@@ -48,6 +48,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabreauto_weimnor_mfg.h b/include/configs/mx6q_sabreauto_weimnor_mfg.h
+index dbd0aec..349afc0 100644
+--- a/include/configs/mx6q_sabreauto_weimnor_mfg.h
++++ b/include/configs/mx6q_sabreauto_weimnor_mfg.h
+@@ -50,6 +50,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index 66bd6a9..b692c87 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -49,6 +49,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabrelite_android.h b/include/configs/mx6q_sabrelite_android.h
+index 4aff72a..71ae2e8 100644
+--- a/include/configs/mx6q_sabrelite_android.h
++++ b/include/configs/mx6q_sabrelite_android.h
+@@ -49,6 +49,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabrelite_mfg.h b/include/configs/mx6q_sabrelite_mfg.h
+index 8064306..115b4f5 100644
+--- a/include/configs/mx6q_sabrelite_mfg.h
++++ b/include/configs/mx6q_sabrelite_mfg.h
+@@ -50,6 +50,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index a1c55c4..0cd57d9 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -49,6 +49,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabresd_iram.h b/include/configs/mx6q_sabresd_iram.h
+index 1074840..f6eb671 100644
+--- a/include/configs/mx6q_sabresd_iram.h
++++ b/include/configs/mx6q_sabresd_iram.h
+@@ -49,6 +49,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6q_sabresd_mfg.h b/include/configs/mx6q_sabresd_mfg.h
+index 1dcfa95..62f0c06 100644
+--- a/include/configs/mx6q_sabresd_mfg.h
++++ b/include/configs/mx6q_sabresd_mfg.h
+@@ -50,6 +50,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6sl_arm2.h b/include/configs/mx6sl_arm2.h
+index d652f6b..2717cd7 100644
+--- a/include/configs/mx6sl_arm2.h
++++ b/include/configs/mx6sl_arm2.h
+@@ -58,6 +58,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6sl_arm2_iram.h b/include/configs/mx6sl_arm2_iram.h
+index 3d57305..4a39f5d 100644
+--- a/include/configs/mx6sl_arm2_iram.h
++++ b/include/configs/mx6sl_arm2_iram.h
+@@ -48,6 +48,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6sl_arm2_mfg.h b/include/configs/mx6sl_arm2_mfg.h
+index d3ac727..d9fd2a9 100644
+--- a/include/configs/mx6sl_arm2_mfg.h
++++ b/include/configs/mx6sl_arm2_mfg.h
+@@ -54,6 +54,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6sl_evk.h b/include/configs/mx6sl_evk.h
+index 7c43fe8..b89430b 100644
+--- a/include/configs/mx6sl_evk.h
++++ b/include/configs/mx6sl_evk.h
+@@ -58,6 +58,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6sl_evk_iram.h b/include/configs/mx6sl_evk_iram.h
+index 6b14434..5e087b9 100644
+--- a/include/configs/mx6sl_evk_iram.h
++++ b/include/configs/mx6sl_evk_iram.h
+@@ -48,6 +48,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6solo_sabreauto.h b/include/configs/mx6solo_sabreauto.h
+index c7cbf76..1288947 100644
+--- a/include/configs/mx6solo_sabreauto.h
++++ b/include/configs/mx6solo_sabreauto.h
+@@ -51,6 +51,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6solo_sabreauto_mfg.h b/include/configs/mx6solo_sabreauto_mfg.h
+index 69aa201..d7c0c56 100644
+--- a/include/configs/mx6solo_sabreauto_mfg.h
++++ b/include/configs/mx6solo_sabreauto_mfg.h
+@@ -52,6 +52,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6solo_sabreauto_weimnor.h b/include/configs/mx6solo_sabreauto_weimnor.h
+index de32dfc..10bc0ed 100644
+--- a/include/configs/mx6solo_sabreauto_weimnor.h
++++ b/include/configs/mx6solo_sabreauto_weimnor.h
+@@ -50,6 +50,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+diff --git a/include/configs/mx6solo_sabreauto_weimnor_mfg.h b/include/configs/mx6solo_sabreauto_weimnor_mfg.h
+index 3ee0945..eb33186 100644
+--- a/include/configs/mx6solo_sabreauto_weimnor_mfg.h
++++ b/include/configs/mx6solo_sabreauto_weimnor_mfg.h
+@@ -52,6 +52,7 @@
+ #define BOARD_LATE_INIT
+ 
+ #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
++#define CONFIG_SERIAL_TAG
+ #define CONFIG_REVISION_TAG
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+-- 
+1.7.7.4
+

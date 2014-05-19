@@ -1,0 +1,35 @@
+From 3a46a9a1bb741343127ec068442b26a8a63f39ae Mon Sep 17 00:00:00 2001
+From: Ajay Bhargav <ajay.bhargav@einfochips.com>
+Date: Wed, 5 Oct 2011 03:13:23 +0000
+Subject: [PATCH 493/678] mmc: CMD7:MMC_CMD_SELECT_CARD response fix
+
+As per JEDEC document JESD84-A441 (page 105) response for CMD7
+(MMC_CMD_SELECT_CARD) response should be R1 instead of R1b. In uboot we
+never take MMC to disconnected state and on powerup its always ideal
+state which later goes to stand-by state.
+
+from document footnote:
+R1 while selecting from Stand-By State to Transfer State; R1b while
+selecting from Disconnected State to Programming State.
+
+Signed-off-by: Ajay Bhargav <ajay.bhargav@einfochips.com>
+---
+ drivers/mmc/mmc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mmc/mmc.c b/drivers/mmc/mmc.c
+index 638edfa..efb6537 100644
+--- a/drivers/mmc/mmc.c
++++ b/drivers/mmc/mmc.c
+@@ -1317,7 +1317,7 @@ int mmc_startup(struct mmc *mmc)
+ 	/* Select the card, and put it into Transfer Mode */
+ 	if (!mmc_host_is_spi(mmc)) { /* cmd not supported in spi */
+ 		cmd.cmdidx = MMC_CMD_SELECT_CARD;
+-		cmd.resp_type = MMC_RSP_R1b;
++		cmd.resp_type = MMC_RSP_R1;
+ 		cmd.cmdarg = mmc->rca << 16;
+ 		cmd.flags = 0;
+ 		err = mmc_send_cmd(mmc, &cmd, NULL);
+-- 
+1.7.7.4
+

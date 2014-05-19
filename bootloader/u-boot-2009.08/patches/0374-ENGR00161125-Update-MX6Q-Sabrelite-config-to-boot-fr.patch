@@ -1,0 +1,35 @@
+From 10bff02ace00c37a31d6842376f96e0cda6889c8 Mon Sep 17 00:00:00 2001
+From: Mahesh Mahadevan <r9aadq@freescale.com>
+Date: Mon, 31 Oct 2011 11:51:47 -0500
+Subject: [PATCH 374/678] ENGR00161125 Update MX6Q Sabrelite config to boot
+ from MMC by default
+
+Boot from MMC by default and disable DHCP by default on MX6Q Sabrelite
+
+Signed-off-by: Mahesh Mahadevan <r9aadq@freescale.com>
+---
+ include/configs/mx6q_sabrelite.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index 7b2fadb..b8a6f76 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -121,12 +121,12 @@
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+ 			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+-		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "     \
++		"bootargs_mmc=setenv bootargs ${bootargs} "     \
+ 			"root=/dev/mmcblk0p1 rootwait\0"                \
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "   \
+ 		"mmc dev 1; "	\
+ 		"mmc read ${loadaddr} 0x800 0x1800; bootm\0"	\
+-		"bootcmd=run bootcmd_net\0"                             \
++		"bootcmd=run bootcmd_mmc\0"                             \
+ 
+ 
+ #define CONFIG_ARP_TIMEOUT	200UL
+-- 
+1.7.7.4
+

@@ -1,0 +1,231 @@
+From b2185088753902a7ea7c04fe755f51383cdc6412 Mon Sep 17 00:00:00 2001
+From: Wayne Zou <b36644@freescale.com>
+Date: Fri, 29 Jun 2012 13:07:05 +0800
+Subject: [PATCH 546/678] ENGR00215515 MX6: Move IPU QoS and VDOA/IPU/VPU AXI
+ Cache config to kernel
+
+Move IPU QoS and VDOA/IPU/VPU AXI Cache config
+to linux kernel in order to reduce code duplicate
+
+Signed-off-by: Wayne Zou <b36644@freescale.com>
+---
+ board/freescale/mx6q_arm2/flash_header.S      |   29 +++++-------------------
+ board/freescale/mx6q_sabreauto/flash_header.S |   30 +++++--------------------
+ board/freescale/mx6q_sabrelite/flash_header.S |   10 +------
+ board/freescale/mx6q_sabresd/flash_header.S   |   19 +++------------
+ 4 files changed, 18 insertions(+), 70 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/flash_header.S b/board/freescale/mx6q_arm2/flash_header.S
+index 1eec5c4..b62428b 100644
+--- a/board/freescale/mx6q_arm2/flash_header.S
++++ b/board/freescale/mx6q_arm2/flash_header.S
+@@ -65,8 +65,8 @@ image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ plugin:           .word 0x0
+ 
+ #if defined CONFIG_MX6DL_DDR3
+-dcd_hdr:          .word 0x40F802D2 /* Tag=0xD2, Len=94*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x04F402CC /* Tag=0xCC, Len=94*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x40E002D2 /* Tag=0xD2, Len=91*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x04DC02CC /* Tag=0xCC, Len=91*8 + 4, Param=0x04 */
+ 
+ # IOMUXC_BASE_ADDR  = 0x20e0000
+ # DDR IO TYPE
+@@ -194,12 +194,6 @@ MXC_DCD_ITEM(89, MMDC_P0_BASE_ADDR + 0x004, 0x0002556d)
+ MXC_DCD_ITEM(90, MMDC_P1_BASE_ADDR + 0x004, 0x00011006)
+ MXC_DCD_ITEM(91, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ 
+-/* enable AXI cache for VDOA/VPU/IPU */
+-MXC_DCD_ITEM(92, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
+-/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
+-MXC_DCD_ITEM(93, IOMUXC_BASE_ADDR + 0x018, 0x007f007f)
+-MXC_DCD_ITEM(94, IOMUXC_BASE_ADDR + 0x01c, 0x007f007f)
+-
+ #elif defined CONFIG_MX6DL_LPDDR2
+ 
+ dcd_hdr:          .word 0x408803D2 /* Tag=0xD2, Len=112*8 + 4 + 4, Ver=0x40 */
+@@ -506,8 +500,8 @@ MXC_DCD_ITEM(111, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ MXC_DCD_ITEM(112, MMDC_P1_BASE_ADDR + 0x01c, 0x00000000)
+ 
+ #elif defined(CONFIG_LPDDR2)
+-dcd_hdr:          .word 0x400804D2 /* Tag=0xD2, Len=128*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x040404CC /* Tag=0xCC, Len=128*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x40F003D2 /* Tag=0xD2, Len=125*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x04EC03CC /* Tag=0xCC, Len=125*8 + 4, Param=0x04 */
+ 
+ /* DCD */
+ MXC_DCD_ITEM(1, CCM_BASE_ADDR + 0x18, 0x60324)
+@@ -672,12 +666,6 @@ MXC_DCD_ITEM(124, MMDC_P1_BASE_ADDR + 0x1c, 0x0)
+ 
+ MXC_DCD_ITEM(125, MMDC_P0_BASE_ADDR + 0x404, 0x00011006)
+ 
+-/* enable AXI cache for VDOA/VPU/IPU */
+-MXC_DCD_ITEM(126, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
+-/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
+-MXC_DCD_ITEM(127, IOMUXC_BASE_ADDR + 0x018, 0x007f007f)
+-MXC_DCD_ITEM(128, IOMUXC_BASE_ADDR + 0x01c, 0x007f007f)
+-
+ #elif defined CONFIG_LPDDR2POP
+ dcd_hdr:          .word 0x40F003D2 /* Tag=0xD2, Len=125*8 + 4 + 4, Ver=0x40 */
+ write_dcd_cmd:    .word 0x04E403CC /* Tag=0xCC, Len=125*8 + 4, Param=0x04 */
+@@ -819,8 +807,8 @@ MXC_DCD_ITEM(123, MMDC_P1_BASE_ADDR + 0x404, 0x00011006)
+ MXC_DCD_ITEM(124, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ MXC_DCD_ITEM(125, MMDC_P1_BASE_ADDR + 0x01c, 0x00000000)
+ #else
+-dcd_hdr:          .word 0x40F002D2 /* Tag=0xD2, Len=93*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x04EC02CC /* Tag=0xCC, Len=93*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x40D802D2 /* Tag=0xD2, Len=90*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x04D402CC /* Tag=0xCC, Len=90*8 + 4, Param=0x04 */
+ 
+ /* DCD */
+ 
+@@ -936,11 +924,6 @@ MXC_DCD_ITEM(88, MMDC_P1_BASE_ADDR + 0x8b8, 0x00000800)
+ MXC_DCD_ITEM(89, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ MXC_DCD_ITEM(90, MMDC_P0_BASE_ADDR + 0x404, 0x00011006)
+ 
+-/* enable AXI cache for VDOA/VPU/IPU */
+-MXC_DCD_ITEM(91, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
+-/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
+-MXC_DCD_ITEM(92, IOMUXC_BASE_ADDR + 0x018, 0x007f007f)
+-MXC_DCD_ITEM(93, IOMUXC_BASE_ADDR + 0x01c, 0x007f007f)
+ #endif
+ 
+ #else
+diff --git a/board/freescale/mx6q_sabreauto/flash_header.S b/board/freescale/mx6q_sabreauto/flash_header.S
+index c8a149b..6977691 100644
+--- a/board/freescale/mx6q_sabreauto/flash_header.S
++++ b/board/freescale/mx6q_sabreauto/flash_header.S
+@@ -54,8 +54,8 @@ image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ plugin:           .word 0x0
+ 
+ #if defined CONFIG_MX6SOLO_DDR3
+-dcd_hdr:          .word 0x40A002D2 /* Tag=0xD2, Len=83*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x049C02CC /* Tag=0xCC, Len=83*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x408802D2 /* Tag=0xD2, Len=80*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x048402CC /* Tag=0xCC, Len=80*8 + 4, Param=0x04 */
+ 
+ /* DCD */
+ /* DDR3 initialization based on the MX6Solo Auto Reference Design (ARD) */
+@@ -154,15 +154,9 @@ MXC_DCD_ITEM(78, MMDC_P0_BASE_ADDR + 0x004, 0x0002556d)
+ MXC_DCD_ITEM(79, MMDC_P1_BASE_ADDR + 0x004, 0x00011006)
+ MXC_DCD_ITEM(80, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ 
+-/* enable AXI cache for VDOA/VPU/IPU */
+-MXC_DCD_ITEM(81, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
+-/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
+-MXC_DCD_ITEM(82, IOMUXC_BASE_ADDR + 0x018, 0x007f007f)
+-MXC_DCD_ITEM(83, IOMUXC_BASE_ADDR + 0x01c, 0x007f007f)
+-
+ #elif defined CONFIG_LPDDR2
+-dcd_hdr:          .word 0x400804D2 /* Tag=0xD2, Len=128*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x040404CC /* Tag=0xCC, Len=128*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x40F003D2 /* Tag=0xD2, Len=125*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x04EC03CC /* Tag=0xCC, Len=125*8 + 4, Param=0x04 */
+ 
+ /* DCD */
+ MXC_DCD_ITEM(1, CCM_BASE_ADDR + 0x18, 0x60324)
+@@ -327,16 +321,10 @@ MXC_DCD_ITEM(124, MMDC_P1_BASE_ADDR + 0x1c, 0x0)
+ 
+ MXC_DCD_ITEM(125, MMDC_P0_BASE_ADDR + 0x404, 0x00011006)
+ 
+-/* enable AXI cache for VDOA/VPU/IPU */
+-MXC_DCD_ITEM(126, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
+-/* set IPU Qos=0x7 */
+-MXC_DCD_ITEM(127, IOMUXC_BASE_ADDR + 0x018, 0x00070007)
+-MXC_DCD_ITEM(128, IOMUXC_BASE_ADDR + 0x01c, 0x00070007)
+-
+ #else
+ 
+-dcd_hdr:          .word 0x40C802D2 /* Tag=0xD2, Len=88*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x04C402CC /* Tag=0xCC, Len=88*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x40B002D2 /* Tag=0xD2, Len=85*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x04AC02CC /* Tag=0xCC, Len=85*8 + 4, Param=0x04 */
+ 
+ /* DCD */
+ /* DDR3 initialization based on the MX6Q Auto Reference Design (ARD) */
+@@ -450,12 +438,6 @@ MXC_DCD_ITEM(84, MMDC_P0_BASE_ADDR + 0x004, 0x00025576)
+ 
+ MXC_DCD_ITEM(85, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ 
+-
+-/* enable AXI cache for VDOA/VPU/IPU */
+-MXC_DCD_ITEM(86, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
+-/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
+-MXC_DCD_ITEM(87, IOMUXC_BASE_ADDR + 0x018, 0x007f007f)
+-MXC_DCD_ITEM(88, IOMUXC_BASE_ADDR + 0x01c, 0x007f007f)
+ #endif
+ 
+ #endif
+diff --git a/board/freescale/mx6q_sabrelite/flash_header.S b/board/freescale/mx6q_sabrelite/flash_header.S
+index c0ec85c..ee6298f 100644
+--- a/board/freescale/mx6q_sabrelite/flash_header.S
++++ b/board/freescale/mx6q_sabrelite/flash_header.S
+@@ -53,8 +53,8 @@ boot_data:        .word TEXT_BASE
+ image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ plugin:           .word 0x0
+ 
+-dcd_hdr:          .word 0x40F002D2 /* Tag=0xD2, Len=93*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x04EC02CC /* Tag=0xCC, Len=93*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x40D802D2 /* Tag=0xD2, Len=90*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x04D402CC /* Tag=0xCC, Len=90*8 + 4, Param=0x04 */
+ 
+ /* DCD */
+ 
+@@ -170,10 +170,4 @@ MXC_DCD_ITEM(88, MMDC_P1_BASE_ADDR + 0x8b8, 0x00000800)
+ MXC_DCD_ITEM(89, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ MXC_DCD_ITEM(90, MMDC_P0_BASE_ADDR + 0x404, 0x00011006)
+ 
+-/* enable AXI cache for VDOA/VPU/IPU */
+-MXC_DCD_ITEM(91, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
+-/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
+-MXC_DCD_ITEM(92, IOMUXC_BASE_ADDR + 0x018, 0x007f007f)
+-MXC_DCD_ITEM(93, IOMUXC_BASE_ADDR + 0x01c, 0x007f007f)
+-
+ #endif
+diff --git a/board/freescale/mx6q_sabresd/flash_header.S b/board/freescale/mx6q_sabresd/flash_header.S
+index 14b9df3..5025446 100644
+--- a/board/freescale/mx6q_sabresd/flash_header.S
++++ b/board/freescale/mx6q_sabresd/flash_header.S
+@@ -54,8 +54,8 @@ image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ plugin:           .word 0x0
+ 
+ #if defined CONFIG_MX6DL_DDR3
+-dcd_hdr:          .word 0x40F802D2 /* Tag=0xD2, Len=94*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x04F402CC /* Tag=0xCC, Len=94*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x40E002D2 /* Tag=0xD2, Len=91*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x04DC02CC /* Tag=0xCC, Len=91*8 + 4, Param=0x04 */
+ 
+ # IOMUXC_BASE_ADDR  = 0x20e0000
+ # DDR IO TYPE
+@@ -181,15 +181,9 @@ MXC_DCD_ITEM(89, MMDC_P0_BASE_ADDR + 0x004, 0x0002556d)
+ MXC_DCD_ITEM(90, MMDC_P1_BASE_ADDR + 0x404, 0x00011006)
+ MXC_DCD_ITEM(91, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ 
+-/* enable AXI cache for VDOA/VPU/IPU */
+-MXC_DCD_ITEM(92, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
+-/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
+-MXC_DCD_ITEM(93, IOMUXC_BASE_ADDR + 0x018, 0x007f007f)
+-MXC_DCD_ITEM(94, IOMUXC_BASE_ADDR + 0x01c, 0x007f007f)
+-
+ #else
+-dcd_hdr:          .word 0x40F002D2 /* Tag=0xD2, Len=93*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x04EC02CC /* Tag=0xCC, Len=93*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x40D802D2 /* Tag=0xD2, Len=90*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x04D402CC /* Tag=0xCC, Len=90*8 + 4, Param=0x04 */
+ 
+ /* DCD */
+ 
+@@ -305,11 +299,6 @@ MXC_DCD_ITEM(88, MMDC_P1_BASE_ADDR + 0x8b8, 0x00000800)
+ MXC_DCD_ITEM(89, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ MXC_DCD_ITEM(90, MMDC_P0_BASE_ADDR + 0x404, 0x00011006)
+ 
+-/* enable AXI cache for VDOA/VPU/IPU */
+-MXC_DCD_ITEM(91, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
+-/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
+-MXC_DCD_ITEM(92, IOMUXC_BASE_ADDR + 0x018, 0x007f007f)
+-MXC_DCD_ITEM(93, IOMUXC_BASE_ADDR + 0x01c, 0x007f007f)
+ #endif
+ 
+ #endif
+-- 
+1.7.7.4
+

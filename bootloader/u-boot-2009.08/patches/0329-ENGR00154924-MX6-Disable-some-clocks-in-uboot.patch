@@ -1,0 +1,48 @@
+From 7c6061fc2b18db8f748f9e667d793e380f74d355 Mon Sep 17 00:00:00 2001
+From: Anson Huang <b20788@freescale.com>
+Date: Wed, 17 Aug 2011 13:09:34 +0800
+Subject: [PATCH 329/678] ENGR00154924 [MX6]Disable some clocks in uboot
+
+We should disabel some clocks in uboot to save
+power, or when we download from enet to boot up
+kernel, the power consumption could be up 800mA@5V,
+may damage the chip.
+
+After apply it, we can save more then 200mA@5V.
+
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/lowlevel_init.S |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/lowlevel_init.S b/board/freescale/mx6q_sabreauto/lowlevel_init.S
+index 467af57..a12a61a 100644
+--- a/board/freescale/mx6q_sabreauto/lowlevel_init.S
++++ b/board/freescale/mx6q_sabreauto/lowlevel_init.S
+@@ -70,16 +70,21 @@
+ #endif
+ 
+ 	/* Restore the default values in the Gate registers */
+-	ldr r1, =0xFFFFFFFF
+ 	ldr r0, CCM_BASE_ADDR_W
++	ldr r1, =0x3F
+ 	str r1, [r0, #CLKCTL_CCGR0]
++	ldr r1, =0x30FC00
+ 	str r1, [r0, #CLKCTL_CCGR1]
++	ldr r1, =0xFFFC000
+ 	str r1, [r0, #CLKCTL_CCGR2]
++	ldr r1, =0x3FF00000
+ 	str r1, [r0, #CLKCTL_CCGR3]
++	ldr r1, =0xF300
+ 	str r1, [r0, #CLKCTL_CCGR4]
++	ldr r1, =0xF0000C3
+ 	str r1, [r0, #CLKCTL_CCGR5]
++	ldr r1, =0x3C0
+ 	str r1, [r0, #CLKCTL_CCGR6]
+-	str r1, [r0, #CLKCTL_CCGR7]
+ 
+ .endm
+ 
+-- 
+1.7.7.4
+

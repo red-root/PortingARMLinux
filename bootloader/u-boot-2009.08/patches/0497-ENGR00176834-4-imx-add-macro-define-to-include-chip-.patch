@@ -1,0 +1,40 @@
+From b849cc37fc5f66c4184ff4bb9a6ccb4ecd337827 Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Fri, 30 Mar 2012 19:07:05 +0800
+Subject: [PATCH 497/678] ENGR00176834-4 - [imx]:add macro define to include
+ chip head file
+
+- Different chip will include different head file, so add macro
+  define to limit the use range.
+
+Signed-off-by: Fugang Duan  <B38611@freescale.com>
+---
+ board/freescale/common/fsl_sys_rev.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/board/freescale/common/fsl_sys_rev.c b/board/freescale/common/fsl_sys_rev.c
+index 9fdabac..26f9f17 100644
+--- a/board/freescale/common/fsl_sys_rev.c
++++ b/board/freescale/common/fsl_sys_rev.c
+@@ -20,7 +20,9 @@
+ #include <config.h>
+ #include <common.h>
+ #include <asm/io.h>
++#if defined(CONFIG_MX6Q) || defined(CONFIG_MX6DL)
+ #include <asm/arch/mx6.h>
++#endif
+ 
+ #ifdef CONFIG_CMD_IMXOTP
+ #include <imx_otp.h>
+@@ -28,7 +30,7 @@
+ 
+ unsigned int fsl_system_rev;
+ 
+-#if defined(CONFIG_MX6Q) || defined(CONFIG_MX6DL) || defined(CONFIG_MX6SOLO)
++#if defined(CONFIG_MX6Q) || defined(CONFIG_MX6DL)
+ /*
+  * Set fsl_system_rev:
+  * bit 0-7: Chip Revision ID
+-- 
+1.7.7.4
+

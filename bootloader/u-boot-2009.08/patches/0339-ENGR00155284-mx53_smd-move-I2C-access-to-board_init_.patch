@@ -1,0 +1,69 @@
+From a9cced4ea28c4fda8550745bb10bebc7a93df408 Mon Sep 17 00:00:00 2001
+From: Wayne Zou <b36644@freescale.com>
+Date: Wed, 24 Aug 2011 15:53:46 +0800
+Subject: [PATCH 339/678] ENGR00155284 mx53_smd: move I2C access to
+ board_init_late for system hang issue
+
+MX53 SMD hangs if reset many times with lower possibility.
+If doing I2C access in early time, I2C may cause system hangs.
+So moving I2C access to late phase to make system hang issue disappear.
+
+QA Test result: QA raised 6 full rounds of CTS one-round test
+Totally ran for 6 rounds about 27 hours, reboot for 56*6=336 times,
+no reboot failure occurred.
+
+Signed-off-by: Wayne Zou <b36644@freescale.com>
+---
+ board/freescale/mx53_smd/mx53_smd.c |   21 ++++++++++++---------
+ 1 files changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/board/freescale/mx53_smd/mx53_smd.c b/board/freescale/mx53_smd/mx53_smd.c
+index 0ced293..a1e5c5c 100644
+--- a/board/freescale/mx53_smd/mx53_smd.c
++++ b/board/freescale/mx53_smd/mx53_smd.c
+@@ -414,8 +414,12 @@ void setup_pmic_voltages(void)
+ 	/* increase VDDGP as 1.25V for 1GHZ */
+ 	value = 0x5e;
+ 	do {
+-		if (0 == i2c_write(0x48, 0x2e, 1, &value, 1))
++		if (0 != i2c_write(0x48, 0x2e, 1, &value, 1)) {
++			printf("da9052_i2c_is_connected - i2c write failed.....\n");
++		} else {
++			printf("da9052_i2c_is_connected - i2c write success....\n");
+ 			ret = 0;
++		}
+ 	} while (ret != 0 && retries--);
+ 	i2c_read(0x48, 60, 1, &value, 1);
+ 	value |= 0x1;
+@@ -834,14 +838,6 @@ int board_init(void)
+ 	setup_fec();
+ #endif
+ 
+-#ifdef CONFIG_I2C_MXC
+-	setup_i2c(CONFIG_SYS_I2C_PORT);
+-	/* Increase VDDGP voltage */
+-	setup_pmic_voltages();
+-	/* Switch to 1GHZ */
+-	clk_config(CONFIG_REF_CLK_FREQ, 1000, CPU_CLK);
+-#endif
+-
+ #if defined(CONFIG_DWC_AHSATA)
+ 	setup_sata_device();
+ #endif
+@@ -984,6 +980,13 @@ int check_recovery_cmd_file(void)
+ 
+ int board_late_init(void)
+ {
++#ifdef CONFIG_I2C_MXC
++	setup_i2c(CONFIG_SYS_I2C_PORT);
++	/* Increase VDDGP voltage */
++	setup_pmic_voltages();
++	/* Switch to 1GHZ */
++	clk_config(CONFIG_REF_CLK_FREQ, 1000, CPU_CLK);
++#endif
+ 	return 0;
+ }
+ 
+-- 
+1.7.7.4
+

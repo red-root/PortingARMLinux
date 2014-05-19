@@ -1,0 +1,38 @@
+From a7decba6225c7691919ad5798627c970f447da14 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Tue, 30 Oct 2012 09:46:53 +0800
+Subject: [PATCH 622/678] ENGR00231553: MX6SL: Uncovered an issue for I2C
+ parent clock
+
+We need to check reg bit to decide I2C parent clock.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/generic.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index a3d965c..191ab5e 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -212,10 +212,15 @@ static u32 __get_ipg_clk(void)
+ 
+ static u32 __get_ipg_per_clk(void)
+ {
+-	u32 podf;
++	u32 podf, reg;
+ 	u32 clk_root = __get_ipg_clk();
+ 
+-	podf = __REG(MXC_CCM_CSCMR1) & MXC_CCM_CSCMR1_PERCLK_PODF_MASK;
++	reg = __REG(MXC_CCM_CSCMR1);
++#ifdef CONFIG_MX6SL
++	if (reg & 0x40) /* PERCLK from 24M OSC */
++		clk_root = CONFIG_MX6_HCLK_FREQ;
++#endif
++	podf = reg & MXC_CCM_CSCMR1_PERCLK_PODF_MASK;
+ 	return clk_root / (podf + 1);
+ }
+ 
+-- 
+1.7.7.4
+

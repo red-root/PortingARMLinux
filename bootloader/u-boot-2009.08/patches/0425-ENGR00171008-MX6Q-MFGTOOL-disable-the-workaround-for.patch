@@ -1,0 +1,81 @@
+From b883fc83fad6f1eecfada25c8e3edaddf49b8a9f Mon Sep 17 00:00:00 2001
+From: Huang Shijie <b32955@freescale.com>
+Date: Wed, 28 Dec 2011 13:38:48 +0800
+Subject: [PATCH 425/678] ENGR00171008 MX6Q/MFGTOOL : disable the workaround
+ for MFGTOOL
+
+Disable the uboot workaround. It will crash the MFGTOOL.
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ board/freescale/mx6q_arm2/mx6q_arm2.c |    7 -------
+ cpu/arm_cortexa8/mx6/generic.c        |    2 ++
+ include/configs/mx6q_arm2_mfg.h       |    1 +
+ include/configs/mx6q_sabrelite_mfg.h  |    1 +
+ 4 files changed, 4 insertions(+), 7 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index c5ff728..3c3a484 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -733,13 +733,6 @@ void setup_splash_image(void)
+ 
+ int board_init(void)
+ {
+-#ifdef CONFIG_MFG
+-/* MFG firmware need reset usb to avoid host crash firstly */
+-#define USBCMD 0x140
+-	int val = readl(OTG_BASE_ADDR + USBCMD);
+-	val &= ~0x1; /*RS bit*/
+-	writel(val, OTG_BASE_ADDR + USBCMD);
+-#endif
+ 	mxc_iomux_v3_init((void *)IOMUXC_BASE_ADDR);
+ 	setup_boot_device();
+ 
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 7a42a5f..44f1a43 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -948,6 +948,7 @@ int cpu_eth_init(bd_t *bis)
+ int arch_cpu_init(void)
+ {
+ 	int val;
++#ifndef CONFIG_MFG
+ 	unsigned int reg;
+ 
+ 	/* Check the flag of SNVS_LPGPR[0], SRC register will not reset
+@@ -971,6 +972,7 @@ int arch_cpu_init(void)
+ 		writel(readl(SNVS_BASE_ADDR + SNVS_LPGPR_OFFSET) & (~0x1),
+ 				SNVS_BASE_ADDR + SNVS_LPGPR_OFFSET);
+ 	}
++#endif
+ 
+ 	icache_enable();
+ 	dcache_enable();
+diff --git a/include/configs/mx6q_arm2_mfg.h b/include/configs/mx6q_arm2_mfg.h
+index 87856e7..c3b2b54 100644
+--- a/include/configs/mx6q_arm2_mfg.h
++++ b/include/configs/mx6q_arm2_mfg.h
+@@ -25,6 +25,7 @@
+ #include <asm/arch/mx6.h>
+ 
+  /* High Level Configuration Options */
++#define CONFIG_MFG
+ #define CONFIG_ARMV7	/* This is armv7 Cortex-A9 CPU core */
+ #define CONFIG_MXC
+ #define CONFIG_MX6Q
+diff --git a/include/configs/mx6q_sabrelite_mfg.h b/include/configs/mx6q_sabrelite_mfg.h
+index 525b65a..5bb6743 100644
+--- a/include/configs/mx6q_sabrelite_mfg.h
++++ b/include/configs/mx6q_sabrelite_mfg.h
+@@ -25,6 +25,7 @@
+ #include <asm/arch/mx6.h>
+ 
+  /* High Level Configuration Options */
++#define CONFIG_MFG
+ #define CONFIG_ARMV7	/* This is armv7 Cortex-A9 CPU core */
+ #define CONFIG_MXC
+ #define CONFIG_MX6Q
+-- 
+1.7.7.4
+

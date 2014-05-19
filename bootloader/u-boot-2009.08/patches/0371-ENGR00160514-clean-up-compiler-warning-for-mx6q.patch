@@ -1,0 +1,45 @@
+From 1b69b48bbaacca9b355a56598ae5e7342442251f Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Mon, 24 Oct 2011 13:59:55 +0800
+Subject: [PATCH 371/678] ENGR00160514: clean up compiler warning for mx6q
+
+Clean up compiler warning.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index 7d2b9b5..eaa19b6 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -268,6 +268,7 @@ static void setup_uart(void)
+ 	mxc_iomux_v3_setup_pad(MX6Q_PAD_KEY_ROW0__UART4_RXD);
+ }
+ 
++#ifdef CONFIG_VIDEO_MX5
+ #ifdef CONFIG_I2C_MXC
+ static void setup_i2c(unsigned int module_base)
+ {
+@@ -332,7 +333,7 @@ void setup_lvds_poweron(void)
+ 	value |= 0x2;
+ 	i2c_write(0x1f, 1, 1, &value, 1);
+ }
+-
++#endif
+ #endif
+ 
+ #define HW_OCOTP_MACn(n)       (0x00000620 + (n) * 0x10)
+@@ -476,7 +477,7 @@ int board_mmc_init(bd_t *bis)
+  * CONFIG is not defined, then the default target delay value will be used.
+  */
+ #ifdef CONFIG_GET_DDR_TARGET_DELAY
+-u32 get_ddr_delay(struct fsl_esdhc *cfg)
++u32 get_ddr_delay(struct fsl_esdhc_cfg *cfg)
+ {
+ 	/* No delay required on SABRE Auto board SD ports */
+ 	return 0;
+-- 
+1.7.7.4
+

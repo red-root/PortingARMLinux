@@ -1,0 +1,671 @@
+From ec10ca317794cd7e83e11df57e89085046ccd940 Mon Sep 17 00:00:00 2001
+From: Anish Trivedi <anish@freescale.com>
+Date: Wed, 19 Oct 2011 13:51:30 -0500
+Subject: [PATCH 372/678] ENGR00139221 USDHC Add SDXC UHS-I support
+
+Modified MMC library for UHS-I command sequence
+Added support to USDHC driver for UHS-I
+
+Signed-off-by: Anish Trivedi <anish@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |   13 +-
+ drivers/mmc/imx_esdhc.c                         |   82 ++++++++-
+ drivers/mmc/mmc.c                               |  225 +++++++++++++++++++++--
+ include/asm-arm/arch-mx6/mx6_pins.h             |    4 +-
+ include/fsl_esdhc.h                             |   16 ++-
+ include/mmc.h                                   |   30 +++
+ 6 files changed, 344 insertions(+), 26 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index eaa19b6..1c36e77 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -366,11 +366,15 @@ int board_eth_init(bd_t *bis)
+ 
+ #ifdef CONFIG_CMD_MMC
+ 
++/* On this board, only SD3 can support 1.8V signalling
++ * that is required for UHS-I mode of operation.
++ * Last element in struct is used to indicate 1.8V support.
++ */
+ struct fsl_esdhc_cfg usdhc_cfg[4] = {
+-	{USDHC1_BASE_ADDR, 1, 1, 1},
+-	{USDHC2_BASE_ADDR, 1, 1, 1},
+-	{USDHC3_BASE_ADDR, 1, 1, 1},
+-	{USDHC4_BASE_ADDR, 1, 1, 1},
++	{USDHC1_BASE_ADDR, 1, 1, 1, 0},
++	{USDHC2_BASE_ADDR, 1, 1, 1, 0},
++	{USDHC3_BASE_ADDR, 1, 1, 1, 1},
++	{USDHC4_BASE_ADDR, 1, 1, 1, 0},
+ };
+ 
+ #ifdef CONFIG_DYNAMIC_MMC_DEVNO
+@@ -412,6 +416,7 @@ iomux_v3_cfg_t mx6q_usdhc3_pads[] = {
+ 	MX6Q_PAD_SD3_DAT5__USDHC3_DAT5,
+ 	MX6Q_PAD_SD3_DAT6__USDHC3_DAT6,
+ 	MX6Q_PAD_SD3_DAT7__USDHC3_DAT7,
++	MX6Q_PAD_GPIO_18__USDHC3_VSELECT,
+ };
+ 
+ iomux_v3_cfg_t mx6q_usdhc4_pads[] = {
+diff --git a/drivers/mmc/imx_esdhc.c b/drivers/mmc/imx_esdhc.c
+index a326f87..ab7f585 100644
+--- a/drivers/mmc/imx_esdhc.c
++++ b/drivers/mmc/imx_esdhc.c
+@@ -72,7 +72,8 @@ struct fsl_esdhc {
+ 	char	reserved2[12];
+ 	uint dllctrl;
+ 	uint dllstatus;
+-	char	reserved3[88];
++	uint clktunectrlstatus;
++	char	reserved3[84];
+ 	uint vendorspec;
+ 	uint	mmcboot;
+ 	char	reserved4[52];
+@@ -165,7 +166,7 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
+ static int
+ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+ {
+-	uint	xfertyp;
++	uint	xfertyp, mixctrl;
+ 	uint	irqstat;
+ 	u32	tmp, sysctl_restore;
+ 	struct fsl_esdhc_cfg *cfg = (struct fsl_esdhc_cfg *)mmc->priv;
+@@ -211,8 +212,13 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+ 
+ 	/* Send the command */
+ 	writel(cmd->cmdarg, &regs->cmdarg);
+-	/* for uSDHC, write lower-half of xfertyp to mixctrl */
+-	writel((xfertyp & 0xFFFF), &regs->mixctrl);
++
++	/* write lower-half of xfertyp to mixctrl */
++	mixctrl = xfertyp & 0xFFFF;
++	/* Keep the bits 22-25 of the register as is */
++	mixctrl |= (readl(&regs->mixctrl) & (0xF << 22));
++	writel(mixctrl, &regs->mixctrl);
++
+ 	writel(xfertyp, &regs->xfertyp);
+ 
+ 	/* Mask all irqs */
+@@ -241,6 +247,11 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+ 		/* Restore auto-clock gate if error */
+ 		if (!cfg->is_usdhc && !data && (cmd->resp_type & MMC_RSP_BUSY))
+ 			writel(sysctl_restore, &regs->sysctl);
++
++		/* If this was CMD11, then notify that power cycle is needed */
++		if (cmd->cmdidx == SD_CMD_SWITCH_UHS18V)
++			printf("CMD11 to switch to 1.8V mode failed."
++				"Card requires power cycle\n");
+ 	}
+ 
+ 	if (irqstat & CMD_ERR)
+@@ -249,6 +260,27 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
+ 	if (irqstat & IRQSTAT_CTOE)
+ 		return TIMEOUT;
+ 
++	/* Switch voltage to 1.8V if CMD11 succeeded */
++	if (cmd->cmdidx == SD_CMD_SWITCH_UHS18V) {
++		/* Set SD_VSELECT to switch to 1.8V */
++		u32 reg;
++		reg = readl(&regs->vendorspec);
++		reg |= VENDORSPEC_VSELECT;
++		writel(reg, &regs->vendorspec);
++
++		/* Sleep for 5 ms - max time for card to switch to 1.8V */
++		udelay(5000);
++
++		/* Turn on SD clock */
++		writel(reg | VENDORSPEC_FRC_SDCLK_ON, &regs->vendorspec);
++
++		while (!(readl(&regs->prsstat) & PRSSTAT_DAT0))
++			;
++
++		/* restore SD clock status */
++		writel(reg, &regs->vendorspec);
++	}
++
+ 	/* Workaround for ESDHC errata ENGcm03648 */
+ 	if (!cfg->is_usdhc && !data && (cmd->resp_type & MMC_RSP_BUSY)) {
+ 		int timeout = 2500;
+@@ -355,6 +387,12 @@ void set_sysctl(struct mmc *mmc, uint clock)
+ 	} else
+ 		pre_div = 2;
+ 
++	/* For the case where clock requested is equal to SDHC clock,
++	 * the pre_div should be 1.
++	 */
++	if (clock == sdhc_clk)
++		pre_div = 1;
++
+ 	for (div = 1; div <= 16; div++)
+ 		if ((sdhc_clk / (div * pre_div)) <= clock)
+ 			break;
+@@ -494,6 +532,24 @@ static void esdhc_set_ios(struct mmc *mmc)
+ 		esdhc_dll_setup(mmc);
+ }
+ 
++static void esdhc_uhsi_tuning(struct mmc *mmc, uint val)
++{
++	struct fsl_esdhc_cfg *cfg = (struct fsl_esdhc_cfg *)mmc->priv;
++	struct fsl_esdhc *regs = (struct fsl_esdhc *)cfg->esdhc_base;
++	u32 mixctrl;
++
++	/* No tuning needed for 50 MHz or lower */
++	if (mmc->card_uhs_mode < SD_UHSI_FUNC_SDR50)
++		return;
++
++	mixctrl = readl(&regs->mixctrl);
++	mixctrl |= USDHC_MIXCTRL_EXE_TUNE | \
++		USDHC_MIXCTRL_SMPCLK_SEL | \
++		USDHC_MIXCTRL_FBCLK_SEL;
++	writel(mixctrl, &regs->mixctrl);
++	writel((val << 8), &regs->clktunectrlstatus);
++}
++
+ static int esdhc_init(struct mmc *mmc)
+ {
+ 	struct fsl_esdhc_cfg *cfg = (struct fsl_esdhc_cfg *)mmc->priv;
+@@ -509,6 +565,12 @@ static int esdhc_init(struct mmc *mmc)
+ 
+ 	/* RSTA doesn't reset MMC_BOOT register, so manually reset it */
+ 	writel(0, &regs->mmcboot);
++	/* Reset MIX_CTRL and CLK_TUNE_CTRL_STATUS regs to 0 */
++	writel(0, &regs->mixctrl);
++	writel(0, &regs->clktunectrlstatus);
++
++	/* Put VEND_SPEC to default value */
++	writel(VENDORSPEC_INIT, &regs->vendorspec);
+ 
+ #ifdef CONFIG_IMX_ESDHC_V1
+ 	tmp = readl(&regs->sysctl) | (SYSCTL_HCKEN | SYSCTL_IPGEN);
+@@ -560,6 +622,7 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
+ 	mmc->send_cmd = esdhc_send_cmd;
+ 	mmc->set_ios = esdhc_set_ios;
+ 	mmc->init = esdhc_init;
++	mmc->set_tuning = esdhc_uhsi_tuning;
+ 
+ /* Enable uSDHC if the config is defined (only for i.MX50 in SDR mode) */
+ #ifdef CONFIG_MX50_ENABLE_USDHC_SDR
+@@ -570,6 +633,7 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
+ 		sprintf(mmc->name, "FSL_USDHC");
+ 
+ 	caps = readl(&regs->hostcapblt);
++
+ 	if (caps & ESDHC_HOSTCAPBLT_VS30)
+ 		mmc->voltages |= MMC_VDD_29_30 | MMC_VDD_30_31;
+ 	if (caps & ESDHC_HOSTCAPBLT_VS33)
+@@ -596,6 +660,16 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
+ 	mmc->f_min = 400000;
+ 	mmc->f_max = MIN(mxc_get_clock(MXC_ESDHC_CLK), 52000000);
+ 
++	if (cfg->is_usdhc) {
++		mmc->f_max = MIN(mxc_get_clock(MXC_ESDHC_CLK), 208000000);
++		mmc->tuning_max = USDHC_TUNE_CTRL_MAX;
++		mmc->tuning_min = USDHC_TUNE_CTRL_MIN;
++		mmc->tuning_step = USDHC_TUNE_CTRL_STEP;
++	}
++
++	if (cfg->port_supports_uhs18v)
++		mmc->host_caps |= SD_UHSI_CAP_ALL_MODES;
++
+ 	mmc_register(mmc);
+ 
+ #ifdef CONFIG_MMC_8BIT_PORTS
+diff --git a/drivers/mmc/mmc.c b/drivers/mmc/mmc.c
+index 54e2a21..638edfa 100644
+--- a/drivers/mmc/mmc.c
++++ b/drivers/mmc/mmc.c
+@@ -328,8 +328,9 @@ mmc_bwrite(int dev_num, ulong start, lbaint_t blkcnt, const void *src)
+ 
+ 	blklen = mmc->write_bl_len;
+ 
+-	if (mmc->card_caps & EMMC_MODE_4BIT_DDR ||
+-		mmc->card_caps & EMMC_MODE_8BIT_DDR) {
++	if ((mmc->card_caps & EMMC_MODE_4BIT_DDR ||
++		mmc->card_caps & EMMC_MODE_8BIT_DDR) ||
++		(IS_SD(mmc) && mmc->high_capacity)) {
+ 		err = 0;
+ 		blklen = 512;
+ 	} else
+@@ -346,7 +347,7 @@ mmc_bwrite(int dev_num, ulong start, lbaint_t blkcnt, const void *src)
+ 			return 0;
+ 		blocks_todo -= cur;
+ 		start += cur;
+-		src += cur * mmc->write_bl_len;
++		src += cur * blklen;
+ 	} while (blocks_todo > 0);
+ 
+ 	return blkcnt;
+@@ -415,8 +416,9 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
+ 		return 0;
+ 	}
+ 
+-	if (mmc->card_caps & EMMC_MODE_4BIT_DDR ||
+-		mmc->card_caps & EMMC_MODE_8BIT_DDR) {
++	if ((mmc->card_caps & EMMC_MODE_4BIT_DDR ||
++		mmc->card_caps & EMMC_MODE_8BIT_DDR) ||
++		(IS_SD(mmc) && mmc->high_capacity)) {
+ 		blklen = 512;
+ 		err = 0;
+ 	} else {
+@@ -435,7 +437,7 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
+ 			return 0;
+ 		blocks_todo -= cur;
+ 		start += cur;
+-		dst += cur * mmc->read_bl_len;
++		dst += cur * blklen;
+ 	} while (blocks_todo > 0);
+ 
+ 	return blkcnt;
+@@ -494,9 +496,14 @@ sd_send_op_cond(struct mmc *mmc)
+ 		cmd.cmdarg = mmc_host_is_spi(mmc) ? 0 :
+ 			(mmc->voltages & 0xff8000);
+ 
+-		if (mmc->version == SD_VERSION_2)
++		/* Check for high capacity or UHS-I 1.8V signalling */
++		if (mmc->version == SD_VERSION_2) {
+ 			cmd.cmdarg |= OCR_HCS;
+ 
++			if (mmc->host_caps & SD_UHSI_CAP_ALL_MODES)
++				cmd.cmdarg |= SD_SWITCH_18V;
++		}
++
+ 		err = mmc_send_cmd(mmc, &cmd, NULL);
+ 
+ 		if (err)
+@@ -526,6 +533,11 @@ sd_send_op_cond(struct mmc *mmc)
+ 	mmc->ocr = cmd.response[0];
+ 
+ 	mmc->high_capacity = ((mmc->ocr & OCR_HCS) == OCR_HCS);
++
++	/* Is card UHS-I compliant? */
++	if (mmc->host_caps & SD_UHSI_CAP_ALL_MODES)
++		mmc->uhs18v = ((mmc->ocr & SD_SWITCH_18V) == SD_SWITCH_18V);
++
+ 	mmc->rca = 0;
+ 
+ 	return 0;
+@@ -833,6 +845,27 @@ err_rtn:
+ 	return -1;
+ }
+ 
++static int sd_send_switch_uhs18v(struct mmc *mmc)
++{
++	struct mmc_cmd cmd;
++	int err;
++
++	cmd.cmdidx = SD_CMD_SWITCH_UHS18V;
++	cmd.cmdarg = 0;
++	cmd.resp_type = MMC_RSP_R1;
++	cmd.flags = 0;
++
++	err = mmc_send_cmd(mmc, &cmd, NULL);
++
++	if (err) {
++		printf("mmc: CMD11 to switch to 1.8V UHS mode failed. \
++			Card will require power cycle\n");
++		return err;
++	}
++
++	return 0;
++}
++
+ int sd_switch_boot_part(int dev_num, unsigned int part_num)
+ {
+ 	return 0;
+@@ -917,7 +950,9 @@ retry_scr:
+ 			mmc->version = SD_VERSION_1_10;
+ 			break;
+ 		case 2:
+-			mmc->version = SD_VERSION_2;
++			if ((mmc->scr[0] >> 15) & 0x1)
++				mmc->version = SD_VERSION_3;
++			/* else, it is already initialized as SD_VERSION_2 */
+ 			break;
+ 		default:
+ 			mmc->version = SD_VERSION_1_0;
+@@ -948,15 +983,140 @@ retry_scr:
+ 	if (!(__be32_to_cpu(switch_status[3]) & SD_HIGHSPEED_SUPPORTED))
+ 		return 0;
+ 
+-	err = sd_switch(mmc, SD_SWITCH_SWITCH, 0, 1, (u8 *)&switch_status);
++	if (mmc->uhs18v) {
++		/* which UHS-I modes are supported by card? */
++		if (__be32_to_cpu(switch_status[3]) & SD_UHSI_CAP_SDR104)
++			mmc->card_caps |= SD_UHSI_CAP_SDR104;
++		if (__be32_to_cpu(switch_status[3]) & SD_UHSI_CAP_SDR50)
++			mmc->card_caps |= SD_UHSI_CAP_SDR50;
++		if (__be32_to_cpu(switch_status[3]) & SD_UHSI_CAP_DDR50)
++			mmc->card_caps |= SD_UHSI_CAP_DDR50;
++		if (__be32_to_cpu(switch_status[3]) & SD_UHSI_CAP_SDR25)
++			mmc->card_caps |= SD_UHSI_CAP_SDR25;
++		if (__be32_to_cpu(switch_status[3]) & SD_UHSI_CAP_SDR12)
++			mmc->card_caps |= SD_UHSI_CAP_SDR12;
++	} else {
++		/* Switch non-UHS card to high speed mode (50 MHz) */
++		err = sd_switch(mmc, SD_SWITCH_SWITCH, 0, 1,
++			(u8 *)&switch_status);
++
++		if (err)
++			return err;
++
++		if ((__be32_to_cpu(switch_status[4]) & 0x0f000000) ==
++			0x01000000)
++			mmc->card_caps |= MMC_MODE_HS;
++	}
++
++	return 0;
++}
++
++/* Put the card in SDR50, DDR50, or SDR104 mode of UHS-I */
++int sd_uhsi_mode_select(struct mmc *mmc)
++{
++	int timeout, err;
++	uint switch_status[16];
++	uint func_num;
++
++	mmc->card_uhs_mode = SD_UHSI_FUNC_SDR12;
++
++	/* Order of checking important to pick fastest mode */
++	if (mmc->card_caps & SD_UHSI_CAP_SDR104)
++		func_num = SD_UHSI_FUNC_SDR104;
++	else if (mmc->card_caps & SD_UHSI_CAP_SDR50)
++		func_num = SD_UHSI_FUNC_SDR50;
++	else if (mmc->card_caps & SD_UHSI_CAP_DDR50)
++		func_num = SD_UHSI_FUNC_DDR50;
++	else if (mmc->card_caps & SD_UHSI_CAP_SDR25)
++		func_num = SD_UHSI_FUNC_SDR25;
++	else
++		return 0;
++
++	timeout = 4;
++	while (timeout--) {
++		err = sd_switch(mmc, SD_SWITCH_CHECK, 0, func_num,
++				(u8 *)&switch_status);
++
++		if (err)
++			return err;
++
++		/* The function is busy if bit is set.  Try again */
++		if (!(__be32_to_cpu(switch_status[7]) & (1 << (16 + func_num))))
++			break;
++	}
++
++	err = sd_switch(mmc, SD_SWITCH_SWITCH, 0, func_num,
++		(u8 *)&switch_status);
+ 
+ 	if (err)
+ 		return err;
+ 
+-	if ((__be32_to_cpu(switch_status[4]) & 0x0f000000) == 0x01000000)
+-		mmc->card_caps |= MMC_MODE_HS;
++	if (((__be32_to_cpu(switch_status[4]) & 0x0f000000) >> 24) ==
++		func_num) {
++		mmc->card_uhs_mode = func_num;
++
++		if (mmc->card_uhs_mode == SD_UHSI_FUNC_DDR50)
++			mmc->card_caps |= EMMC_MODE_4BIT_DDR;
++	}
+ 
+ 	return 0;
++
++}
++
++int sd_send_tuning_cmd(struct mmc *mmc)
++{
++	struct mmc_cmd cmd;
++	struct mmc_data data;
++	char buff[64]; /* 64 byte tuning block */
++
++	/* Switch the frequency */
++	cmd.cmdidx = SD_CMD_TUNING;
++	cmd.resp_type = MMC_RSP_R1;
++	cmd.cmdarg = 0;
++	cmd.flags = 0;
++
++	data.dest = buff;
++	data.blocksize = 64;
++	data.blocks = 1;
++	data.flags = MMC_DATA_READ;
++
++	return mmc_send_cmd(mmc, &cmd, &data);
++}
++
++void sd_uhsi_tuning(struct mmc *mmc)
++{
++	int min, max, avg;
++
++	/* Tuning only required for SDR50 and SDR104 modes */
++	if (mmc->card_uhs_mode != SD_UHSI_FUNC_SDR50 &&
++		mmc->card_uhs_mode != SD_UHSI_FUNC_SDR104)
++		return;
++
++	/* Start with lowest value, increase it until CMD19 succeeds */
++	min = mmc->tuning_min;
++	while (min < mmc->tuning_max) {
++		mmc->set_tuning(mmc, min);
++		if (!sd_send_tuning_cmd(mmc))
++			break;
++		min += mmc->tuning_step;
++	}
++
++	/* Start with last successful value, increase it until CMD19 fails */
++	max = min;
++	while (max < mmc->tuning_max) {
++		mmc->set_tuning(mmc, max);
++		if (sd_send_tuning_cmd(mmc))
++			break;
++		max += mmc->tuning_step;
++	}
++
++	/* Set tuning value to average of
++	 * [lowest successful val, highest successful val]
++	 */
++	avg = (min + max) / 2;
++	mmc->set_tuning(mmc, avg);
++	sd_send_tuning_cmd(mmc);
++	sd_send_tuning_cmd(mmc);
+ }
+ 
+ /* frequency bases */
+@@ -1037,6 +1197,13 @@ int mmc_startup(struct mmc *mmc)
+ 	}
+ #endif
+ 
++	/* If this is a UHS-I compliant SD card, switch to 1.8V for I/O now */
++	if (mmc->uhs18v) {
++		err = sd_send_switch_uhs18v(mmc);
++		if (err)
++			return err;
++	}
++
+ 	/* Put the Card in Identify Mode */
+ 	cmd.cmdidx = mmc_host_is_spi(mmc) ? MMC_CMD_SEND_CID :
+ 		MMC_CMD_ALL_SEND_CID; /* cmd not supported in spi */
+@@ -1236,10 +1403,36 @@ int mmc_startup(struct mmc *mmc)
+ 			mmc_set_bus_width(mmc, 4);
+ 		}
+ 
+-		if (mmc->card_caps & MMC_MODE_HS)
+-			mmc_set_clock(mmc, 50000000);
+-		else
+-			mmc_set_clock(mmc, 25000000);
++		/* Switch the card and host to UHS-I modes, if available */
++		if (mmc->uhs18v) {
++			err = sd_uhsi_mode_select(mmc);
++			if (err)
++				return err;
++
++			switch (mmc->card_uhs_mode) {
++			case SD_UHSI_FUNC_SDR104:
++				mmc_set_clock(mmc, 208000000);
++				break;
++			case SD_UHSI_FUNC_SDR50:
++				mmc_set_clock(mmc, 100000000);
++				break;
++			case SD_UHSI_FUNC_SDR25:
++			case SD_UHSI_FUNC_DDR50:
++				mmc_set_clock(mmc, 50000000);
++				break;
++			case SD_UHSI_FUNC_SDR12:
++			default:
++				mmc_set_clock(mmc, 25000000);
++				break;
++			}
++
++			sd_uhsi_tuning(mmc);
++		} else {
++			if (mmc->card_caps & MMC_MODE_HS)
++				mmc_set_clock(mmc, 50000000);
++			else
++				mmc_set_clock(mmc, 25000000);
++		}
+ 	} else {
+ 
+ 		if (mmc->card_caps & MMC_MODE_4BIT) {
+@@ -1363,6 +1556,8 @@ int mmc_init(struct mmc *mmc)
+ 	if (mmc->has_init)
+ 		return 0;
+ 
++	mmc->uhs18v = 0;
++
+ 	err = mmc->init(mmc);
+ 
+ 	if (err)
+diff --git a/include/asm-arm/arch-mx6/mx6_pins.h b/include/asm-arm/arch-mx6/mx6_pins.h
+index 9648aa9..d50e17c 100644
+--- a/include/asm-arm/arch-mx6/mx6_pins.h
++++ b/include/asm-arm/arch-mx6/mx6_pins.h
+@@ -51,8 +51,8 @@ typedef enum iomux_config {
+ 		PAD_CTL_DSE_40ohm | PAD_CTL_HYS)
+ 
+ #define MX6Q_USDHC_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_PUE |	\
+-		PAD_CTL_PUS_47K_UP | PAD_CTL_SPEED_LOW | \
+-		PAD_CTL_DSE_80ohm | PAD_CTL_SRE_FAST | PAD_CTL_HYS)
++		PAD_CTL_PUS_47K_UP | PAD_CTL_SPEED_HIGH | \
++		PAD_CTL_DSE_40ohm | PAD_CTL_SRE_FAST | PAD_CTL_HYS)
+ 
+ #define MX6Q_ENET_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_PUE |	\
+ 		PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED | \
+diff --git a/include/fsl_esdhc.h b/include/fsl_esdhc.h
+index df73e22..da7e584 100644
+--- a/include/fsl_esdhc.h
++++ b/include/fsl_esdhc.h
+@@ -29,6 +29,11 @@
+ #include <asm/errno.h>
+ 
+ /* FSL eSDHC-specific constants */
++
++#define VENDORSPEC_VSELECT		0x00000002
++#define VENDORSPEC_FRC_SDCLK_ON	0x00000100
++#define VENDORSPEC_INIT	0x20007809
++
+ #define SYSCTL			0x0002e02c
+ #define SYSCTL_INITA		0x08000000
+ #define SYSCTL_TIMEOUT_MASK	0x000f0000
+@@ -97,7 +102,7 @@
+ #define PRSSTAT_CIDHB		(0x00000001)
+ 
+ #define PROCTL			0x0002e028
+-#define PROCTL_INIT		0x00000020
++#define PROCTL_INIT		0x08800020
+ #define PROCTL_DTW_4		0x00000002
+ #define PROCTL_DTW_8		0x00000004
+ #define PROCTL_D3CD		0x00000008
+@@ -173,11 +178,20 @@
+ #define USDHC_DLL_LOW_MASK	0xF
+ #define USDHC_DLL_HIGH_SHIFT	4
+ 
++#define USDHC_MIXCTRL_EXE_TUNE	0x00400000
++#define USDHC_MIXCTRL_SMPCLK_SEL	0x00800000
++#define USDHC_MIXCTRL_FBCLK_SEL	0x02000000
++
++#define USDHC_TUNE_CTRL_STEP	0x1
++#define USDHC_TUNE_CTRL_MIN	0x0
++#define USDHC_TUNE_CTRL_MAX	((1 << 7) - 1)
++
+ struct fsl_esdhc_cfg {
+ 	u32	esdhc_base;
+ 	u32	no_snoop;
+ 	u32	clk_enable;
+ 	u32	is_usdhc;
++	u32	port_supports_uhs18v;
+ };
+ 
+ #if defined(CONFIG_FSL_ESDHC) || defined(CONFIG_IMX_MMC)
+diff --git a/include/mmc.h b/include/mmc.h
+index dd47dfc..769fb92 100644
+--- a/include/mmc.h
++++ b/include/mmc.h
+@@ -31,6 +31,7 @@
+ #include <linux/list.h>
+ 
+ #define SD_VERSION_SD	0x20000
++#define SD_VERSION_3	(SD_VERSION_SD | 0x30)
+ #define SD_VERSION_2	(SD_VERSION_SD | 0x20)
+ #define SD_VERSION_1_0	(SD_VERSION_SD | 0x10)
+ #define SD_VERSION_1_10	(SD_VERSION_SD | 0x1a)
+@@ -51,6 +52,24 @@
+ #define MMC_MODE_SPI		0x010
+ #define MMC_MODE_HC		0x020
+ 
++/* UHS-I modes  - host and card capabilities*/
++#define SD_UHSI_CAP_SDR104		0x00080000
++#define SD_UHSI_CAP_SDR50		0x00040000
++#define SD_UHSI_CAP_SDR25		0x00020000
++#define SD_UHSI_CAP_SDR12		0x00010000
++#define SD_UHSI_CAP_DDR50		0x00100000
++#define SD_UHSI_CAP_ALL_MODES	(SD_UHSI_CAP_SDR104 | SD_UHSI_CAP_SDR50 |\
++	SD_UHSI_CAP_DDR50 | SD_UHSI_CAP_SDR25 | SD_UHSI_CAP_SDR12)
++#define SD_UHSI_CAP_HS_MODES	(SD_UHSI_CAP_SDR104 | SD_UHSI_CAP_SDR50 |\
++	SD_UHSI_CAP_DDR50)
++
++/* UHS-I modes - function numbers */
++#define SD_UHSI_FUNC_SDR12		0
++#define SD_UHSI_FUNC_SDR25		1
++#define SD_UHSI_FUNC_SDR50		2
++#define SD_UHSI_FUNC_SDR104		3
++#define SD_UHSI_FUNC_DDR50		4
++
+ #define SD_DATA_4BIT	0x00040000
+ 
+ #define IS_SD(x) (x->version & SD_VERSION_SD)
+@@ -121,6 +140,11 @@
+ #define OCR_VOLTAGE_MASK	0x007FFF80
+ #define OCR_ACCESS_MODE		0x60000000
+ 
++/* UHS-I related defines */
++#define SD_SWITCH_18V	0x01000000
++#define SD_CMD_SWITCH_UHS18V	11
++#define SD_CMD_TUNING	19
++
+ #define SECURE_ERASE		0x80000000
+ 
+ #define MMC_STATUS_MASK		(~0x0206BF7F)
+@@ -315,10 +339,15 @@ struct mmc {
+ 	uint f_min;
+ 	uint f_max;
+ 	int high_capacity;
++	uint uhs18v;	/* UHS-I complaint 1.8V signalling */
+ 	uint bus_width;
+ 	uint clock;
+ 	uint card_caps;
+ 	uint host_caps;
++	uint card_uhs_mode;
++	uint tuning_min;
++	uint tuning_max;
++	uint tuning_step;
+ 	uint ocr;
+ 	uint scr[2];
+ 	uint csd[4];
+@@ -337,6 +366,7 @@ struct mmc {
+ 			struct mmc_cmd *cmd, struct mmc_data *data);
+ 	void (*set_ios)(struct mmc *mmc);
+ 	int (*init)(struct mmc *mmc);
++	void (*set_tuning)(struct mmc *mmc, uint val);
+ 	uint b_max;
+ };
+ 
+-- 
+1.7.7.4
+

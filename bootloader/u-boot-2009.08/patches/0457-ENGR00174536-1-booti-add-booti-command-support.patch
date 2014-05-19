@@ -1,0 +1,648 @@
+From c530d9188dbf0d97cab4b38f0a53a28c56a6bd6c Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Wed, 15 Feb 2012 16:40:33 +0800
+Subject: [PATCH 457/678] ENGR00174536-1 booti: add booti command support.
+
+Support booti command which can boot from a boot.img
+boot.img is a zImage + ramdisk.img + bootargs + boot addr
+which include these info can be used to avoid mis match between
+kernel and ramdisk, also can avoid commit to chagne default
+bootargs.
+
+For example:
+> booti mmc1
+command will read the boot.img from 1M offset,
+and then parser the bootargs and ramdisk
+then do the boot from that zImage.
+> booti mmc1 recovery
+will going to read the recovery's partition no
+and offset and boot from recovery image.
+this recovery image also a zImage + ramdisk
+
+bootargs:
+if uboot have define a env var 'bootargs', booti command
+will use this bootargs as kernel cmdline
+
+if you want use boot.img 's bootargs, just type:
+> setenv bootargs
+in uboot to clear the bootargs in uboot env.
+our default uboot env will be NULL in config file.
+
+also, android use boot.img to support OTA.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ board/freescale/common/recovery.c        |   10 +--
+ common/cmd_bootm.c                       |  217 ++++++++++++++++++++++++++++++
+ common/cmd_fastboot.c                    |   45 +++----
+ include/bootimg.h                        |  107 +++++++++++++++
+ include/configs/mx6q_sabrelite_android.h |    2 +
+ include/configs/mx6q_sabresd_android.h   |    1 +
+ lib_arm/bootm.c                          |   66 +++++++++
+ 7 files changed, 413 insertions(+), 35 deletions(-)
+
+diff --git a/board/freescale/common/recovery.c b/board/freescale/common/recovery.c
+index 16e0be4..e63a1d4 100644
+--- a/board/freescale/common/recovery.c
++++ b/board/freescale/common/recovery.c
+@@ -1,7 +1,7 @@
+ /*
+  * Freescale Android Recovery mode checking routing
+  *
+- * Copyright (C) 2010 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -83,7 +83,6 @@ void setup_recovery_env(void)
+ 	int bootdev = get_boot_device();
+ 
+ 	boot_cmd = supported_reco_envs[bootdev].cmd;
+-	boot_args = supported_reco_envs[bootdev].args;
+ 
+ 	if (boot_cmd == NULL) {
+ 		printf("Unsupported bootup device for recovery\n");
+@@ -92,13 +91,6 @@ void setup_recovery_env(void)
+ 
+ 	printf("setup env for recovery..\n");
+ 
+-	env = getenv("bootargs_android_recovery");
+-	/* Set env to recovery mode */
+-	/* Only set recovery env when these env not exist, give user a
+-	 * chance to change their recovery env */
+-	if (!env)
+-		setenv("bootargs_android_recovery", boot_args);
+-
+ 	env = getenv("bootcmd_android_recovery");
+ 	if (!env)
+ 		setenv("bootcmd_android_recovery", boot_cmd);
+diff --git a/common/cmd_bootm.c b/common/cmd_bootm.c
+index f43b472..bcc5739 100644
+--- a/common/cmd_bootm.c
++++ b/common/cmd_bootm.c
+@@ -2,6 +2,8 @@
+  * (C) Copyright 2000-2009
+  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+  *
++ * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+  *
+@@ -35,6 +37,7 @@
+ #include <environment.h>
+ #include <lmb.h>
+ #include <linux/ctype.h>
++#include <fastboot.h>
+ #include <asm/byteorder.h>
+ 
+ #if defined(CONFIG_CMD_USB)
+@@ -57,6 +60,10 @@
+ #include <lzma/LzmaTools.h>
+ #endif /* CONFIG_LZMA */
+ 
++#include <mmc.h>
++/* Android mkbootimg format*/
++#include <bootimg.h>
++
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+ extern int gunzip (void *dst, int dstlen, unsigned char *src, unsigned long *lenp);
+@@ -1452,3 +1459,213 @@ static int do_bootm_integrity (int flag, int argc, char *argv[],
+ 	return 1;
+ }
+ #endif
++
++  /* Section for Android bootimage format support
++   * Refer:
++   * http://android.git.kernel.org/?p=platform/system/core.git;a=blob;f=mkbootimg/bootimg.h
++   */
++
++void
++bootimg_print_image_hdr (boot_img_hdr *hdr)
++{
++#ifdef DEBUG
++	int i;
++	printf("   Image magic:   %s\n", hdr->magic);
++
++	printf("   kernel_size:   0x%x\n", hdr->kernel_size);
++	printf("   kernel_addr:   0x%x\n", hdr->kernel_addr);
++
++	printf("   rdisk_size:   0x%x\n", hdr->ramdisk_size);
++	printf("   rdisk_addr:   0x%x\n", hdr->ramdisk_addr);
++
++	printf("   second_size:   0x%x\n", hdr->second_size);
++	printf("   second_addr:   0x%x\n", hdr->second_addr);
++
++	printf("   tags_addr:   0x%x\n", hdr->tags_addr);
++	printf("   page_size:   0x%x\n", hdr->page_size);
++
++	printf("   name:      %s\n", hdr->name);
++	printf("   cmdline:   %s%x\n", hdr->cmdline);
++
++	for (i = 0; i < 8; i++)
++		printf("   id[%d]:   0x%x\n", i, hdr->id[i]);
++#endif
++}
++
++static unsigned char boothdr[512];
++
++#define ALIGN_SECTOR(n, pagesz) ((n + (pagesz - 1)) & (~(pagesz - 1)))
++
++/* booti <addr> [ mmc0 | mmc1 [ <partition> ] ] */
++int do_booti(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
++{
++	unsigned addr;
++	char *ptn = "boot";
++	int mmcc = -1;
++	boot_img_hdr *hdr = (void *)boothdr;
++
++	if (argc < 2)
++		return -1;
++
++	if (!strncmp(argv[1], "mmc", 3))
++		mmcc = simple_strtoul(argv[1]+3, NULL, 10);
++	else
++		addr = simple_strtoul(argv[1], NULL, 16);
++
++	if (argc > 2)
++		ptn = argv[2];
++
++	if (mmcc != -1) {
++#ifdef CONFIG_MMC
++		struct fastboot_ptentry *pte;
++		struct mmc *mmc;
++		disk_partition_t info;
++		block_dev_desc_t *dev_desc = NULL;
++		unsigned sector, partno = -1;
++
++		/* i.MX use MBR as partition table, so this will have
++		   to find the start block and length for the
++		   partition name and register the fastboot pte we
++		   define the partition number of each partition in
++		   config file
++		 */
++
++		mmc = find_mmc_device(mmcc);
++		if (!mmc) {
++			printf("booti: cannot find '%d' mmc device\n", mmcc);
++			goto fail;
++		}
++		dev_desc = get_dev("mmc", mmcc);
++		if (NULL == dev_desc) {
++			printf("** Block device MMC %d not supported\n", mmcc);
++			goto fail;
++		}
++
++		/* below was i.MX mmc operation code */
++		if (mmc_init(mmc)) {
++			printf("mmc%d init failed\n", mmcc);
++			goto fail;
++		}
++
++		if (!strcmp(ptn, "boot"))
++			partno = CONFIG_ANDROID_BOOT_PARTITION_MMC;
++		if (!strcmp(ptn, "recovery"))
++			partno = CONFIG_ANDROID_RECOVERY_PARTITION_MMC;
++
++		if (get_partition_info(dev_desc, partno, &info)) {
++			printf("booti: device don't have such partition:%s\n", ptn);
++			goto fail;
++		}
++
++#ifdef CONFIG_FASTBOOT
++		fastboot_ptentry the_partition = {
++			.start = info.start,
++			.length = info.start * info.blksz,
++			.flags = 0,
++			.partition_id = 0,
++		};
++		strncpy(the_partition.name, ptn, 10);
++		fastboot_flash_add_ptn(&the_partition);
++		/* fastboot_flash_dump_ptn(); */
++
++		pte = fastboot_flash_find_ptn(ptn);
++		if (!pte) {
++			printf("booti: cannot find '%s' partition\n", ptn);
++			goto fail;
++		}
++
++		if (mmc->block_dev.block_read(mmcc, pte->start,
++					      1, (void *)hdr) < 0) {
++			printf("booti: mmc failed to read bootimg header\n");
++			goto fail;
++		}
++			/* flush cache after read */
++		flush_cache((ulong)hdr, 512); /* FIXME */
++
++		if (memcmp(hdr->magic, BOOT_MAGIC, 8)) {
++			printf("booti: bad boot image magic\n");
++			goto fail;
++		}
++
++		sector = pte->start + (hdr->page_size / 512);
++#else
++		if (mmc->block_dev.block_read(mmcc, info.start,
++					      1, (void *)hdr) < 0) {
++			printf("booti: mmc failed to read bootimg header\n");
++			goto fail;
++		}
++			/* flush cache after read */
++		flush_cache((ulong)hdr, 512); /* FIXME */
++
++		if (memcmp(hdr->magic, BOOT_MAGIC, 8)) {
++			printf("booti: bad boot image magic\n");
++			goto fail;
++		}
++
++		sector = info.start + (hdr->page_size / 512);
++#endif
++		if (mmc->block_dev.block_read(mmcc, sector,
++					      (hdr->kernel_size / 512) + 1,
++					      (void *)hdr->kernel_addr) < 0) {
++			printf("booti: mmc failed to read kernel\n");
++			goto fail;
++		}
++		/* flush cache after read */
++		flush_cache((ulong)hdr->kernel_addr, hdr->kernel_size); /* FIXME */
++		sector += ALIGN_SECTOR(hdr->kernel_size, hdr->page_size) / 512;
++		if (mmc->block_dev.block_read(mmcc, sector,
++					      (hdr->ramdisk_size / 512) + 1,
++					      (void *)hdr->ramdisk_addr) < 0) {
++			printf("booti: mmc failed to read kernel\n");
++			goto fail;
++		}
++		/* flush cache after read */
++		flush_cache((ulong)hdr->ramdisk_addr, hdr->ramdisk_size); /* FIXME */
++#else
++		return -1;
++#endif
++	} else {
++		unsigned kaddr, raddr;
++
++		/* set this aside somewhere safe */
++		memcpy(hdr, (void *) addr, sizeof(*hdr));
++
++		if (memcmp(hdr->magic, BOOT_MAGIC, 8)) {
++			printf("booti: bad boot image magic\n");
++			return 1;
++		}
++
++		bootimg_print_image_hdr(hdr);
++
++		kaddr = addr + hdr->page_size;
++		raddr = kaddr + ALIGN_SECTOR(hdr->kernel_size, hdr->page_size);
++
++		memmove((void *) hdr->kernel_addr, (void *)kaddr, hdr->kernel_size);
++		memmove((void *) hdr->ramdisk_addr, (void *)raddr, hdr->ramdisk_size);
++	}
++
++	printf("kernel   @ %08x (%d)\n", hdr->kernel_addr, hdr->kernel_size);
++	printf("ramdisk  @ %08x (%d)\n", hdr->ramdisk_addr, hdr->ramdisk_size);
++
++	do_booti_linux(hdr);
++
++	puts ("booti: Control returned to monitor - resetting...\n");
++	do_reset (cmdtp, flag, argc, argv);
++	return 1;
++
++fail:
++#ifdef CONFIG_FASTBOOT
++	return do_fastboot(NULL, 0, 0, NULL);
++#else
++	return -1;
++#endif
++}
++
++U_BOOT_CMD(
++	booti,	3,	1,	do_booti,
++	"booti   - boot android bootimg from memory\n",
++	"[<addr> | mmc0 | mmc1 | mmc2 | mmcX] [<partition>] \n    - boot application image stored in memory or mmc\n"
++	"\t'addr' should be the address of boot image which is zImage+ramdisk.img\n"
++	"\t'mmcX' is the mmc device you store your boot.img, which will read the boot.img from 1M offset('/boot' partition)\n"
++	"\t 'partition' (optional) is the partition id of your device, if no partition give, will going to 'boot' partition\n"
++);
+diff --git a/common/cmd_fastboot.c b/common/cmd_fastboot.c
+index 4f076f4..eb91763 100644
+--- a/common/cmd_fastboot.c
++++ b/common/cmd_fastboot.c
+@@ -2,7 +2,7 @@
+  * Copyright 2008 - 2009 (C) Wind River Systems, Inc.
+  * Tom Rix <Tom.Rix@windriver.com>
+  *
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -1014,8 +1014,8 @@ static int rx_handler (const unsigned char *buffer, unsigned int buffer_size)
+ 			    (CFG_FASTBOOT_MKBOOTIMAGE_PAGE_SIZE <
+ 				    download_bytes)) {
+ 				char start[32];
+-				char *bootm[3] = { "bootm", NULL, NULL, };
+ 				char *go[3]    = { "go",    NULL, NULL, };
++				char *booti_args[4] = {"booti",  NULL, "boot", NULL};
+ 
+ 				/*
+ 				 * Use this later to determine if a command line was passed
+@@ -1025,40 +1025,30 @@ static int rx_handler (const unsigned char *buffer, unsigned int buffer_size)
+ 					(struct fastboot_boot_img_hdr *) interface.transfer_buffer;
+ 
+ 				/* Skip the mkbootimage header */
+-				image_header_t *hdr =
+-					(image_header_t *)
+-					&interface.transfer_buffer[CFG_FASTBOOT_MKBOOTIMAGE_PAGE_SIZE];
++				/* image_header_t *hdr = */
++				/* 	(image_header_t *) */
++				/* 	&interface.transfer_buffer[CFG_FASTBOOT_MKBOOTIMAGE_PAGE_SIZE]; */
+ 
+-				bootm[1] = go[1] = start;
+-				sprintf(start, "0x%x", (unsigned int)hdr);
++				booti_args[1] = start;
++				sprintf(start, "0x%x", (unsigned int)interface.transfer_buffer);
+ 
+ 				/* Execution should jump to kernel so send the response
+ 				   now and wait a bit.  */
+ 				sprintf(response, "OKAY");
+ 				fastboot_tx_status(response, strlen(response));
+-				udelay(1000000); /* 1 sec */
+ 
+-				if (ntohl(hdr->ih_magic) == IH_MAGIC) {
+-					/* Looks like a kernel.. */
+-					printf("Booting kernel..\n");
++				printf("Booting kernel...\n");
+ 
+-					/*
+-					 * Check if the user sent a bootargs down.
+-					 * If not, do not override what is already there
+-					 */
+-					if (strlen((char *)&fb_hdr->cmdline[0]))
+-						set_env("bootargs",
+-						   (char *)&fb_hdr->cmdline[0]);
+ 
+-					do_bootm(NULL, 0, 2, bootm);
+-				} else {
+-					/* Raw image, maybe another uboot */
+-					printf("Booting raw image..\n");
++				/* Reserve for further use, this can
++				 * be more convient for developer. */
++				/* if (strlen ((char *) &fb_hdr->cmdline[0])) */
++				/* 	set_env("bootargs", (char *) &fb_hdr->cmdline[0]); */
++
++				/* boot the boot.img */
++				do_booti(NULL, 0, 3, booti_args);
++
+ 
+-					do_go(NULL, 0, 2, go);
+-				}
+-				printf("ERROR : bootting failed\n");
+-				printf("You should reset the board\n");
+ 			}
+ 			sprintf(response, "FAILinvalid boot image");
+ 			ret = 0;
+@@ -1749,6 +1739,9 @@ fastboot_ptentry *fastboot_flash_find_ptn(const char *name)
+ 				return ptable + n;
+ 		}
+ 	}
++
++	printf("can't find partition: %s, dump the partition table\n", name);
++	fastboot_flash_dump_ptn();
+ 	return 0;
+ }
+ 
+diff --git a/include/bootimg.h b/include/bootimg.h
+new file mode 100644
+index 0000000..5f64bc6
+--- /dev/null
++++ b/include/bootimg.h
+@@ -0,0 +1,107 @@
++/*
++ * Copyright (C) 2008 The Android Open Source Project
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *  * Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ *  * Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
++ * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ */
++
++#ifndef _BOOT_IMAGE_H_
++#define _BOOT_IMAGE_H_
++
++typedef struct boot_img_hdr boot_img_hdr;
++
++#define BOOT_MAGIC "ANDROID!"
++#define BOOT_MAGIC_SIZE 8
++#define BOOT_NAME_SIZE 16
++#define BOOT_ARGS_SIZE 512
++
++struct boot_img_hdr {
++    unsigned char magic[BOOT_MAGIC_SIZE];
++
++    unsigned kernel_size;  /* size in bytes */
++    unsigned kernel_addr;  /* physical load addr */
++
++    unsigned ramdisk_size; /* size in bytes */
++    unsigned ramdisk_addr; /* physical load addr */
++
++    unsigned second_size;  /* size in bytes */
++    unsigned second_addr;  /* physical load addr */
++
++    unsigned tags_addr;    /* physical addr for kernel tags */
++    unsigned page_size;    /* flash page size we assume */
++    unsigned unused[2];    /* future expansion: should be 0 */
++
++    unsigned char name[BOOT_NAME_SIZE]; /* asciiz product name */
++
++    unsigned char cmdline[BOOT_ARGS_SIZE];
++
++    unsigned id[8]; /* timestamp / checksum / sha1 / etc */
++};
++
++/*
++** +-----------------+
++** | boot header     | 1 page
++** +-----------------+
++** | kernel          | n pages
++** +-----------------+
++** | ramdisk         | m pages
++** +-----------------+
++** | second stage    | o pages
++** +-----------------+
++**
++** n = (kernel_size + page_size - 1) / page_size
++** m = (ramdisk_size + page_size - 1) / page_size
++** o = (second_size + page_size - 1) / page_size
++**
++** 0. all entities are page_size aligned in flash
++** 1. kernel and ramdisk are required (size != 0)
++** 2. second is optional (second_size == 0 -> no second)
++** 3. load each element (kernel, ramdisk, second) at
++**    the specified physical address (kernel_addr, etc)
++** 4. prepare tags at tag_addr.  kernel_args[] is
++**    appended to the kernel commandline in the tags.
++** 5. r0 = 0, r1 = MACHINE_TYPE, r2 = tags_addr
++** 6. if second_size != 0: jump to second_addr
++**    else: jump to kernel_addr
++*/
++
++#if 0
++typedef struct ptentry ptentry;
++
++struct ptentry {
++    char name[16];      /* asciiz partition name    */
++    unsigned start;     /* starting block number    */
++    unsigned length;    /* length in blocks         */
++    unsigned flags;     /* set to zero              */
++};
++
++/* MSM Partition Table ATAG
++**
++** length: 2 + 7 * n
++** atag:   0x4d534d70
++**         <ptentry> x n
++*/
++#endif
++
++#endif
+diff --git a/include/configs/mx6q_sabrelite_android.h b/include/configs/mx6q_sabrelite_android.h
+index 8d5526e..3898320 100644
+--- a/include/configs/mx6q_sabrelite_android.h
++++ b/include/configs/mx6q_sabrelite_android.h
+@@ -143,6 +143,8 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR	0x11000000
+ 
++#define CONFIG_INITRD_TAG
++
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+ 		"netdev=eth0\0"						\
+ 		"ethprime=FEC0\0"					\
+diff --git a/include/configs/mx6q_sabresd_android.h b/include/configs/mx6q_sabresd_android.h
+index 349ffc1..3ff1e14 100644
+--- a/include/configs/mx6q_sabresd_android.h
++++ b/include/configs/mx6q_sabresd_android.h
+@@ -56,6 +56,7 @@
+ 	"mmc dev 3; "	\
+ 	"mmc read ${loadaddr} 0x800 0x2000;bootm"
+ #define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
++#define CONFIG_INITRD_TAG
+ 
+ #undef CONFIG_LOADADDR
+ #undef CONFIG_RD_LOADADDR
+diff --git a/lib_arm/bootm.c b/lib_arm/bootm.c
+index 128b7e3..f301edb 100644
+--- a/lib_arm/bootm.c
++++ b/lib_arm/bootm.c
+@@ -4,6 +4,7 @@
+  * Marius Groeger <mgroeger@sysgo.de>
+  *
+  * Copyright (C) 2001  Erik Mouw (J.A.K.Mouw@its.tudelft.nl)
++ * Copyright (C) 2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -27,6 +28,8 @@
+ #include <u-boot/zlib.h>
+ #include <asm/byteorder.h>
+ 
++#include <bootimg.h>
++
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+ #if defined (CONFIG_SETUP_MEMORY_TAGS) || \
+@@ -131,6 +134,68 @@ int do_bootm_linux(int flag, int argc, char *argv[], bootm_headers_t *images)
+ 	return 1;
+ }
+ 
++void do_booti_linux (boot_img_hdr *hdr)
++{
++	ulong initrd_start, initrd_end;
++	void (*theKernel)(int zero, int arch, uint params);
++	bd_t *bd = gd->bd;
++#ifdef CONFIG_CMDLINE_TAG
++	char *commandline = getenv("bootargs");
++
++	/* If no bootargs env, just use hdr command line */
++	if (!commandline)
++	    commandline = hdr->cmdline;
++
++	/* XXX: in production, you should always use boot.img 's cmdline !!! */
++
++	printf("kernel cmdline: \n\tuse %s command line:\n\t%s \n",
++	       getenv("bootargs") ? "uboot" : "boot.img",
++	       commandline);
++#endif
++
++	theKernel = (void (*)(int, int, uint))(hdr->kernel_addr);
++
++	initrd_start = hdr->ramdisk_addr;
++	initrd_end = initrd_start + hdr->ramdisk_size;
++
++#if defined (CONFIG_SETUP_MEMORY_TAGS)
++	setup_start_tag(bd);
++#ifdef CONFIG_SERIAL_TAG
++	setup_serial_tag (&params);
++#endif
++#ifdef CONFIG_REVISION_TAG
++	setup_revision_tag (&params);
++#endif
++#ifdef CONFIG_SETUP_MEMORY_TAGS
++	setup_memory_tags (bd);
++#endif
++#ifdef CONFIG_CMDLINE_TAG
++	setup_commandline_tag (bd, commandline);
++#endif
++#ifdef CONFIG_INITRD_TAG
++	if (hdr->ramdisk_size)
++		setup_initrd_tag (bd, initrd_start, initrd_end);
++#endif
++#if defined (CONFIG_VFD) || defined (CONFIG_LCD)
++	setup_videolfb_tag ((gd_t *) gd);
++#endif
++	setup_end_tag (bd);
++#endif
++
++	/* we assume that the kernel is in place */
++	printf ("\nStarting kernel ...\n\n");
++
++#ifdef CONFIG_USB_DEVICE
++	{
++		extern void udc_disconnect (void);
++		udc_disconnect ();
++	}
++#endif
++
++	cleanup_before_linux ();
++
++	theKernel (0, bd->bi_arch_number, bd->bi_boot_params);
++}
+ 
+ #if defined (CONFIG_SETUP_MEMORY_TAGS) || \
+     defined (CONFIG_CMDLINE_TAG) || \
+@@ -277,3 +342,4 @@ static void setup_end_tag (bd_t *bd)
+ }
+ 
+ #endif /* CONFIG_SETUP_MEMORY_TAGS || CONFIG_CMDLINE_TAG || CONFIG_INITRD_TAG */
++
+-- 
+1.7.7.4
+

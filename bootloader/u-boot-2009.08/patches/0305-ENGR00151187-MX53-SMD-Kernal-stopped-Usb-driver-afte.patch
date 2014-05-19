@@ -1,0 +1,52 @@
+From de7bbfa11ec3f04d53e7b620a4f5371538b17253 Mon Sep 17 00:00:00 2001
+From: Wayne Zou <b36644@freescale.com>
+Date: Fri, 10 Jun 2011 09:58:33 +0800
+Subject: [PATCH 305/678] ENGR00151187 MX53 SMD: Kernal stopped Usb driver
+ after reseting in stop mode
+
+After reseting in stop mode, the VUSB_2V5 voltage is disable by pmic.
+It needs to be enable manually in u-boot.
+
+Signed-off-by: Wayne Zou <b36644@freescale.com>
+---
+ board/freescale/mx53_smd/mx53_smd.c |   15 ++++++++++++++-
+ 1 files changed, 14 insertions(+), 1 deletions(-)
+
+diff --git a/board/freescale/mx53_smd/mx53_smd.c b/board/freescale/mx53_smd/mx53_smd.c
+index 3cfa430..aff0364 100644
+--- a/board/freescale/mx53_smd/mx53_smd.c
++++ b/board/freescale/mx53_smd/mx53_smd.c
+@@ -399,9 +399,15 @@ static void setup_i2c(unsigned int module_base)
+ 	}
+ }
+ 
++/* restore VUSB 2V5 active after suspend */
++#define BUCKPERI_RESTORE_SW_STEP   (0x55)
++/* restore VUSB 2V5 power supply after suspend */
++#define SUPPLY_RESTORE_VPERISW_EN  (0x20)
++#define DA9052_ID1213_REG		   (35)
++#define DA9052_SUPPLY_REG		   (60)
+ void setup_pmic_voltages(void)
+ {
+-	int value;
++	uchar value;
+ 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+ 	/* increase VDDGP as 1.25V for 1GHZ */
+ 	value = 0x5e;
+@@ -409,6 +415,13 @@ void setup_pmic_voltages(void)
+ 	i2c_read(0x48, 60, 1, &value, 1);
+ 	value |= 0x1;
+ 	i2c_write(0x48, 60, 1, &value, 1);
++
++	/* restore VUSB_2V5 when reset from suspend state */
++	value = BUCKPERI_RESTORE_SW_STEP;
++	i2c_write(0x48, DA9052_ID1213_REG, 1, &value, 1);
++	i2c_read(0x48, DA9052_SUPPLY_REG, 1, &value, 1);
++	value |= SUPPLY_RESTORE_VPERISW_EN;
++	i2c_write(0x48, DA9052_SUPPLY_REG, 1, &value, 1);
+ }
+ 
+ #endif
+-- 
+1.7.7.4
+

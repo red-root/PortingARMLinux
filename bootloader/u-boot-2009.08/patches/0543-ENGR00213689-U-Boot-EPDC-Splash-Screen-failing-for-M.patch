@@ -1,0 +1,52 @@
+From 22c0075757734a286a94a322069416167ec722aa Mon Sep 17 00:00:00 2001
+From: Danny Nold <dannynold@freescale.com>
+Date: Thu, 14 Jun 2012 18:44:31 -0500
+Subject: [PATCH 543/678] ENGR00213689 - U-Boot: EPDC Splash Screen failing
+ for MX 6DL/S
+
+Fix a hang and a garbage update to the E Ink panel with the following
+changes for both MX 6DL/S SabreSD and MX 6DL/S ARM2:
+- Update the address for the EPDC waveform file to 6MB offset
+in SD card.
+- Update the waveform file size to cover the default
+Pearl panel waveform file.
+
+Signed-off-by: Danny Nold <dannynold@freescale.com>
+---
+ include/configs/mx6dl_arm2.h    |    4 ++--
+ include/configs/mx6dl_sabresd.h |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index 4c53e48..3a80a04 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -322,8 +322,8 @@
+ 
+ 	#define CONFIG_WORKING_BUF_ADDR			(TEXT_BASE + 0x100000)
+ 	#define CONFIG_WAVEFORM_BUF_ADDR		(TEXT_BASE + 0x200000)
+-	#define CONFIG_WAVEFORM_FILE_OFFSET		0x100000
+-	#define CONFIG_WAVEFORM_FILE_SIZE		0xF0988
++	#define CONFIG_WAVEFORM_FILE_OFFSET		0x600000
++	#define CONFIG_WAVEFORM_FILE_SIZE		0xF0A00
+ 	#define CONFIG_WAVEFORM_FILE_IN_MMC
+ 
+ #ifdef CONFIG_SPLASH_IS_IN_MMC
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index ea0a23f..0cc8736 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -326,8 +326,8 @@
+ 
+ 	#define CONFIG_WORKING_BUF_ADDR			(TEXT_BASE + 0x100000)
+ 	#define CONFIG_WAVEFORM_BUF_ADDR		(TEXT_BASE + 0x200000)
+-	#define CONFIG_WAVEFORM_FILE_OFFSET		0x100000
+-	#define CONFIG_WAVEFORM_FILE_SIZE		0xF0988
++	#define CONFIG_WAVEFORM_FILE_OFFSET		0x600000
++	#define CONFIG_WAVEFORM_FILE_SIZE		0xF0A00
+ 	#define CONFIG_WAVEFORM_FILE_IN_MMC
+ 
+ #ifdef CONFIG_SPLASH_IS_IN_MMC
+-- 
+1.7.7.4
+

@@ -1,0 +1,29 @@
+From a009cd46b542f91be79c6e3c0d095fdfc3952234 Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Mon, 19 Mar 2012 13:49:48 +0800
+Subject: [PATCH 487/678] ENGR00176837-4 - imx6solo sabreauto : remove
+ Ethernet phy MICREL macro.
+
+- FEC detect phy OUID to check phy type, so remove MICREL macro
+  in board config file.
+
+ Signed-off-by: Fugang Duan  <B38611@freescale.com>
+---
+ include/configs/mx6solo_sabreauto.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6solo_sabreauto.h b/include/configs/mx6solo_sabreauto.h
+index 2b957bf..32a5320 100644
+--- a/include/configs/mx6solo_sabreauto.h
++++ b/include/configs/mx6solo_sabreauto.h
+@@ -167,7 +167,6 @@
+ #define CONFIG_FEC0_PHY_ADDR		1
+ #define CONFIG_ETH_PRIME
+ #define CONFIG_RMII
+-#define CONFIG_PHY_MICREL_KSZ9021
+ #define CONFIG_CMD_MII
+ #define CONFIG_CMD_DHCP
+ #define CONFIG_CMD_PING
+-- 
+1.7.7.4
+

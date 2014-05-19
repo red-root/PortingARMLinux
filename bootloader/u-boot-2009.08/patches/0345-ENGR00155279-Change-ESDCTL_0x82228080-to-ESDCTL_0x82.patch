@@ -1,0 +1,64 @@
+From ea7a4199586b4b9cd9a4e13c0e420a4e1699a297 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Tue, 23 Aug 2011 17:31:46 +0800
+Subject: [PATCH 345/678] ENGR00155279: Change ESDCTL_0x82228080 to
+ ESDCTL_0x82226080 for mx35
+
+In mx35, when testing TVIN, the screen will flick.
+We find that flickers will get better when using ESDCTL_0x82226080
+against ESDCTL_0x82228080 for register SCDCTL0.
+The origin value ESDCTL_0x82228080 in lowlevel_init.S will be called in
+external boot which will reduce the bandwidth.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ board/freescale/mx35_3stack/board-mx35_3stack.h |    3 ++-
+ board/freescale/mx35_3stack/lowlevel_init.S     |    4 ++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/board/freescale/mx35_3stack/board-mx35_3stack.h b/board/freescale/mx35_3stack/board-mx35_3stack.h
+index 82667ac..520d89b 100644
+--- a/board/freescale/mx35_3stack/board-mx35_3stack.h
++++ b/board/freescale/mx35_3stack/board-mx35_3stack.h
+@@ -2,7 +2,7 @@
+  *
+  * (c) 2007 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
+  *
+- * (C) Copyright 2008-2009 Freescale Semiconductor, Inc.
++ * (C) Copyright 2008-2011 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -88,6 +88,7 @@
+ #define ESDCTL_0xA2220000	0xA2220000
+ #define ESDCTL_0xB2220000	0xB2220000
+ #define ESDCTL_0x82228080 	0x82228080
++#define ESDCTL_0x82226080	0x82226080
+ 
+ #define ESDCTL_PRECHARGE	0x00000400
+ 
+diff --git a/board/freescale/mx35_3stack/lowlevel_init.S b/board/freescale/mx35_3stack/lowlevel_init.S
+index 64a20bd..bae5964 100644
+--- a/board/freescale/mx35_3stack/lowlevel_init.S
++++ b/board/freescale/mx35_3stack/lowlevel_init.S
+@@ -1,7 +1,7 @@
+ /*
+  * Copyright (C) 2007, Guennadi Liakhovetski <lg@denx.de>
+  *
+- * (C) Copyright 2008-2010 Freescale Semiconductor, Inc.
++ * (C) Copyright 2008-2011 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -422,7 +422,7 @@ skip_set_mode:
+         strb r3, [r1, r4]
+ 
+         cmp r1, #CSD1_BASE_ADDR
+-        ldr r3, =ESDCTL_0x82228080
++        ldr r3, =ESDCTL_0x82226080
+         strlo r3, [r0, #0x0]
+         strhs r3, [r0, #0x8]
+ 
+-- 
+1.7.7.4
+

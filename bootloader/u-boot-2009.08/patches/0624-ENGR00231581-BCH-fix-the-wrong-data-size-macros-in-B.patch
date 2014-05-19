@@ -1,0 +1,69 @@
+From 2dcb1c53134b5156741f7811c9033d0a2224777e Mon Sep 17 00:00:00 2001
+From: Huang Shijie <b32955@freescale.com>
+Date: Tue, 30 Oct 2012 11:22:27 +0800
+Subject: [PATCH 624/678] ENGR00231581 BCH: fix the wrong data size macros in
+ BCH
+
+In the mx23/mx28, the DATA0_SIZE/DATAN_SIZE of the BCH's
+HW_BCH_FLASH1LAYOUT0/HW_BCH_FLASH0LAYOUT1 should be the real
+bytes length of the data chunk 0 and data chunk 1.
+
+But in the mx6q/mx50, the DATA0_SIZE/DATAN_SIZE of the BCH's
+HW_BCH_FLASH1LAYOUT0/HW_BCH_FLASH0LAYOUT1 should be multiple of 4 bytes.
+
+this patch fixes the wrong macros.
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ drivers/mtd/nand/gpmi_nfc_bch.h |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mtd/nand/gpmi_nfc_bch.h b/drivers/mtd/nand/gpmi_nfc_bch.h
+index 2807088..32c1c04 100644
+--- a/drivers/mtd/nand/gpmi_nfc_bch.h
++++ b/drivers/mtd/nand/gpmi_nfc_bch.h
+@@ -1,7 +1,7 @@
+ /*
+  * Freescale BCH Register Definitions
+  *
+- * Copyright 2008-2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright 2008-2012 Freescale Semiconductor, Inc. All Rights Reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -238,13 +238,16 @@
+ #define BV_BCH_FLASH0LAYOUT0_ECC0__ECC32 0x10
+ #define BM_BCH_FLASH0LAYOUT0_GF13_0_GF14_1 0x00000400
+ #define BP_BCH_FLASH0LAYOUT0_DATA0_SIZE      0
++
+ #if defined(CONFIG_GPMI_NFC_V2)
+ #define BM_BCH_FLASH0LAYOUT0_DATA0_SIZE 0x000003FF
++#define BF_BCH_FLASH0LAYOUT0_DATA0_SIZE(v)  \
++	(((v) >> 2) & BM_BCH_FLASH0LAYOUT0_DATA0_SIZE)
+ #else
+ #define BM_BCH_FLASH0LAYOUT0_DATA0_SIZE	0x00000FFF
+-#endif
+ #define BF_BCH_FLASH0LAYOUT0_DATA0_SIZE(v)  \
+ 	(((v) << 0) & BM_BCH_FLASH0LAYOUT0_DATA0_SIZE)
++#endif
+ 
+ #define HW_BCH_FLASH0LAYOUT1	(0x00000090)
+ 
+@@ -284,11 +287,13 @@
+ #define BP_BCH_FLASH0LAYOUT1_DATAN_SIZE      0
+ #if defined(CONFIG_GPMI_NFC_V2)
+ #define BM_BCH_FLASH0LAYOUT1_DATAN_SIZE 0x000003FF
++#define BF_BCH_FLASH0LAYOUT1_DATAN_SIZE(v)  \
++	(((v) >> 2) & BM_BCH_FLASH0LAYOUT1_DATAN_SIZE)
+ #else
+ #define BM_BCH_FLASH0LAYOUT1_DATAN_SIZE	0x00000FFF
+-#endif
+ #define BF_BCH_FLASH0LAYOUT1_DATAN_SIZE(v)  \
+ 	(((v) << 0) & BM_BCH_FLASH0LAYOUT1_DATAN_SIZE)
++#endif
+ 
+ #define HW_BCH_FLASH1LAYOUT0	(0x000000a0)
+ 
+-- 
+1.7.7.4
+

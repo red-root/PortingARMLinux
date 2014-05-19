@@ -1,0 +1,30 @@
+From 7d6fd7e5ba4d5cd35caa75112289d9cec0804007 Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Mon, 20 Feb 2012 19:38:29 +0800
+Subject: [PATCH 461/678] ENGR00174868 mx6dl arm2: change the default console
+ as ttymxc3
+
+The default console on i.MX6DL ARM2 CPU board is
+ttymxc3
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ include/configs/mx6dl_arm2.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index 48b9066..eaa9a34 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -118,7 +118,7 @@
+ 		"uboot=u-boot.bin\0"			\
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+-		"bootargs_base=setenv bootargs console=ttymxc0,115200 "\
++		"bootargs_base=setenv bootargs console=ttymxc3,115200 "\
+ 			"nosmp enable_wait_mode=off\0"     \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+-- 
+1.7.7.4
+

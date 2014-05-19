@@ -1,0 +1,78 @@
+From 6667da86ca1582222416defdcbf8e6d41bc03d28 Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Thu, 21 Jul 2011 18:08:07 +0800
+Subject: [PATCH 318/678] ENGR00151310 mx53 smd: force warm reset as cold
+ reset
+
+This patch is used to support watchdog timeout in SMD RevA, RevB
+board.
+1. Revert "ENGR00143469 mx53 smd: pull down GPIO_9 to reset the
+board".
+2. Force warm reset as cold reset.
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ board/freescale/mx53_smd/mx53_smd.c |    9 +++++++++
+ cpu/arm_cortexa8/mx53/interrupts.c  |   15 ---------------
+ 2 files changed, 9 insertions(+), 15 deletions(-)
+
+diff --git a/board/freescale/mx53_smd/mx53_smd.c b/board/freescale/mx53_smd/mx53_smd.c
+index aff0364..b698fd3 100644
+--- a/board/freescale/mx53_smd/mx53_smd.c
++++ b/board/freescale/mx53_smd/mx53_smd.c
+@@ -799,6 +799,7 @@ void setup_splash_image(void)
+ 
+ int board_init(void)
+ {
++	unsigned int val;
+ #ifdef CONFIG_MFG
+ /* MFG firmware need reset usb to avoid host crash firstly */
+ #define USBCMD 0x140
+@@ -806,6 +807,14 @@ int board_init(void)
+ 	val &= ~0x1; /*RS bit*/
+ 	writel(val, OTG_BASE_ADDR + USBCMD);
+ #endif
++
++	/* Workaround: To make watchdog timeout work in mx53
++	 * SMD, force warm reset as cold reset
++	 */
++	val = readl(SRC_BASE_ADDR);
++	val &= 0xFFFFFFFE;
++	writel(val, SRC_BASE_ADDR);
++
+ 	setup_boot_device();
+ 	setup_soc_rev();
+ 
+diff --git a/cpu/arm_cortexa8/mx53/interrupts.c b/cpu/arm_cortexa8/mx53/interrupts.c
+index a39e7ff..0cc24db 100644
+--- a/cpu/arm_cortexa8/mx53/interrupts.c
++++ b/cpu/arm_cortexa8/mx53/interrupts.c
+@@ -36,25 +36,10 @@ int interrupt_init(void)
+ 
+ void reset_cpu(ulong addr)
+ {
+-#if defined(CONFIG_MX53_SMD)
+-	unsigned int reg;
+-#endif
+-
+ 	/* de-select SS0 of instance: eCSPI1 */
+ 	mxc_request_iomux(MX53_PIN_EIM_EB2, IOMUX_CONFIG_ALT1);
+ 	/* de-select SS1 of instance: eCSPI1 */
+ 	mxc_request_iomux(MX53_PIN_EIM_D19, IOMUX_CONFIG_ALT1);
+ 
+-#if defined(CONFIG_MX53_SMD)
+-	/* GPIO_1_9 */
+-	reg = readl(GPIO1_BASE_ADDR + 0x4);
+-	reg |= (0x1 << 9);
+-	writel(reg, GPIO1_BASE_ADDR + 0x4);
+-
+-	reg = readl(GPIO1_BASE_ADDR);
+-	reg &= ~0x200;
+-	writel(reg, GPIO1_BASE_ADDR);
+-#else
+ 	__REG16(WDOG1_BASE_ADDR) = 4;
+-#endif
+ }
+-- 
+1.7.7.4
+

@@ -1,0 +1,80 @@
+From 5258372493d5e3b0f405524d4711bcf6f63aff79 Mon Sep 17 00:00:00 2001
+From: Liu Ying <Ying.Liu@freescale.com>
+Date: Wed, 22 Aug 2012 11:11:19 +0800
+Subject: [PATCH 588/678] ENGR00221013 MX6 SabreSD:Disable LVDS panel CABC
+ function
+
+This patch sets CABC_EN0/1 pins to low to disable
+LVDS panel CABC function. This function will turn backlight
+automatically according to display content which may cause
+potential unstable backlight phenomena.
+
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |   38 +++++++++++++++++++++++++++
+ 1 files changed, 38 insertions(+), 0 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index c611dcb..3989b23 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -1374,11 +1374,22 @@ void lcd_enable(void)
+ 	g_ipu_hw_rev = IPUV3_HW_REV_IPUV3H;
+ 
+ #if defined CONFIG_MX6Q
++	/* GPIO backlight */
+ 	mxc_iomux_v3_setup_pad(MX6Q_PAD_SD1_DAT3__GPIO_1_21);
++	/* LVDS panel CABC_EN0 */
++	mxc_iomux_v3_setup_pad(MX6Q_PAD_NANDF_CS2__GPIO_6_15);
++	/* LVDS panel CABC_EN1 */
++	mxc_iomux_v3_setup_pad(MX6Q_PAD_NANDF_CS3__GPIO_6_16);
+ #elif defined CONFIG_MX6DL
++	/* GPIO backlight */
+ 	mxc_iomux_v3_setup_pad(MX6DL_PAD_SD1_DAT3__GPIO_1_21);
++	/* LVDS panel CABC_EN0 */
++	mxc_iomux_v3_setup_pad(MX6DL_PAD_NANDF_CS2__GPIO_6_15);
++	/* LVDS panel CABC_EN1 */
++	mxc_iomux_v3_setup_pad(MX6DL_PAD_NANDF_CS3__GPIO_6_16);
+ #endif
+ 
++	/* Set GPIO backlight to high. */
+ 	reg = readl(GPIO1_BASE_ADDR + GPIO_GDIR);
+ 	reg |= (1 << 21);
+ 	writel(reg, GPIO1_BASE_ADDR + GPIO_GDIR);
+@@ -1387,6 +1398,33 @@ void lcd_enable(void)
+ 	reg |= (1 << 21);
+ 	writel(reg, GPIO1_BASE_ADDR + GPIO_DR);
+ 
++	/*
++	 * Set LVDS panel CABC_EN0 to low to disable
++	 * CABC function. This function will turn backlight
++	 * automatically according to display content, so
++	 * simply disable it to get rid of annoying unstable
++	 * backlight phenomena.
++	 */
++	reg = readl(GPIO6_BASE_ADDR + GPIO_GDIR);
++	reg |= (1 << 15);
++	writel(reg, GPIO6_BASE_ADDR + GPIO_GDIR);
++
++	reg = readl(GPIO6_BASE_ADDR + GPIO_DR);
++	reg &= ~(1 << 15);
++	writel(reg, GPIO6_BASE_ADDR + GPIO_DR);
++
++	/*
++	 * Set LVDS panel CABC_EN1 to low to disable
++	 * CABC function.
++	 */
++	reg = readl(GPIO6_BASE_ADDR + GPIO_GDIR);
++	reg |= (1 << 16);
++	writel(reg, GPIO6_BASE_ADDR + GPIO_GDIR);
++
++	reg = readl(GPIO6_BASE_ADDR + GPIO_DR);
++	reg &= ~(1 << 16);
++	writel(reg, GPIO6_BASE_ADDR + GPIO_DR);
++
+ 	/* Enable IPU clock */
+ 	if (di == 1) {
+ 		reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR3);
+-- 
+1.7.7.4
+

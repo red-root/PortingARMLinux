@@ -1,0 +1,59 @@
+From 9c9807eec87cb3b51e8d90adc0601d7bae5b6f2c Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Fri, 18 Nov 2011 15:32:51 +0800
+Subject: [PATCH 394/678] ENGR00162491 Android: MX53_SMD: enter recovery mode
+ by key.
+
+Implement a key press check on recovery mode check.
+User can press Vol- key to enter recovery mode when boot.
+Idealy, should be a combo key press together, but on SMD
+it only can Vol+ or Vol- but it can't press together.
+
+More usuful for user and less bug.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ board/freescale/mx53_smd/mx53_smd.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
+
+diff --git a/board/freescale/mx53_smd/mx53_smd.c b/board/freescale/mx53_smd/mx53_smd.c
+index 1266cfa..a84205e 100644
+--- a/board/freescale/mx53_smd/mx53_smd.c
++++ b/board/freescale/mx53_smd/mx53_smd.c
+@@ -1009,9 +1009,11 @@ struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
+ int check_recovery_cmd_file(void)
+ {
+ 	disk_partition_t info;
++	int button_pressed = 0;
+ 	ulong part_length;
+ 	int filelen = 0;
+ 	char *env;
++	u32 reg;
+ 	int i;
+ 
+ 	/* For test only */
+@@ -1085,7 +1087,20 @@ int check_recovery_cmd_file(void)
+ 		break;
+ 	}
+ 
+-	return (filelen > 0) ? 1 : 0;
++	/* Check Recovery Combo Button press or not.
++	 * @TODO: Need At least Two key, but in SMD board,
++	 * only can use one Volume key. */
++	mxc_request_iomux(MX53_PIN_ATA_DATA14, IOMUX_CONFIG_ALT1);
++	readl(GPIO2_BASE_ADDR + GPIO_GDIR);
++	reg &= ~(1<<14);
++	writel(reg, GPIO2_BASE_ADDR + GPIO_GDIR);
++	reg = readl(GPIO2_BASE_ADDR + GPIO_PSR);
++	if (!(reg & (1 << 14))) { /* Vol - is low assert */
++		button_pressed = 1;
++		printf("Recovery key pressed\n");
++	}
++
++	return (filelen > 0 || button_pressed);
+ 
+ }
+ #endif
+-- 
+1.7.7.4
+

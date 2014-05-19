@@ -1,0 +1,117 @@
+From 82d607a727228da0cb333adc7d072e9eb23c26db Mon Sep 17 00:00:00 2001
+From: Liu Ying <Ying.Liu@freescale.com>
+Date: Mon, 3 Sep 2012 15:30:55 +0800
+Subject: [PATCH 604/678] ENGR00223794 MX6 SabreSD:Enable LVDS panel pwm
+ backlight
+
+This patch enables pwm backlight for LVDS panel and stops
+using gpio backlight to align with kernel to avoid unstable
+backlight when booting into kernel, as kernel usually uses
+pwm backlight instead of gpio backlight. Following items
+are done to support this:
+1) Add PWM1 and PWM2 controller base addresses.
+2) Change PIN SD1_DAT3 mux from GPIO to PWM1_PWMO.
+3) Set default backlight density to 50%.
+
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |   27 +++++++++++++--------------
+ include/configs/mx6dl_sabresd.h             |    4 ++++
+ include/configs/mx6q_sabresd.h              |    4 ++++
+ 3 files changed, 21 insertions(+), 14 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 3989b23..92e3463 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -33,6 +33,7 @@
+ #endif
+ 
+ #if defined(CONFIG_VIDEO_MX5)
++#include <asm/imx_pwm.h>
+ #include <linux/list.h>
+ #include <linux/fb.h>
+ #include <linux/mxcfb.h>
+@@ -99,6 +100,11 @@ unsigned short colormap[65536];
+ unsigned short colormap[16777216];
+ #endif
+ 
++static struct pwm_device pwm0 = {
++	.pwm_id = 0,
++	.pwmo_invert = 0,
++};
++
+ static int di = 1;
+ 
+ extern int ipuv3_fb_init(struct fb_videomode *mode, int di,
+@@ -1373,31 +1379,24 @@ void lcd_enable(void)
+ 	*/
+ 	g_ipu_hw_rev = IPUV3_HW_REV_IPUV3H;
+ 
++	imx_pwm_config(pwm0, 25000, 50000);
++	imx_pwm_enable(pwm0);
++
+ #if defined CONFIG_MX6Q
+-	/* GPIO backlight */
+-	mxc_iomux_v3_setup_pad(MX6Q_PAD_SD1_DAT3__GPIO_1_21);
++	/* PWM backlight */
++	mxc_iomux_v3_setup_pad(MX6Q_PAD_SD1_DAT3__PWM1_PWMO);
+ 	/* LVDS panel CABC_EN0 */
+ 	mxc_iomux_v3_setup_pad(MX6Q_PAD_NANDF_CS2__GPIO_6_15);
+ 	/* LVDS panel CABC_EN1 */
+ 	mxc_iomux_v3_setup_pad(MX6Q_PAD_NANDF_CS3__GPIO_6_16);
+ #elif defined CONFIG_MX6DL
+-	/* GPIO backlight */
+-	mxc_iomux_v3_setup_pad(MX6DL_PAD_SD1_DAT3__GPIO_1_21);
++	/* PWM backlight */
++	mxc_iomux_v3_setup_pad(MX6DL_PAD_SD1_DAT3__PWM1_PWMO);
+ 	/* LVDS panel CABC_EN0 */
+ 	mxc_iomux_v3_setup_pad(MX6DL_PAD_NANDF_CS2__GPIO_6_15);
+ 	/* LVDS panel CABC_EN1 */
+ 	mxc_iomux_v3_setup_pad(MX6DL_PAD_NANDF_CS3__GPIO_6_16);
+ #endif
+-
+-	/* Set GPIO backlight to high. */
+-	reg = readl(GPIO1_BASE_ADDR + GPIO_GDIR);
+-	reg |= (1 << 21);
+-	writel(reg, GPIO1_BASE_ADDR + GPIO_GDIR);
+-
+-	reg = readl(GPIO1_BASE_ADDR + GPIO_DR);
+-	reg |= (1 << 21);
+-	writel(reg, GPIO1_BASE_ADDR + GPIO_DR);
+-
+ 	/*
+ 	 * Set LVDS panel CABC_EN0 to low to disable
+ 	 * CABC function. This function will turn backlight
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index 1d32ffb..b59bd8b 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -346,6 +346,10 @@
+ 	#define CONFIG_BMP_8BPP
+ 	#define CONFIG_SPLASH_SCREEN_ALIGN
+ 	#define CONFIG_SYS_WHITE_ON_BLACK
++
++	#define CONFIG_IMX_PWM
++	#define IMX_PWM1_BASE    PWM1_BASE_ADDR
++	#define IMX_PWM2_BASE    PWM2_BASE_ADDR
+ #endif
+ #endif /* CONFIG_SPLASH_SCREEN */
+ #endif				/* __CONFIG_H */
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index 0cd57d9..5717eec 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -343,5 +343,9 @@
+ 	#define CONFIG_FB_BASE	(TEXT_BASE + 0x300000)
+ 	#define CONFIG_SPLASH_SCREEN_ALIGN
+ 	#define CONFIG_SYS_WHITE_ON_BLACK
++
++	#define CONFIG_IMX_PWM
++	#define IMX_PWM1_BASE    PWM1_BASE_ADDR
++	#define IMX_PWM2_BASE    PWM2_BASE_ADDR
+ #endif
+ #endif				/* __CONFIG_H */
+-- 
+1.7.7.4
+

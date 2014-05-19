@@ -1,0 +1,29 @@
+From 0eaf2efb6d740b2544a88277d4a9c9d44ca15f71 Mon Sep 17 00:00:00 2001
+From: Liu Ying <Ying.Liu@freescale.com>
+Date: Fri, 27 Jul 2012 12:54:33 +0800
+Subject: [PATCH 562/678] ENGR00218583-2 MX6Q SabreSD:Enable splashimage by
+ default
+
+This patch adds CONFIG_SPLASH_SCREEN definition to board
+config file to enable splashimage by default.
+
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+ include/configs/mx6q_sabresd.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index fbf549a..09c1ba0 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -324,6 +324,7 @@
+ 	#define CONFIG_ENV_IS_NOWHERE	1
+ #endif
+ 
++#define CONFIG_SPLASH_SCREEN
+ #ifdef CONFIG_SPLASH_SCREEN
+ 	/*
+ 	 * Framebuffer and LCD
+-- 
+1.7.7.4
+

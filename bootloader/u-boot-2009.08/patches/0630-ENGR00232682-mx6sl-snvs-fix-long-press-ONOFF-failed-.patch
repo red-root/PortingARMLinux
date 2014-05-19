@@ -1,0 +1,69 @@
+From 552907b7a21ba7712f4c72da8a49c717486a22bd Mon Sep 17 00:00:00 2001
+From: Lin Fuzhen <fuzhen.lin@freescale.com>
+Date: Tue, 6 Nov 2012 17:54:23 +0800
+Subject: [PATCH 630/678] ENGR00232682 mx6sl snvs: fix long press ONOFF failed
+ issue in u-boot
+
+the same as TKT104835 reported on MX6Q/DL
+Need set Power Supply Glitch to 0x41736166 and clear Power Supply
+Glitch Detect bit when POR or reboot or power on, otherwise system could
+not be power off anymore, it will power up auto agian.
+
+Signed-off-by: Lin Fuzhen <fuzhen.lin@freescale.com>
+---
+ board/freescale/mx6sl_arm2/mx6sl_arm2.c |   13 +++++++++++++
+ board/freescale/mx6sl_evk/mx6sl_evk.c   |   14 ++++++++++++++
+ 2 files changed, 27 insertions(+), 0 deletions(-)
+
+diff --git a/board/freescale/mx6sl_arm2/mx6sl_arm2.c b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+index 13d6339..f695066 100644
+--- a/board/freescale/mx6sl_arm2/mx6sl_arm2.c
++++ b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+@@ -1009,6 +1009,19 @@ static int setup_pmic_voltages(void)
+ 
+ int board_init(void)
+ {
++/*
++ * need set Power Supply Glitch to 0x41736166
++ * and need clear Power supply Glitch Detect bit
++ * when POR or reboot or power on Otherwise system
++ * could not be power off anymore
++ * */
++	u32 reg;
++	writel(0x41736166, SNVS_BASE_ADDR + 0x64);/*set LPPGDR*/
++	udelay(10);
++	reg = readl(SNVS_BASE_ADDR + 0x4c);
++	reg |= (1 << 3);
++	writel(reg, SNVS_BASE_ADDR + 0x4c);/*clear LPSR*/
++
+ 	mxc_iomux_v3_init((void *)IOMUXC_BASE_ADDR);
+ 	setup_boot_device();
+ 
+diff --git a/board/freescale/mx6sl_evk/mx6sl_evk.c b/board/freescale/mx6sl_evk/mx6sl_evk.c
+index 1ce3e59..5800f3d 100644
+--- a/board/freescale/mx6sl_evk/mx6sl_evk.c
++++ b/board/freescale/mx6sl_evk/mx6sl_evk.c
+@@ -1033,6 +1033,20 @@ int check_powerkey_pressed(void)
+ 
+ int board_init(void)
+ {
++/*
++ * need set Power Supply Glitch to 0x41736166
++ * and need clear Power supply Glitch Detect bit
++ * when POR or reboot or power on Otherwise system
++ * could not be power off anymore;
++ * need to set SNVS work at DUMP mode;
++ * */
++	u32 reg;
++	writel(0x41736166, SNVS_BASE_ADDR + 0x64);/*set LPPGDR*/
++	udelay(10);
++	reg = readl(SNVS_BASE_ADDR + 0x4c);
++	reg |= (1 << 3);
++	writel(reg, SNVS_BASE_ADDR + 0x4c);/*clear LPSR*/
++
+ 	mxc_iomux_v3_init((void *)IOMUXC_BASE_ADDR);
+ 	setup_boot_device();
+ 
+-- 
+1.7.7.4
+

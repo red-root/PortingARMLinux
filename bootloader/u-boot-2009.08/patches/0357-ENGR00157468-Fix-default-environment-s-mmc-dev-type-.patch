@@ -1,0 +1,190 @@
+From 0ff764f10e14df31e80cb4d6cc3766e8e7813384 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Fri, 23 Sep 2011 10:59:54 +0800
+Subject: [PATCH 357/678] ENGR00157468: Fix default environment's "mmc dev"
+ type error
+
+Some semicolons are missed after "mmc dev 0".
+They need to be added to make default environment work.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ include/configs/mx28_evk.h               |    2 +-
+ include/configs/mx50_rd3_android.h       |    2 +-
+ include/configs/mx50_rdp_android.h       |    2 +-
+ include/configs/mx51_3stack_android.h    |    2 +-
+ include/configs/mx51_bbg_android.h       |    2 +-
+ include/configs/mx53_ard.h               |    2 +-
+ include/configs/mx53_ard_ddr3.h          |    2 +-
+ include/configs/mx53_arm2_ddr3_android.h |    4 ++--
+ include/configs/mx53_evk_android.h       |    4 ++--
+ include/configs/mx53_loco.h              |    2 +-
+ include/configs/mx53_smd_android.h       |    4 ++--
+ 11 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/include/configs/mx28_evk.h b/include/configs/mx28_evk.h
+index feab354..a742471 100644
+--- a/include/configs/mx28_evk.h
++++ b/include/configs/mx28_evk.h
+@@ -84,7 +84,7 @@
+ 	"bootargs_mmc=setenv bootargs ${bootargs} root=/dev/mmcblk0p3 " \
+ 		"rw rootwait ip=dhcp fec_mac=${ethaddr}\0" \
+ 	"bootcmd_mmc=run bootargs_mmc; " \
+-		"mmc dev 0"	\
++		"mmc dev 0; "	\
+ 		"mmc read ${loadaddr} 100 3000; bootm\0" \
+ 
+ /*
+diff --git a/include/configs/mx50_rd3_android.h b/include/configs/mx50_rd3_android.h
+index 8c85040..95dcb6e 100644
+--- a/include/configs/mx50_rd3_android.h
++++ b/include/configs/mx50_rd3_android.h
+@@ -324,7 +324,7 @@
+ 	" rootfs=ext4 keypad"
+ #define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
+ 	"run bootargs_base bootargs_android_recovery;"  \
+-	"mmc dev 0"	\
++	"mmc dev 0;"	\
+ 	"mmc read ${loadaddr} 0x800 0x2000;bootm"
+ #define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
+ 
+diff --git a/include/configs/mx50_rdp_android.h b/include/configs/mx50_rdp_android.h
+index d234583..804742f 100644
+--- a/include/configs/mx50_rdp_android.h
++++ b/include/configs/mx50_rdp_android.h
+@@ -326,7 +326,7 @@
+ 	" rootfs=ext4 keypad"
+ #define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
+ 	"run bootargs_base bootargs_android_recovery;"  \
+-	"mmc dev 0"	\
++	"mmc dev 0;"	\
+ 	"mmc read ${loadaddr} 0x800 0x2000;bootm"
+ #define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
+ 
+diff --git a/include/configs/mx51_3stack_android.h b/include/configs/mx51_3stack_android.h
+index 85b6251..a4ae3ab 100644
+--- a/include/configs/mx51_3stack_android.h
++++ b/include/configs/mx51_3stack_android.h
+@@ -186,7 +186,7 @@
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+ 			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+ 		"bootcmd_android=run bootargs_base bootargs_android; "	\
+-			"mmc dev 0"					\
++			"mmc dev 0;"					\
+ 			"mmc read ${loadaddr} 0x800 0x1280; "		\
+ 			"mmc read ${rd_loadaddr} 0x2000 0x258; "	\
+ 			"bootm ${loadaddr} ${rd_loadaddr}\0"		\
+diff --git a/include/configs/mx51_bbg_android.h b/include/configs/mx51_bbg_android.h
+index df99cbc..09c454c 100644
+--- a/include/configs/mx51_bbg_android.h
++++ b/include/configs/mx51_bbg_android.h
+@@ -126,7 +126,7 @@
+ 	"rootfs=ext4 di1_primary"
+ #define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
+ 	"run bootargs_base bootargs_android_recovery;"	\
+-	"mmc dev 0"	\
++	"mmc dev 0;"	\
+ 	"mmc read ${loadaddr} 0x800 0x2000;bootm"
+ #define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
+ 
+diff --git a/include/configs/mx53_ard.h b/include/configs/mx53_ard.h
+index c7d8ddb..c0ced24 100644
+--- a/include/configs/mx53_ard.h
++++ b/include/configs/mx53_ard.h
+@@ -135,7 +135,7 @@
+ 		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "     \
+ 			"root=/dev/mmcblk0p1 rootwait rw\0"                \
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "		\
+-			"mmc dev 0"					\
++			"mmc dev 0;"					\
+ 			"mmc read ${loadaddr} 0x800 0x1800; bootm\0"   \
+ 		"bootcmd=run bootcmd_net\0"                             \
+ 
+diff --git a/include/configs/mx53_ard_ddr3.h b/include/configs/mx53_ard_ddr3.h
+index 569c7d1..f58bcf3 100644
+--- a/include/configs/mx53_ard_ddr3.h
++++ b/include/configs/mx53_ard_ddr3.h
+@@ -135,7 +135,7 @@
+ 		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "     \
+ 			"root=/dev/mmcblk0p1 rootwait rw\0"                \
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "		\
+-			"mmc dev 0"	\
++			"mmc dev 0;"	\
+ 			"mmc read ${loadaddr} 0x800 0x1800; bootm\0"   \
+ 		"bootcmd=run bootcmd_net\0"                             \
+ 
+diff --git a/include/configs/mx53_arm2_ddr3_android.h b/include/configs/mx53_arm2_ddr3_android.h
+index b88f227..4b654d6 100644
+--- a/include/configs/mx53_arm2_ddr3_android.h
++++ b/include/configs/mx53_arm2_ddr3_android.h
+@@ -146,7 +146,7 @@
+ 			"video=mxcdi0fb:RGB565,800x480M@55 calibration\0"	\
+ 		"bootcmd=run bootcmd_SD \0"				\
+ 		"bootcmd_SD=run bootargs_base bootargs_android;"	\
+-			"mmc dev 0"					\
++			"mmc dev 0;"					\
+ 			"mmc read ${loadaddr} 0x800 1800;"		\
+ 			"mmc read ${rd_loadaddr} 0x2000 0x258;"		\
+ 			"bootm ${loadaddr} ${rd_loadaddr}\0"		\
+@@ -154,7 +154,7 @@
+ 			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+ 		"bootcmd_android_recovery=run bootargs_base"		\
+ 			" bootargs_android_recovery;"			\
+-			"mmc dev 0"					\
++			"mmc dev 0;"					\
+ 			"mmc read ${loadaddr} 0x800 0x1800;bootm\0"	\
+ 		"bootargs_android_recovery=setenv bootargs ${bootargs}" \
+ 			" init=/init root=/dev/mmcblk0p4 rootfs=ext4\0"	\
+diff --git a/include/configs/mx53_evk_android.h b/include/configs/mx53_evk_android.h
+index 4f37e4d..f329e6d 100644
+--- a/include/configs/mx53_evk_android.h
++++ b/include/configs/mx53_evk_android.h
+@@ -175,7 +175,7 @@
+ 			"video=mxcdi0fb:RGB565,800x480M@55 calibration\0"	\
+ 		"bootcmd=run bootcmd_SD \0"				\
+ 		"bootcmd_SD=run bootargs_base bootargs_android;"	\
+-			"mmc dev 0"					\
++			"mmc dev 0;"					\
+ 			"mmc read ${loadaddr} 0x800 2000;"		\
+ 			"mmc read ${rd_loadaddr} 0x3000 0x258;"		\
+ 			"bootm ${loadaddr} ${rd_loadaddr}\0"		\
+@@ -183,7 +183,7 @@
+ 			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+ 		"bootcmd_android_recovery=run bootargs_base"		\
+ 			" bootargs_android_recovery;"			\
+-			"mmc dev 0"					\
++			"mmc dev 0;"					\
+ 			"mmc read ${loadaddr} 0x800 0x2000;bootm\0"	\
+ 		"bootargs_android_recovery=setenv bootargs ${bootargs}" \
+ 			" init=/init root=/dev/mmcblk0p4 rootfs=ext4\0"	\
+diff --git a/include/configs/mx53_loco.h b/include/configs/mx53_loco.h
+index 75ea8e9..0f57f78 100644
+--- a/include/configs/mx53_loco.h
++++ b/include/configs/mx53_loco.h
+@@ -127,7 +127,7 @@
+ 		"bootargs_mmc=setenv bootargs ${bootargs} ip=dhcp "	\
+ 			"root=/dev/mmcblk0p1 rootwait rw\0"		\
+ 		"bootcmd_mmc=run bootargs_base bootargs_mmc; "		\
+-			"mmc dev 0"					\
++			"mmc dev 0; "					\
+ 			"mmc read ${loadaddr} 0x800 0x1800; bootm\0"	\
+ 		"bootcmd=run bootcmd_mmc\0"	\
+ 	\
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index 2830932..d7b0fe9 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -103,8 +103,8 @@
+ #define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC \
+ 	"setenv bootargs ${bootargs} init=/init root=/dev/mmcblk0p4 rootfs=ext4 video=mxcdi1fb:RGB666,XGA ldb=di1 di1_primary"
+ #define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
+-	"run bootargs_base bootargs_android_recovery;"	\
+-	"mmc dev 1 0"	\
++	"run bootargs_base bootargs_android_recovery; "	\
++	"mmc dev 1 0; "	\
+ 	"mmc read ${loadaddr} 0x800 0x2000;bootm"
+ #define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
+ 
+-- 
+1.7.7.4
+

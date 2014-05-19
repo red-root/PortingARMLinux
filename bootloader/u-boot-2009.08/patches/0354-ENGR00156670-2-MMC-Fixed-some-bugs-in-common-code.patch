@@ -1,0 +1,49 @@
+From e2c4083c4b9afffdc64d6916ab69bd596ed10fc0 Mon Sep 17 00:00:00 2001
+From: Anish Trivedi <anish@freescale.com>
+Date: Tue, 13 Sep 2011 18:21:30 -0500
+Subject: [PATCH 354/678] ENGR00156670-2 MMC: Fixed some bugs in common code
+
+Need to send RCA when sending CMD13.
+
+Cannot use print_size function when displaying card capacity
+because it expects a 32 bit integer as input, while mmc->capacity
+is a 64 bit integer. There is loss of information leading to incorrect
+capacities being displayed for "mmcinfo" cmd. Changed it to simply
+print the entire 64 bit integer, which is the number of bytes.
+
+Signed-off-by: Tony Lin <tony.lin@freescale.com>
+Signed-off-by: Anish Trivedi <anish@freescale.com>
+---
+ common/cmd_mmc.c  |    2 +-
+ drivers/mmc/mmc.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/common/cmd_mmc.c b/common/cmd_mmc.c
+index d82f2db..85f0200 100644
+--- a/common/cmd_mmc.c
++++ b/common/cmd_mmc.c
+@@ -113,7 +113,7 @@ static void print_mmcinfo(struct mmc *mmc)
+ 
+ 	printf("High Capacity: %s\n", mmc->high_capacity ? "Yes" : "No");
+ 	puts("Capacity: ");
+-	print_size(mmc->capacity, "\n");
++	printf("%lld Bytes\n", mmc->capacity);
+ 
+ 	printf("Bus Width: %d-bit %s\n", mmc->bus_width,
+ 		(mmc->card_caps & EMMC_MODE_4BIT_DDR ||
+diff --git a/drivers/mmc/mmc.c b/drivers/mmc/mmc.c
+index e5a0ec9..54e2a21 100644
+--- a/drivers/mmc/mmc.c
++++ b/drivers/mmc/mmc.c
+@@ -119,7 +119,7 @@ int mmc_send_status(struct mmc *mmc, int timeout)
+ 
+ 	cmd.cmdidx = MMC_CMD_SEND_STATUS;
+ 	cmd.resp_type = MMC_RSP_R1;
+-	cmd.cmdarg = 0;
++	cmd.cmdarg = mmc->rca << 16;
+ 	cmd.flags = 0;
+ 
+ 	do {
+-- 
+1.7.7.4
+

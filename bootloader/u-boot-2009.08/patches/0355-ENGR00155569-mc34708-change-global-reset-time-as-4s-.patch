@@ -1,0 +1,61 @@
+From c690577b6a25f416f5b79bbd0ded89bceb4b023b Mon Sep 17 00:00:00 2001
+From: Robin Gong <B38343@freescale.com>
+Date: Mon, 19 Sep 2011 12:44:08 +0800
+Subject: [PATCH 355/678] ENGR00155569 mc34708: change global reset time as 4s
+ of LOCO and PCBA
+
+reduce the time of global reset to 4s in the boards of loco and pcba
+
+Signed-off-by: Robin Gong <B38343@freescale.com>
+---
+ board/freescale/mx53_loco/mx53_loco.c |   11 +++++++++++
+ board/freescale/mx53_pcba/mx53_pcba.c |   11 +++++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
+
+diff --git a/board/freescale/mx53_loco/mx53_loco.c b/board/freescale/mx53_loco/mx53_loco.c
+index 963c11e..fda52dc 100644
+--- a/board/freescale/mx53_loco/mx53_loco.c
++++ b/board/freescale/mx53_loco/mx53_loco.c
+@@ -844,6 +844,17 @@ int board_late_init(void)
+ 			printf("%s:i2c_write:error\n", __func__);
+ 			return -1;
+ 		}
++		/*change global reset time as 4s*/
++		if (i2c_read(0x8, 15, 1, &buf[0], 3)) {
++			printf("%s:i2c_read:error\n", __func__);
++			return -1;
++		}
++		buf[1] |= 0x1;
++		buf[1] &= ~0x2;
++		if (i2c_write(0x8, 15, 1, buf, 3)) {
++			printf("%s:i2c_write:error\n", __func__);
++			return -1;
++		}
+ 
+ 		/* set up rev #1 for loco/ripley board */
+ 		setup_board_rev(get_board_rev_from_fuse());
+diff --git a/board/freescale/mx53_pcba/mx53_pcba.c b/board/freescale/mx53_pcba/mx53_pcba.c
+index e3c9621..5ea1658 100644
+--- a/board/freescale/mx53_pcba/mx53_pcba.c
++++ b/board/freescale/mx53_pcba/mx53_pcba.c
+@@ -356,6 +356,17 @@ void setup_pmic_voltages(void)
+ 		buf[0] = (buf[0] & 0xf8) | 0x7;
+ 		if (i2c_write(0x8, 51, 1, buf, 3))
+ 			printf("%s:i2c_write 51:error\n", __func__);
++		/*change global reset time as 4s*/
++		if (i2c_read(0x8, 15, 1, &buf[0], 3)) {
++			printf("%s:i2c_read:error\n", __func__);
++			return -1;
++		}
++		buf[1] |= 0x1;
++		buf[1] &= ~0x2;
++		if (i2c_write(0x8, 15, 1, buf, 3)) {
++			printf("%s:i2c_write:error\n", __func__);
++			return -1;
++		}
+ 
+ 	} else
+ 		printf("Error: Dont't found mc34708 on board.\n");
+-- 
+1.7.7.4
+

@@ -1,0 +1,44 @@
+From 117b01ede48d74266b7eebae2d23e331426bbb73 Mon Sep 17 00:00:00 2001
+From: Jason Chen <b02280@freescale.com>
+Date: Wed, 27 Jul 2011 14:19:36 +0800
+Subject: [PATCH 324/678] ENGR00153761 imx6q ipuv3: improve display quality
+
+to avoid ipu starvation issue.
+1. enable IPU AXI cache in uboot
+2. set Qos to 7 for IPU to highest priority in uboot.
+3. set AXI id to 0 for high priority IDMA channel in linux.
+
+Signed-off-by: Jason Chen <b02280@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/flash_header.S |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/flash_header.S b/board/freescale/mx6q_sabreauto/flash_header.S
+index 454164c..d18ab74 100644
+--- a/board/freescale/mx6q_sabreauto/flash_header.S
++++ b/board/freescale/mx6q_sabreauto/flash_header.S
+@@ -53,8 +53,8 @@ boot_data:        .word TEXT_BASE
+ image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ plugin:           .word 0x0
+ 
+-dcd_hdr:          .word 0x40D802D2 /* Tag=0xD2, Len=90*8 + 4 + 4, Ver=0x40 */
+-write_dcd_cmd:    .word 0x04D402CC /* Tag=0xCC, Len=90*8 + 4, Param=0x04 */
++dcd_hdr:          .word 0x40F002D2 /* Tag=0xD2, Len=93*8 + 4 + 4, Ver=0x40 */
++write_dcd_cmd:    .word 0x04EC02CC /* Tag=0xCC, Len=93*8 + 4, Param=0x04 */
+ 
+ /* DCD */
+ 
+@@ -170,4 +170,10 @@ MXC_DCD_ITEM(88, MMDC_P1_BASE_ADDR + 0x8b8, 0x00000800)
+ MXC_DCD_ITEM(89, MMDC_P0_BASE_ADDR + 0x01c, 0x00000000)
+ MXC_DCD_ITEM(90, MMDC_P0_BASE_ADDR + 0x404, 0x00011006)
+ 
++/* enable AXI cache for VDOA/VPU/IPU */
++MXC_DCD_ITEM(91, IOMUXC_BASE_ADDR + 0x010, 0xf00000ff)
++/* set IPU Qos=0x7 */
++MXC_DCD_ITEM(92, IOMUXC_BASE_ADDR + 0x018, 0x00070007)
++MXC_DCD_ITEM(93, IOMUXC_BASE_ADDR + 0x01c, 0x00070007)
++
+ #endif
+-- 
+1.7.7.4
+

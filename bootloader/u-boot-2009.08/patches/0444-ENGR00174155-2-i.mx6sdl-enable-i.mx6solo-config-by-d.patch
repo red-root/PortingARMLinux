@@ -1,0 +1,30 @@
+From 0f8cf0cc51e6b209fd49213f84c5e4f612025cce Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Thu, 9 Feb 2012 21:49:16 +0800
+Subject: [PATCH 444/678] ENGR00174155-2 i.mx6sdl: enable i.mx6solo config by
+ default
+
+enable i.mx6solo config by default
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ include/configs/mx6dl_arm2.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index 22cfe66..5c96b11 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -118,7 +118,8 @@
+ 		"uboot=u-boot.bin\0"			\
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+-		"bootargs_base=setenv bootargs console=ttymxc0,115200\0"\
++		"bootargs_base=setenv bootargs console=ttymxc0,115200 "\
++			"nosmp arm_freq=800 enable_wait_mode=off\0"     \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+-- 
+1.7.7.4
+

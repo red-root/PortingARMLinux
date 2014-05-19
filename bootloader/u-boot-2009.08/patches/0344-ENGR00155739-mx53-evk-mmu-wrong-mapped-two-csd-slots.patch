@@ -1,0 +1,44 @@
+From 5eced774fcb9edebfa09558a81988de7b22588df Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Thu, 1 Sep 2011 13:47:05 +0800
+Subject: [PATCH 344/678] ENGR00155739: mx53 evk mmu wrong mapped two csd
+ slots
+
+mx53 evk mmu wrong mapped two csd slots.
+Actually evk only has one slot.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ board/freescale/mx53_evk/mx53_evk.c |   14 ++++----------
+ 1 files changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/board/freescale/mx53_evk/mx53_evk.c b/board/freescale/mx53_evk/mx53_evk.c
+index 4193557..4129a0b 100644
+--- a/board/freescale/mx53_evk/mx53_evk.c
++++ b/board/freescale/mx53_evk/mx53_evk.c
+@@ -203,18 +203,12 @@ void board_mmu_init(void)
+ 	X_ARM_MMU_SECTION(0x400, 0x400, 0x300,
+ 			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+ 			ARM_ACCESS_PERM_RW_RW); /* periperals */
+-	X_ARM_MMU_SECTION(0x700, 0x700, 0x200,
++	X_ARM_MMU_SECTION(0x700, 0x700, 0x400,
+ 			ARM_CACHEABLE, ARM_BUFFERABLE,
+-			ARM_ACCESS_PERM_RW_RW); /* CSD0 512M */
+-	X_ARM_MMU_SECTION(0x700, 0x900, 0x200,
++			ARM_ACCESS_PERM_RW_RW); /* CSD0 1G */
++	X_ARM_MMU_SECTION(0x700, 0xB00, 0x400,
+ 			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+-			ARM_ACCESS_PERM_RW_RW); /* CSD0 512M */
+-	X_ARM_MMU_SECTION(0xB00, 0xB00, 0x200,
+-			ARM_CACHEABLE, ARM_BUFFERABLE,
+-			ARM_ACCESS_PERM_RW_RW); /* CSD0 512M */
+-	X_ARM_MMU_SECTION(0xB00, 0xD00, 0x200,
+-			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+-			ARM_ACCESS_PERM_RW_RW); /* CSD0 512M */
++			ARM_ACCESS_PERM_RW_RW); /* CSD0 1G */
+ 	X_ARM_MMU_SECTION(0xF00, 0xF00, 0x07F,
+ 			ARM_UNCACHEABLE, ARM_UNBUFFERABLE,
+ 			ARM_ACCESS_PERM_RW_RW); /* CS1 EIM control*/
+-- 
+1.7.7.4
+

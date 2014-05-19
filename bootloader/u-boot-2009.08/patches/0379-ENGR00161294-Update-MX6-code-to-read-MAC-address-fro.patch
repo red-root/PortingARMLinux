@@ -1,0 +1,70 @@
+From 01a080fe6c11de531f79d0a05d7a06dac1708e41 Mon Sep 17 00:00:00 2001
+From: Mahesh Mahadevan <r9aadq@freescale.com>
+Date: Wed, 2 Nov 2011 10:16:23 -0500
+Subject: [PATCH 379/678] ENGR00161294 Update MX6 code to read MAC address
+ from fuses
+
+Fix the code to read the MAC address correctly from the fuses
+
+Signed-off-by: Mahesh Mahadevan <r9aadq@freescale.com>
+---
+ board/freescale/mx6q_arm2/mx6q_arm2.c           |   15 ++++++++++-----
+ board/freescale/mx6q_sabrelite/mx6q_sabrelite.c |   14 ++++++++++----
+ 2 files changed, 20 insertions(+), 9 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index 4e1cc73..b7853ac 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -411,12 +411,17 @@ void spi_io_init(struct imx_spi_dev_t *dev)
+ 
+ int fec_get_mac_addr(unsigned char *mac)
+ {
+-	u32 *ocotp_mac_base =
+-		(u32 *)(OCOTP_BASE_ADDR + HW_OCOTP_MACn(0));
+-	int i;
++	unsigned int value;
++
++	value = readl(OCOTP_BASE_ADDR + HW_OCOTP_MACn(0));
++	mac[0] = value & 0xff;
++	mac[1] = (value >> 8) & 0xff;
++	mac[2] = (value >> 16) & 0xff;
++	mac[3] = (value >> 24) & 0xff;
++	value = readl(OCOTP_BASE_ADDR + HW_OCOTP_MACn(1));
++	mac[4] = value & 0xff;
++	mac[5] = (value >> 8) & 0xff;
+ 
+-	for (i = 0; i < 6; ++i, ++ocotp_mac_base)
+-		mac[6 - 1 - i] = readl(++ocotp_mac_base);
+ 	return 0;
+ }
+ 
+diff --git a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+index 39cd827..9f499e7 100644
+--- a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
++++ b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+@@ -302,11 +302,17 @@ void spi_io_init(struct imx_spi_dev_t *dev)
+ 
+ int fec_get_mac_addr(unsigned char *mac)
+ {
+-	u32 *ocotp_mac_base = (u32 *) (OCOTP_BASE_ADDR + HW_OCOTP_MACn(0));
+-	int i;
++	unsigned int value;
++
++	value = readl(OCOTP_BASE_ADDR + HW_OCOTP_MACn(0));
++	mac[0] = value & 0xff;
++	mac[1] = (value >> 8) & 0xff;
++	mac[2] = (value >> 16) & 0xff;
++	mac[3] = (value >> 24) & 0xff;
++	value = readl(OCOTP_BASE_ADDR + HW_OCOTP_MACn(1));
++	mac[4] = value & 0xff;
++	mac[5] = (value >> 8) & 0xff;
+ 
+-	for (i = 0; i < 6; ++i, ++ocotp_mac_base)
+-		mac[6 - 1 - i] = readl(++ocotp_mac_base);
+ 	return 0;
+ }
+ 
+-- 
+1.7.7.4
+

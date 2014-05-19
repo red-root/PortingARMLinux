@@ -1,0 +1,130 @@
+From 951586a9fb6d6f30106e70978500c564dd573f9d Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Thu, 23 Feb 2012 15:08:52 +0800
+Subject: [PATCH 462/678] ENGR00175091 MX6Q_SABRESD: android: add recovery
+ check
+
+define a new macro to show which mmc bus was main storage
+in recovery check, only check the main storage /cache
+partition.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |   76 +++++++++++++--------------
+ include/configs/mx6q_sabresd_android.h      |    4 ++
+ 2 files changed, 41 insertions(+), 39 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index e2a080e..08957d7 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -811,49 +811,47 @@ int check_recovery_cmd_file(void)
+ 	case SPI_NOR_BOOT:
+ 	case I2C_BOOT:
+ 		{
+-			for (i = 0; i < 3; i++) {
+-				block_dev_desc_t *dev_desc = NULL;
+-				struct mmc *mmc = find_mmc_device(i);
+-
+-				dev_desc = get_dev("mmc", i);
+-
+-				if (NULL == dev_desc) {
+-					printf("** Block device MMC %d not supported\n", i);
+-					continue;
+-				}
+-
+-				mmc_init(mmc);
+-
+-				if (get_partition_info(dev_desc,
+-						       CONFIG_ANDROID_CACHE_PARTITION_MMC,
+-						       &info)) {
+-					printf("** Bad partition %d **\n",
+-					       CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-					continue;
+-				}
+-
+-				part_length = ext2fs_set_blk_dev(dev_desc,
+-								 CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-				if (part_length == 0) {
+-					printf("** Bad partition - mmc %d:%d **\n", i,
+-					       CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-					ext2fs_close();
+-					continue;
+-				}
+-
+-				if (!ext2fs_mount(part_length)) {
+-					printf("** Bad ext2 partition or "
+-					       "disk - mmc %d:%d **\n",
+-					       i, CONFIG_ANDROID_CACHE_PARTITION_MMC);
+-					ext2fs_close();
+-					continue;
+-				}
+-
+-				filelen = ext2fs_open(CONFIG_ANDROID_RECOVERY_CMD_FILE);
++			block_dev_desc_t *dev_desc = NULL;
++			struct mmc *mmc = find_mmc_device(CONFIG_ANDROID_MAIN_MMC_BUS);
+ 
++			dev_desc = get_dev("mmc", CONFIG_ANDROID_MAIN_MMC_BUS);
++
++			if (NULL == dev_desc) {
++				printf("** Block device MMC %d not supported\n", i);
++				break;
++			}
++
++			mmc_init(mmc);
++
++			if (get_partition_info(dev_desc,
++					       CONFIG_ANDROID_CACHE_PARTITION_MMC,
++					       &info)) {
++				printf("** Bad partition %d **\n",
++				       CONFIG_ANDROID_CACHE_PARTITION_MMC);
++				break;
++			}
++
++			part_length = ext2fs_set_blk_dev(dev_desc,
++							 CONFIG_ANDROID_CACHE_PARTITION_MMC);
++			if (part_length == 0) {
++				printf("** Bad partition - mmc %d:%d **\n", i,
++				       CONFIG_ANDROID_CACHE_PARTITION_MMC);
+ 				ext2fs_close();
+ 				break;
+ 			}
++
++			if (!ext2fs_mount(part_length)) {
++				printf("** Bad ext2 partition or "
++				       "disk - mmc %d:%d **\n",
++				       i, CONFIG_ANDROID_CACHE_PARTITION_MMC);
++				ext2fs_close();
++				break;
++			}
++
++			filelen = ext2fs_open(CONFIG_ANDROID_RECOVERY_CMD_FILE);
++
++			ext2fs_close();
++			break;
+ 		}
+ 		break;
+ 	case NAND_BOOT:
+diff --git a/include/configs/mx6q_sabresd_android.h b/include/configs/mx6q_sabresd_android.h
+index 6252d00..6248eb4 100644
+--- a/include/configs/mx6q_sabresd_android.h
++++ b/include/configs/mx6q_sabresd_android.h
+@@ -45,11 +45,15 @@
+ #endif	/* if 0 */
+ 
+ #define CONFIG_ANDROID_RECOVERY
++/* which mmc bus is your main storage ? */
++#define CONFIG_ANDROID_MAIN_MMC_BUS 3
++
+ #define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
+ #define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 5
+ #define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 2
+ #define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
+ 
++
+ #define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC NULL
+ #define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
+ 	"booti mmc3 recovery"
+-- 
+1.7.7.4
+

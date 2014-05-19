@@ -1,0 +1,47 @@
+From f6c6e96cc953f82cb2ebc58c6ad30e743dc972a3 Mon Sep 17 00:00:00 2001
+From: Ryan QIAN <b32804@freescale.com>
+Date: Mon, 20 Aug 2012 15:11:15 +0800
+Subject: [PATCH 584/678] ENGR00220824: mx6sl_evk: mmc: only SD1 supports 8bit
+ on evk board.
+
+- configure SD1 to support 8bit on evk
+
+Signed-off-by: Ryan QIAN <b32804@freescale.com>
+---
+ board/freescale/mx6sl_evk/mx6sl_evk.c |    4 ----
+ include/configs/mx6sl_evk.h           |    4 ++--
+ 2 files changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/board/freescale/mx6sl_evk/mx6sl_evk.c b/board/freescale/mx6sl_evk/mx6sl_evk.c
+index e63eb0c..63705ea 100644
+--- a/board/freescale/mx6sl_evk/mx6sl_evk.c
++++ b/board/freescale/mx6sl_evk/mx6sl_evk.c
+@@ -190,10 +190,6 @@ iomux_v3_cfg_t usdhc2_pads[] = {
+ 	MX6SL_PAD_SD2_DAT1__USDHC2_DAT1,
+ 	MX6SL_PAD_SD2_DAT2__USDHC2_DAT2,
+ 	MX6SL_PAD_SD2_DAT3__USDHC2_DAT3,
+-	MX6SL_PAD_SD2_DAT4__USDHC2_DAT4,
+-	MX6SL_PAD_SD2_DAT5__USDHC2_DAT5,
+-	MX6SL_PAD_SD2_DAT6__USDHC2_DAT6,
+-	MX6SL_PAD_SD2_DAT7__USDHC2_DAT7,
+ };
+ 
+ iomux_v3_cfg_t usdhc3_pads[] = {
+diff --git a/include/configs/mx6sl_evk.h b/include/configs/mx6sl_evk.h
+index 8864a7f..7c43fe8 100644
+--- a/include/configs/mx6sl_evk.h
++++ b/include/configs/mx6sl_evk.h
+@@ -218,8 +218,8 @@
+ 	/* detect whether SD1, 2, or 3 is boot device */
+ 	#define CONFIG_DYNAMIC_MMC_DEVNO
+ 
+-	/* SD2 is 8 bit */
+-	#define CONFIG_MMC_8BIT_PORTS   0x2
++	/* SD1 is 8 bit */
++	#define CONFIG_MMC_8BIT_PORTS   0x1
+ 	/* Setup target delay in DDR mode for each SD port */
+ 	#define CONFIG_GET_DDR_TARGET_DELAY
+ #endif
+-- 
+1.7.7.4
+

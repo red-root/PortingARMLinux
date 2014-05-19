@@ -1,0 +1,56 @@
+From 339d6552722c2c1e666fd7a61c12b380bd5282ca Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Wed, 11 Apr 2012 19:34:04 +0800
+Subject: [PATCH 504/678] ENGR00179437-1: u-boot: iomux: NO_PAD_I/NO_PAD_MUX
+ not set corretly
+
+NO_PAD_I/NO_PAD_MUX not defined correctly, which will cause build error.
+And According to iomux-v3.h, the NO_PAD_I/NO_PAD_MUX should be 0 for the
+pins which does not have PAD/MUX config.
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ include/asm-arm/arch-mx6/iomux-v3.h |    5 ++++-
+ include/asm-arm/arch-mx6/mx6_pins.h |    3 ---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/asm-arm/arch-mx6/iomux-v3.h b/include/asm-arm/arch-mx6/iomux-v3.h
+index 750cb61..b67a31f 100644
+--- a/include/asm-arm/arch-mx6/iomux-v3.h
++++ b/include/asm-arm/arch-mx6/iomux-v3.h
+@@ -2,7 +2,7 @@
+  * Copyright (C) 2009 by Jan Weitzel Phytec Messtechnik GmbH,
+  *			<armlinux@phytec.de>
+  *
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -91,6 +91,9 @@ typedef u64 iomux_v3_cfg_t;
+ #define NO_PAD_CTRL		(1 << 17)
+ #define PAD_CTL_HYS		(1 << 16)
+ 
++#define NO_PAD_I		0
++#define NO_MUX_I		0
++
+ #define PAD_CTL_PUS_100K_DOWN	(0 << 14)
+ #define PAD_CTL_PUS_47K_UP	(1 << 14)
+ #define PAD_CTL_PUS_100K_UP	(2 << 14)
+diff --git a/include/asm-arm/arch-mx6/mx6_pins.h b/include/asm-arm/arch-mx6/mx6_pins.h
+index af835ce..a7a2041 100644
+--- a/include/asm-arm/arch-mx6/mx6_pins.h
++++ b/include/asm-arm/arch-mx6/mx6_pins.h
+@@ -40,9 +40,6 @@ typedef enum iomux_config {
+ 	IOMUX_CONFIG_SION = 0x1 << 4,	/* LOOPBACK:MUX SION bit */
+ } iomux_pin_cfg_t;
+ 
+-#define NON_MUX_I       0x3FF
+-#define NON_PAD_I       0x7FF
+-
+ #define MX6Q_UART_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_PUE |	\
+ 		PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED | \
+ 		PAD_CTL_DSE_40ohm | PAD_CTL_SRE_FAST | PAD_CTL_HYS)
+-- 
+1.7.7.4
+

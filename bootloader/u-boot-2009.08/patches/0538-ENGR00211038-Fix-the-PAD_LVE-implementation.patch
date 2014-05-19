@@ -1,0 +1,42 @@
+From 75752c1cbe95c9f6241f3054b6435312d6708a38 Mon Sep 17 00:00:00 2001
+From: Mahesh Mahadevan <mahesh.mahadevan@freescale.com>
+Date: Fri, 25 May 2012 10:29:10 -0500
+Subject: [PATCH 538/678] ENGR00211038 Fix the PAD_LVE implementation
+
+Fix the PAD_LVE implementation used on MX6SL.
+
+Signed-off-by: Mahesh Mahadevan <mahesh.mahadevan@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/iomux-v3.c     |    2 +-
+ include/asm-arm/arch-mx6/iomux-v3.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/iomux-v3.c b/cpu/arm_cortexa8/mx6/iomux-v3.c
+index a147c4e..6041a07 100644
+--- a/cpu/arm_cortexa8/mx6/iomux-v3.c
++++ b/cpu/arm_cortexa8/mx6/iomux-v3.c
+@@ -52,7 +52,7 @@ int mxc_iomux_v3_setup_pad(iomux_v3_cfg_t pad)
+ 		if (pad_ctrl & PAD_CTL_LVE) {
+ 			/* Set the bit for LVE */
+ 			pad_ctrl |= (1 << PAD_CTL_LVE_OFFSET);
+-			pad_ctrl &= ~(1 << PAD_CTL_LVE);
++			pad_ctrl &= ~(PAD_CTL_LVE);
+ 		}
+ 		__raw_writel(pad_ctrl, base + pad_ctrl_ofs);
+ 	}
+diff --git a/include/asm-arm/arch-mx6/iomux-v3.h b/include/asm-arm/arch-mx6/iomux-v3.h
+index 4ce38a5..6f33552 100644
+--- a/include/asm-arm/arch-mx6/iomux-v3.h
++++ b/include/asm-arm/arch-mx6/iomux-v3.h
+@@ -96,7 +96,7 @@ typedef unsigned int iomux_pin_name_t;
+ /*
+  * Use to set PAD control
+  */
+-#define PAD_CTL_LVE_OFFSET	(1 << 22)
++#define PAD_CTL_LVE_OFFSET	(22)
+ #define PAD_CTL_LVE		(1 << 18)
+ #define NO_PAD_CTRL		(1 << 17)
+ #define PAD_CTL_HYS		(1 << 16)
+-- 
+1.7.7.4
+

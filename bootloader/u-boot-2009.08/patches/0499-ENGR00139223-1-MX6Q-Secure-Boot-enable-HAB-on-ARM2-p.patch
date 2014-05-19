@@ -1,0 +1,372 @@
+From 87a0deee1cd9c2bd6d50af03b81377a90eb07eb4 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Fri, 30 Mar 2012 20:18:16 +0800
+Subject: [PATCH 499/678] ENGR00139223-1 [MX6Q] Secure Boot, enable HAB on
+ ARM2 platform (Stage 1)
+
+The first stage of High Assurance Boot (HAB) is the authentication of
+U-boot. A CST tool is used to generate the CSF data, which include
+public key, certificate and instruction of authentication process. Then
+it is attached to the original u-boot.bin
+
+The IVT should be modified to contain a pointer to the CSF data. The original
+u-boot.bin is with size between 0x27000 to 0x28000. For convinence, we first
+extend the u-boot.bin to 0x2F000 (with fill 0xFF). Then concatenate it with
+the CSF data. The combined image is again extend to a fixed length (0x31000),
+which is used as the IVT size parameter.
+
+The new memory layout is as the following.
+
+    U-Boot Image
+    +-------------+
+    |   Blank     |
+    |-------------| 0x400
+    |    IVT      |-----------------------+
+    |-------------|                       |
+    |             |                       |
+    |             |                       |
+    |             |                       |
+    |Remaining UB |                       |  CSF pointer
+    |             |                       |
+    |             |                       |
+    |             |                       |
+    |-------------|                       |
+    |             |                       |
+    |  Fill Data  |                       |
+    |             |                       |
+    |-------------| 0x2F000 <-------------+
+    |             |
+    |   CSF Data  |
+    |             |
+    |-------------|
+    |             |
+    |  Fill Data  |
+    |             |
+    +-------------+ 0x31000
+
+HAB APIs are ROM implemented, the entry table is located in a fixed
+location in the ROM. We export them so that during the HAB we can
+have some information about the secure boot process. For convinience
+some wrapper API is implemented based on the HAB APIs.
+
+ - get_hab_status : used to dump information of authentication result
+ - authenticate_image : used by u-boot to authenticate uImage
+
+For security hardware to function, CAAM related clock (CG0[4~6]) must
+be open. They are default closed in the original U-boot.
+"hab_caam_clock_enable" and "hab_caam_clock_disable" are created to
+open and close these clock gates.
+
+The generation of CSF data is not in the scope of this patch. CST tool
+will be used for this purpose. The procedure will be introduced in
+another document.
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ board/freescale/mx6q_arm2/flash_header.S |   10 ++-
+ board/freescale/mx6q_arm2/mx6q_arm2.c    |  121 ++++++++++++++++++++++++++++++
+ board/freescale/mx6q_arm2/u-boot.lds     |   10 ++-
+ include/asm-arm/arch-mx6/mx6_secure.h    |   80 ++++++++++++++++++++
+ include/configs/mx6q_arm2.h              |    2 +
+ 5 files changed, 221 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/flash_header.S b/board/freescale/mx6q_arm2/flash_header.S
+index c6cb83f..02d0737 100644
+--- a/board/freescale/mx6q_arm2/flash_header.S
++++ b/board/freescale/mx6q_arm2/flash_header.S
+@@ -49,11 +49,19 @@ reserv1:          .word 0x0
+ dcd_ptr:          .word dcd_hdr
+ boot_data_ptr:	  .word boot_data
+ self_ptr:         .word ivt_header
+-app_code_csf:     .word 0x0
++#ifdef CONFIG_SECURE_BOOT
++app_code_csf:     .word __hab_data
++#else
++app_code_csf:     .word 0
++#endif
+ reserv2:          .word 0x0
+ 
+ boot_data:        .word TEXT_BASE
++#ifdef CONFIG_SECURE_BOOT
++image_len:        .word __hab_data_end - TEXT_BASE
++#else
+ image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
++#endif
+ plugin:           .word 0x0
+ 
+ #if defined CONFIG_MX6DL_DDR3
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index ba0d6c1..eb3e34e 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -24,6 +24,9 @@
+ #include <asm/io.h>
+ #include <asm/arch/mx6.h>
+ #include <asm/arch/mx6_pins.h>
++#if defined(CONFIG_SECURE_BOOT)
++#include <asm/arch/mx6_secure.h>
++#endif
+ #include <asm/arch/mx6dl_pins.h>
+ #include <asm/arch/iomux-v3.h>
+ #include <asm/errno.h>
+@@ -895,6 +898,119 @@ int board_late_init(void)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_SECURE_BOOT
++/* -------- start of HAB API updates ------------*/
++#define hab_rvt_report_event ((hab_rvt_report_event_t *)HAB_RVT_REPORT_EVENT)
++#define hab_rvt_report_status ((hab_rvt_report_status_t *)HAB_RVT_REPORT_STATUS)
++#define hab_rvt_authenticate_image \
++	((hab_rvt_authenticate_image_t *)HAB_RVT_AUTHENTICATE_IMAGE)
++#define hab_rvt_entry ((hab_rvt_entry_t *) HAB_RVT_ENTRY)
++#define hab_rvt_exit ((hab_rvt_exit_t *) HAB_RVT_EXIT)
++#define hab_rvt_clock_init HAB_RVT_CLOCK_INIT
++
++
++void display_event(uint8_t *event_data, size_t bytes)
++{
++	uint32_t i;
++	if ((event_data) && (bytes > 0)) {
++		for (i = 0; i < bytes; i++) {
++			if (i == 0)
++				printf("\t0x%02x", event_data[i]);
++			else if ((i % 8) == 0)
++				printf("\n\t0x%02x", event_data[i]);
++			else
++				printf(" 0x%02x", event_data[i]);
++		}
++	}
++}
++
++int get_hab_status(void)
++{
++	uint32_t index = 0; /* Loop index */
++	uint8_t event_data[128]; /* Event data buffer */
++	size_t bytes = sizeof(event_data); /* Event size in bytes */
++	hab_config_t config = 0;
++	hab_state_t state = 0;
++
++	/* Check HAB status */
++	if (hab_rvt_report_status(&config, &state) != HAB_SUCCESS) {
++		printf("\nHAB Configuration: 0x%02x, HAB State: 0x%02x\n",
++			config, state);
++
++		/* Display HAB Error events */
++		while (hab_rvt_report_event(HAB_FAILURE, index, event_data,
++				&bytes) == HAB_SUCCESS) {
++			printf("\n");
++			printf("--------- HAB Event %d -----------------\n",
++					index + 1);
++			printf("event data:\n");
++			display_event(event_data, bytes);
++			printf("\n");
++			bytes = sizeof(event_data);
++			index++;
++		}
++	}
++	/* Display message if no HAB events are found */
++	else {
++		printf("\nHAB Configuration: 0x%02x, HAB State: 0x%02x\n",
++			config, state);
++		printf("No HAB Events Found!\n\n");
++	}
++	return 0;
++}
++
++void hab_caam_clock_enable(void)
++{
++	u32 reg = 0;
++
++	reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR0); /* CCGR0 */
++	reg |= 0x3F00; /*CG4 ~ CG6, enable CAAM clocks*/
++	writel(reg, CCM_BASE_ADDR + CLKCTL_CCGR0);
++}
++
++
++void hab_caam_clock_disable(void)
++{
++	u32 reg = 0;
++
++	reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR0); /* CCGR0 */
++	reg &= ~0x3F00; /*CG4 ~ CG6, disable CAAM clocks*/
++	writel(reg, CCM_BASE_ADDR + CLKCTL_CCGR0);
++}
++
++uint32_t authenticate_image(ulong start)
++{
++	uint32_t load_addr = 0;
++	size_t bytes;
++	ptrdiff_t ivt_offset = 0x003FDFE0;
++
++	printf("\nAuthenticate uImage from DDR location 0x%lx...\n", start);
++
++	hab_caam_clock_enable();
++
++	if (hab_rvt_entry() == HAB_SUCCESS) {
++		start = 0x10800000;
++		bytes = 0x00400000;
++		load_addr = (uint32_t)hab_rvt_authenticate_image(HAB_CID_UBOOT,
++				ivt_offset, (void **)&start,
++				(size_t *)&bytes, NULL);
++		if (hab_rvt_exit() != HAB_SUCCESS) {
++			printf("hab exit function fail\n");
++			load_addr = 0;
++		}
++	} else
++		printf("hab entry function fail\n");
++
++	hab_caam_clock_disable();
++
++	get_hab_status();
++
++	return load_addr;
++}
++/* ----------- end of HAB API updates ------------*/
++#endif
++
++
+ #ifdef CONFIG_MXC_FEC
+ static int phy_read(char *devname, unsigned char addr, unsigned char reg,
+ 		    unsigned short *pdata)
+@@ -1070,5 +1186,10 @@ int checkboard(void)
+ 		printf("UNKNOWN\n");
+ 		break;
+ 	}
++
++#ifdef CONFIG_SECURE_BOOT
++	get_hab_status();
++#endif
++
+ 	return 0;
+ }
+diff --git a/board/freescale/mx6q_arm2/u-boot.lds b/board/freescale/mx6q_arm2/u-boot.lds
+index e800b70..177bac1 100644
+--- a/board/freescale/mx6q_arm2/u-boot.lds
++++ b/board/freescale/mx6q_arm2/u-boot.lds
+@@ -5,7 +5,7 @@
+  * (C) Copyright 2002
+  * Gary Jennejohn, DENX Software Engineering, <gj@denx.de>
+  *
+- * (C) Copyright 2011 Freescale Semiconductor, Inc.
++ * (C) Copyright 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -66,6 +66,14 @@ SECTIONS
+ 	.u_boot_cmd : { *(.u_boot_cmd) }
+ 	__u_boot_cmd_end = .;
+ 
++	/* Original Size is 0x27..., enlarge to 0x2F000 */
++	. = TEXT_BASE + 0x2F000;
++	__hab_data = .;
++	. = . + 0x2000;
++	__hab_data_end = .;
++	/* End of Hab Data, Place it before BSS section */
++
++
+ 	. = ALIGN(4);
+ 	_end_of_copy = .; /* end_of ROM copy code here */
+ 	__bss_start = .;
+diff --git a/include/asm-arm/arch-mx6/mx6_secure.h b/include/asm-arm/arch-mx6/mx6_secure.h
+new file mode 100644
+index 0000000..a632ca2
+--- /dev/null
++++ b/include/asm-arm/arch-mx6/mx6_secure.h
+@@ -0,0 +1,80 @@
++/*
++ * Copyright (C) 2012 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Auto Generate file, please don't edit it
++ *
++ */
++
++#ifndef __SECURE_MX6Q_H__
++#define __SECURE_MX6Q_H__
++
++#include <linux/types.h>
++
++/* -------- start of HAB API updates ------------*/
++/* The following are taken from HAB4 SIS */
++
++/* Status definitions */
++typedef enum hab_status {
++	HAB_STS_ANY = 0x00,
++	HAB_FAILURE = 0x33,
++	HAB_WARNING = 0x69,
++	HAB_SUCCESS = 0xf0
++} hab_status_t;
++
++/* Security Configuration definitions */
++typedef enum hab_config {
++	HAB_CFG_RETURN = 0x33, /**< Field Return IC */
++	HAB_CFG_OPEN = 0xf0, /**< Non-secure IC */
++	HAB_CFG_CLOSED = 0xcc /**< Secure IC */
++} hab_config_t;
++
++/* State definitions */
++typedef enum hab_state {
++	HAB_STATE_INITIAL = 0x33, /**< Initialising state (transitory) */
++	HAB_STATE_CHECK = 0x55, /**< Check state (non-secure) */
++	HAB_STATE_NONSECURE = 0x66, /**< Non-secure state */
++	HAB_STATE_TRUSTED = 0x99, /**< Trusted state */
++	HAB_STATE_SECURE = 0xaa, /**< Secure state */
++	HAB_STATE_FAIL_SOFT = 0xcc, /**< Soft fail state */
++	HAB_STATE_FAIL_HARD = 0xff, /**< Hard fail state (terminal) */
++	HAB_STATE_NONE = 0xf0, /**< No security state machine */
++	HAB_STATE_MAX
++} hab_state_t;
++
++/*Function prototype description*/
++typedef hab_status_t hab_rvt_report_event_t(hab_status_t, uint32_t, \
++		uint8_t* , size_t*);
++typedef hab_status_t hab_rvt_report_status_t(hab_config_t *, hab_state_t *);
++typedef hab_status_t hab_loader_callback_f_t(void**, size_t*, const void*);
++typedef hab_status_t hab_rvt_entry_t(void);
++typedef hab_status_t hab_rvt_exit_t(void);
++typedef void *hab_rvt_authenticate_image_t(uint8_t, ptrdiff_t, \
++		void **, size_t *, hab_loader_callback_f_t);
++typedef void hapi_clock_init_t(void);
++
++#define HAB_RVT_REPORT_EVENT (*(uint32_t *) 0x000000B4)
++#define HAB_RVT_REPORT_STATUS (*(uint32_t *) 0x000000B8)
++#define HAB_RVT_AUTHENTICATE_IMAGE (*(uint32_t *) 0x000000A4)
++#define HAB_RVT_ENTRY (*(uint32_t *) 0x00000098)
++#define HAB_RVT_EXIT (*(uint32_t *) 0x0000009C)
++#define HAB_RVT_CLOCK_INIT ((hapi_clock_init_t *) 0x0000024D)
++
++#define HAB_CID_ROM 0 /**< ROM Caller ID */
++#define HAB_CID_UBOOT 1 /**< UBOOT Caller ID*/
++/* ----------- end of HAB API updates ------------*/
++
++#endif
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index f7d8759..cd03bf7 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -33,6 +33,8 @@
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+ 
++#define CONFIG_SECURE_BOOT /*For Secure Boot*/
++
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+ 
+ #define CONFIG_ARCH_CPU_INIT
+-- 
+1.7.7.4
+

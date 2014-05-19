@@ -1,0 +1,261 @@
+From 95c7393cf3836314c9b26dcc29ea3a75b4d5f8b2 Mon Sep 17 00:00:00 2001
+From: Robin Gong <b38343@freescale.com>
+Date: Fri, 16 Nov 2012 15:25:49 +0800
+Subject: [PATCH 639/678] ENGR00233366-5 Anatop PFUZE: move LDO bypass code to
+ kernel
+
+move LDO bypass code and one PFUZE1.0 workaround code to kernel. Remove
+CONFIG_MX6_INTER_LDO_BYPASS in u-boot
+
+Signed-off-by: Robin Gong <b38343@freescale.com>
+---
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |   43 ---------------------------
+ board/freescale/mx6sl_arm2/mx6sl_arm2.c     |   39 ------------------------
+ board/freescale/mx6sl_evk/mx6sl_evk.c       |   39 ------------------------
+ cpu/arm_cortexa8/mx6/generic.c              |    3 ++
+ include/configs/mx6dl_sabresd.h             |    1 -
+ include/configs/mx6q_sabresd.h              |    1 -
+ include/configs/mx6sl_arm2.h                |    1 -
+ include/configs/mx6sl_evk.h                 |    1 -
+ 8 files changed, 3 insertions(+), 125 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index d6b4062..7be4d26 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -763,9 +763,6 @@ int i2c_bus_recovery(void)
+ static int setup_pmic_voltages(void)
+ {
+ 	unsigned char value, rev_id = 0 ;
+-	#if CONFIG_MX6_INTER_LDO_BYPASS
+-	unsigned int val = 0;
+-	#endif
+ 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+ 	if (!i2c_probe(0x8)) {
+ 		if (i2c_read(0x8, 0, 1, &value, 1)) {
+@@ -804,46 +801,6 @@ static int setup_pmic_voltages(void)
+ 			printf("Set VGEN5 error!\n");
+ 			return -1;
+ 		}
+-
+-		#if CONFIG_MX6_INTER_LDO_BYPASS
+-		/*VDDCORE 1.1V@800Mhz: SW1AB*/
+-		value = 0x20;
+-		if (i2c_write(0x8, 0x20, 1, &value, 1)) {
+-			printf("VDDCORE set voltage error!\n");
+-			return -1;
+-		}
+-
+-		/*VDDSOC 1.2V : SW1C*/
+-		value = 0x24;
+-		if (i2c_write(0x8, 0x2e, 1, &value, 1)) {
+-			printf("VDDSOC set voltage error!\n");
+-			return -1;
+-		}
+-
+-		/* Bypass the VDDSOC from Anatop */
+-		val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
+-		val &= ~BM_ANADIG_REG_CORE_REG2_TRG;
+-		val |= BF_ANADIG_REG_CORE_REG2_TRG(0x1f);
+-		REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+-
+-		/* Bypass the VDDCORE from Anatop */
+-		val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
+-		val &= ~BM_ANADIG_REG_CORE_REG0_TRG;
+-		val |= BF_ANADIG_REG_CORE_REG0_TRG(0x1f);
+-		REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+-
+-		/* Bypass the VDDPU from Anatop */
+-		val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
+-		val &= ~BM_ANADIG_REG_CORE_REG1_TRG;
+-		val |= BF_ANADIG_REG_CORE_REG1_TRG(0x1f);
+-		REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+-
+-		/*clear PowerDown Enable bit of WDOG1_WMCR*/
+-		writew(0, WDOG1_BASE_ADDR + 0x08);
+-		printf("hw_anadig_reg_core=%x\n",
+-			REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE));
+-		#endif
+-
+ 	}
+ }
+ #endif
+diff --git a/board/freescale/mx6sl_arm2/mx6sl_arm2.c b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+index f695066..ad6f47f 100644
+--- a/board/freescale/mx6sl_arm2/mx6sl_arm2.c
++++ b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+@@ -952,9 +952,6 @@ int i2c_bus_recovery(void)
+ static int setup_pmic_voltages(void)
+ {
+ 	unsigned char value, rev_id = 0 ;
+-	#if CONFIG_MX6_INTER_LDO_BYPASS
+-	unsigned int val = 0;
+-	#endif
+ 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+ 	if (!i2c_probe(0x8)) {
+ 		if (i2c_read(0x8, 0, 1, &value, 1)) {
+@@ -966,42 +963,6 @@ static int setup_pmic_voltages(void)
+ 			return -1;
+ 		}
+ 		printf("Found PFUZE100! deviceid=%x,revid=%x\n", value, rev_id);
+-		#if CONFIG_MX6_INTER_LDO_BYPASS
+-		/*VDDCORE 1.1V@800Mhz: SW1AB*/
+-		value = 0x20;
+-		if (i2c_write(0x8, 0x20, 1, &value, 1)) {
+-			printf("VDDCORE set voltage error!\n");
+-			return -1;
+-		}
+-
+-		/*VDDSOC 1.2V : SW1C*/
+-		value = 0x24;
+-		if (i2c_write(0x8, 0x2e, 1, &value, 1)) {
+-			printf("VDDSOC set voltage error!\n");
+-			return -1;
+-		}
+-
+-		/* Bypass the VDDSOC from Anatop */
+-		val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
+-		val &= ~BM_ANADIG_REG_CORE_REG2_TRG;
+-		val |= BF_ANADIG_REG_CORE_REG2_TRG(0x1f);
+-		REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+-
+-		/* Bypass the VDDCORE from Anatop */
+-		val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
+-		val &= ~BM_ANADIG_REG_CORE_REG0_TRG;
+-		val |= BF_ANADIG_REG_CORE_REG0_TRG(0x1f);
+-		REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+-
+-		/* Bypass the VDDPU from Anatop */
+-		val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
+-		val &= ~BM_ANADIG_REG_CORE_REG1_TRG;
+-		val |= BF_ANADIG_REG_CORE_REG1_TRG(0x1f);
+-		REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+-
+-		printf("hw_anadig_reg_core=%x\n",
+-			REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE));
+-		#endif
+ 
+ 	}
+ }
+diff --git a/board/freescale/mx6sl_evk/mx6sl_evk.c b/board/freescale/mx6sl_evk/mx6sl_evk.c
+index 5800f3d..87ef68e 100644
+--- a/board/freescale/mx6sl_evk/mx6sl_evk.c
++++ b/board/freescale/mx6sl_evk/mx6sl_evk.c
+@@ -947,9 +947,6 @@ int i2c_bus_recovery(void)
+ static int setup_pmic_voltages(void)
+ {
+ 	unsigned char value, rev_id = 0;
+-#if CONFIG_MX6_INTER_LDO_BYPASS
+-	unsigned int val = 0;
+-#endif
+ 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+ 	if (!i2c_probe(0x8)) {
+ 		if (i2c_read(0x8, 0, 1, &value, 1)) {
+@@ -961,42 +958,6 @@ static int setup_pmic_voltages(void)
+ 			return -1;
+ 		}
+ 		printf("Found PFUZE100! deviceid=%x,revid=%x\n", value, rev_id);
+-#if CONFIG_MX6_INTER_LDO_BYPASS
+-		/*VDDCORE 1.1V@800Mhz: SW1AB */
+-		value = 0x20;
+-		if (i2c_write(0x8, 0x20, 1, &value, 1)) {
+-			printf("VDDCORE set voltage error!\n");
+-			return -1;
+-		}
+-
+-		/*VDDSOC 1.2V : SW1C*/
+-		value = 0x24;
+-		if (i2c_write(0x8, 0x2e, 1, &value, 1)) {
+-			printf("VDDSOC set voltage error!\n");
+-			return -1;
+-		}
+-
+-		/* Bypass the VDDSOC from Anatop */
+-		val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
+-		val &= ~BM_ANADIG_REG_CORE_REG2_TRG;
+-		val |= BF_ANADIG_REG_CORE_REG2_TRG(0x1f);
+-		REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+-
+-		/* Bypass the VDDCORE from Anatop */
+-		val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
+-		val &= ~BM_ANADIG_REG_CORE_REG0_TRG;
+-		val |= BF_ANADIG_REG_CORE_REG0_TRG(0x1f);
+-		REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+-
+-		/* Bypass the VDDPU from Anatop */
+-		val = REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE);
+-		val &= ~BM_ANADIG_REG_CORE_REG1_TRG;
+-		val |= BF_ANADIG_REG_CORE_REG1_TRG(0x1f);
+-		REG_WR(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE, val);
+-
+-		printf("hw_anadig_reg_core=%x\n",
+-		       REG_RD(ANATOP_BASE_ADDR, HW_ANADIG_REG_CORE));
+-#endif
+ 
+ 	}
+ }
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 72e7255..bb91642 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -1042,6 +1042,9 @@ int arch_cpu_init(void)
+ 	val |= (0x1 << 18);
+ 	REG_WR(IOMUXC_BASE_ADDR, IOMUXC_GPR1_OFFSET, val);
+ 
++	/*clear PowerDown Enable bit of WDOGx_WMCR*/
++	writew(0, WDOG1_BASE_ADDR + 0x08);
++	writew(0, WDOG2_BASE_ADDR + 0x08);
+ 	return 0;
+ }
+ #endif
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index ad6825f..a496453 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -198,7 +198,6 @@
+ 	#define CONFIG_SYS_I2C_PORT             I2C2_BASE_ADDR
+ 	#define CONFIG_SYS_I2C_SPEED            100000
+ 	#define CONFIG_SYS_I2C_SLAVE            0x8
+-	#define CONFIG_MX6_INTER_LDO_BYPASS	0
+ #endif
+ 
+ /*
+diff --git a/include/configs/mx6q_sabresd.h b/include/configs/mx6q_sabresd.h
+index 5717eec..6f07961 100644
+--- a/include/configs/mx6q_sabresd.h
++++ b/include/configs/mx6q_sabresd.h
+@@ -194,7 +194,6 @@
+ 	#define CONFIG_SYS_I2C_PORT             I2C2_BASE_ADDR
+ 	#define CONFIG_SYS_I2C_SPEED            100000
+ 	#define CONFIG_SYS_I2C_SLAVE            0x8
+-	#define CONFIG_MX6_INTER_LDO_BYPASS	0
+ #endif
+ 
+ /*
+diff --git a/include/configs/mx6sl_arm2.h b/include/configs/mx6sl_arm2.h
+index 2717cd7..44b2b38 100644
+--- a/include/configs/mx6sl_arm2.h
++++ b/include/configs/mx6sl_arm2.h
+@@ -279,7 +279,6 @@
+ 	#define CONFIG_SYS_I2C_PORT             I2C1_BASE_ADDR
+ 	#define CONFIG_SYS_I2C_SPEED            100000
+ 	#define CONFIG_SYS_I2C_SLAVE            0x8
+-	#define CONFIG_MX6_INTER_LDO_BYPASS	1
+ #endif
+ 
+ /*#define CONFIG_SPLASH_SCREEN*/
+diff --git a/include/configs/mx6sl_evk.h b/include/configs/mx6sl_evk.h
+index a20f705..4c327bc 100644
+--- a/include/configs/mx6sl_evk.h
++++ b/include/configs/mx6sl_evk.h
+@@ -281,7 +281,6 @@
+ 	#define CONFIG_SYS_I2C_SLAVE            0x8
+ #endif
+ 
+-#define CONFIG_MX6_INTER_LDO_BYPASS	1
+ 
+ /*#define CONFIG_SPLASH_SCREEN*/
+ 
+-- 
+1.7.7.4
+

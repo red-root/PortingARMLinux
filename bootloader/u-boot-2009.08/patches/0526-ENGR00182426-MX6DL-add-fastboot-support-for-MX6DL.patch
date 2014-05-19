@@ -1,0 +1,39 @@
+From fef250219ce2a99f10f38b9018796fe2610cd3f9 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Wed, 9 May 2012 16:13:54 +0800
+Subject: [PATCH 526/678] ENGR00182426 MX6DL: add fastboot support for MX6DL.
+
+fix mx6dl usb init issue, due to leak of reset phy,
+it was only called on MX6Q.
+
+Signed-off-by: Shi Make <make.shi@freescale.com>
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ drivers/usb/gadget/imx_udc.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/gadget/imx_udc.c b/drivers/usb/gadget/imx_udc.c
+index 67011bd..b3f4008 100644
+--- a/drivers/usb/gadget/imx_udc.c
++++ b/drivers/usb/gadget/imx_udc.c
+@@ -464,7 +464,7 @@ static void usb_set_mode_device(void)
+ 		;
+ 	DBG("DOORE RESET END\n");
+ 
+-#ifdef CONFIG_MX6Q
++#if defined(CONFIG_MX6Q) || defined(CONFIG_MX6DL)
+ 	reset_usb_phy1();
+ #endif
+ 	DBG("init core to device mode\n");
+@@ -812,7 +812,7 @@ int mxc_udc_init(void)
+ 	set_usboh3_clk();
+ 	set_usb_phy1_clk();
+ 	enable_usboh3_clk(1);
+-#ifdef CONFIG_MX6Q
++#if defined(CONFIG_MX6Q) || defined(CONFIG_MX6DL)
+ 	udc_disable_over_current();
+ #endif
+ 	enable_usb_phy1_clk(1);
+-- 
+1.7.7.4
+

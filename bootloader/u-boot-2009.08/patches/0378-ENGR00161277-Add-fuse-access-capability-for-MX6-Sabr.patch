@@ -1,0 +1,95 @@
+From 9aa74e691a1de2e471af837d72a5a3acc274c540 Mon Sep 17 00:00:00 2001
+From: Mahesh Mahadevan <r9aadq@freescale.com>
+Date: Wed, 2 Nov 2011 06:10:18 -0500
+Subject: [PATCH 378/678] ENGR00161277 Add fuse access capability for MX6
+ Sabre-lite
+
+Add support to read and program fuses in the MX6 Sabre-lite
+
+Signed-off-by: Mahesh Mahadevan <r9aadq@freescale.com>
+---
+ common/cmd_imxotp.c                   |    2 +-
+ drivers/misc/imx_otp.c                |    2 +-
+ include/asm-arm/arch-mx6/regs-ocotp.h |    2 +-
+ include/configs/mx6q_sabrelite.h      |   11 +++++++++++
+ include/imx_otp.h                     |    2 +-
+ 5 files changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/common/cmd_imxotp.c b/common/cmd_imxotp.c
+index b976aaa..9ef772c 100644
+--- a/common/cmd_imxotp.c
++++ b/common/cmd_imxotp.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+diff --git a/drivers/misc/imx_otp.c b/drivers/misc/imx_otp.c
+index 917924d..9e58ecb 100644
+--- a/drivers/misc/imx_otp.c
++++ b/drivers/misc/imx_otp.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+diff --git a/include/asm-arm/arch-mx6/regs-ocotp.h b/include/asm-arm/arch-mx6/regs-ocotp.h
+index d3c8de9..03203dc 100644
+--- a/include/asm-arm/arch-mx6/regs-ocotp.h
++++ b/include/asm-arm/arch-mx6/regs-ocotp.h
+@@ -1,7 +1,7 @@
+ /*
+  * Freescale OCOTP Register Definitions
+  *
+- * Copyright 2008-2011 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index 0dbd5ae..3285a9c 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -90,6 +90,7 @@
+ 
+ #define CONFIG_CMD_SPI
+ #define CONFIG_CMD_I2C
++#define CONFIG_CMD_IMXOTP
+ 
+ /* Enable below configure when supporting nand */
+ 
+@@ -175,6 +176,16 @@
+ #define CONFIG_NETMASK			255.255.255.0
+ 
+ /*
++ * OCOTP Configs
++ */
++#ifdef CONFIG_CMD_IMXOTP
++	#define CONFIG_IMX_OTP
++	#define IMX_OTP_BASE		OCOTP_BASE_ADDR
++	#define IMX_OTP_ADDR_MAX	0x7F
++	#define IMX_OTP_DATA_ERROR_VAL	0xBADABADA
++#endif
++
++/*
+  * I2C Configs
+  */
+ #ifdef CONFIG_CMD_I2C
+diff --git a/include/imx_otp.h b/include/imx_otp.h
+index 87650d8..54ccf2d 100644
+--- a/include/imx_otp.h
++++ b/include/imx_otp.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+-- 
+1.7.7.4
+

@@ -1,0 +1,32 @@
+From 499febf0a2527f14ed00be087b1dd1c869da5c5a Mon Sep 17 00:00:00 2001
+From: Liu Ying <Ying.Liu@freescale.com>
+Date: Fri, 27 Jul 2012 13:06:04 +0800
+Subject: [PATCH 565/678] ENGR00218583-5 MX6DL SabreSD Android:Add splashimage
+ uboot var
+
+This patch adds splashimage related variables to board configure
+file so that splashimage can work without touching the uboot
+variables.
+
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+ include/configs/mx6dl_sabresd_android.h |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/include/configs/mx6dl_sabresd_android.h b/include/configs/mx6dl_sabresd_android.h
+index c66d274..c129890 100644
+--- a/include/configs/mx6dl_sabresd_android.h
++++ b/include/configs/mx6dl_sabresd_android.h
+@@ -75,5 +75,8 @@
+ 		"netdev=eth0\0"						\
+ 		"ethprime=FEC0\0"					\
+ 		"fastboot_dev=mmc3\0"					\
+-		"bootcmd=booti mmc3\0"
++		"bootcmd=booti mmc3\0"					\
++		"splashimage=0x30000000\0"				\
++		"splashpos=m,m\0"					\
++		"lvds_num=1\0"
+ #endif
+-- 
+1.7.7.4
+

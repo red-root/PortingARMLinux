@@ -1,0 +1,28 @@
+From 01133f43a8fc4ef42c2851fb6fac02b744754bad Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Fri, 9 Mar 2012 15:24:43 +0800
+Subject: [PATCH 472/678] ENGR00176347-4 anatop: add support for mx6solo/dl
+
+Enable anatop command "regul" for mx6solo/DL
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ drivers/power/anatop.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/power/anatop.c b/drivers/power/anatop.c
+index 7c6015c..df6d392 100644
+--- a/drivers/power/anatop.c
++++ b/drivers/power/anatop.c
+@@ -89,7 +89,7 @@ static int is_enabled(struct anatop_regulator_data *sreg)
+ 	return 1;
+ }
+ 
+-#ifdef CONFIG_MX6Q
++#if defined(CONFIG_MX6Q) || defined(CONFIG_MX6DL)
+ static struct anatop_regulator_data vdd_data_set[] = {
+ 	{
+ 	.name		= "vddpu",
+-- 
+1.7.7.4
+

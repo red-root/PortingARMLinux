@@ -1,0 +1,31 @@
+From 1f2f2d3f5c0ab69f6c68be13968082d35bc675fb Mon Sep 17 00:00:00 2001
+From: Huang Shijie <b32955@freescale.com>
+Date: Wed, 31 Oct 2012 18:19:44 +0800
+Subject: [PATCH 627/678] ENGR00231891-2 gpmi: fix the 4k page size limit
+
+We may use the 8K page nand now. So expand the page size from 4k
+to 8K. Also expand the oobsize to 1K size.
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ include/linux/mtd/nand.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index 7310605..5a8a926 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -50,8 +50,8 @@ extern void nand_wait_ready(struct mtd_info *mtd);
+  * is supported now. If you add a chip with bigger oobsize/page
+  * adjust this accordingly.
+  */
+-#define NAND_MAX_OOBSIZE	(218 * CONFIG_SYS_NAND_MAX_CHIPS)
+-#define NAND_MAX_PAGESIZE	(4096 * CONFIG_SYS_NAND_MAX_CHIPS)
++#define NAND_MAX_OOBSIZE	(1024 * CONFIG_SYS_NAND_MAX_CHIPS)
++#define NAND_MAX_PAGESIZE	(8192 * CONFIG_SYS_NAND_MAX_CHIPS)
+ 
+ /*
+  * Constants for hardware specific CLE/ALE/NCE function
+-- 
+1.7.7.4
+

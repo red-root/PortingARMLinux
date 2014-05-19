@@ -1,0 +1,79 @@
+From 32429d7b461f8b6a96d7b0f2bb3e2b1270780091 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Fri, 12 Aug 2011 12:58:07 +0800
+Subject: [PATCH 343/678] ENGR00154666-4: Align u-boot mmc command with
+ community
+
+Change fastboot code for that fastboot uses mmc command to access card.
+Thus the code need to be modified to new mmc command.
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ common/cmd_fastboot.c       |   21 ++++++++++-----------
+ drivers/fastboot/fastboot.c |    4 +---
+ 2 files changed, 11 insertions(+), 14 deletions(-)
+
+diff --git a/common/cmd_fastboot.c b/common/cmd_fastboot.c
+index 2c819bf..4f076f4 100644
+--- a/common/cmd_fastboot.c
++++ b/common/cmd_fastboot.c
+@@ -1191,16 +1191,15 @@ static int rx_handler (const unsigned char *buffer, unsigned int buffer_size)
+ 
+ mmc_ops:
+ 					printf("writing to partition '%s'\n", ptn->name);
+-					char *mmc_write[7] = {"mmc", "write",
+-						NULL, NULL, NULL, NULL, NULL};
+-					char *mmc_init[2] = {"mmcinit", NULL,};
++					char *mmc_write[5] = {"mmc", "write",
++						NULL, NULL, NULL, NULL};
++					char *mmc_dev[4] = {"mmc", "dev", NULL, NULL};
+ 
+-					mmc_init[1] = slot_no;
+-					mmc_write[2] = slot_no;
+-					mmc_write[3] = source;
+-					mmc_write[4] = dest;
+-					mmc_write[5] = length;
+-					mmc_write[6] = part_no;
++					mmc_dev[2] = slot_no;
++					mmc_dev[3] = part_no;
++					mmc_write[2] = source;
++					mmc_write[3] = dest;
++					mmc_write[4] = length;
+ 
+ 					sprintf(slot_no, "%d",
+ 						    fastboot_devinfo.dev_id);
+@@ -1217,13 +1216,13 @@ mmc_ops:
+ 					sprintf(length, "0x%x", temp);
+ 
+ 					printf("Initializing '%s'\n", ptn->name);
+-					if (do_mmcops(NULL, 0, 2, mmc_init))
++					if (do_mmcops(NULL, 0, 4, mmc_dev))
+ 						sprintf(response, "FAIL:Init of MMC card");
+ 					else
+ 						sprintf(response, "OKAY");
+ 
+ 					printf("Writing '%s'\n", ptn->name);
+-					if (do_mmcops(NULL, 0, 7, mmc_write)) {
++					if (do_mmcops(NULL, 0, 5, mmc_write)) {
+ 						printf("Writing '%s' FAILED!\n", ptn->name);
+ 						sprintf(response, "FAIL: Write partition");
+ 					} else {
+diff --git a/drivers/fastboot/fastboot.c b/drivers/fastboot/fastboot.c
+index e775fab..a922b30 100644
+--- a/drivers/fastboot/fastboot.c
++++ b/drivers/fastboot/fastboot.c
+@@ -330,10 +330,8 @@ static int fastboot_init_mmc_sata_ptable(void)
+ 		}
+ 
+ 		/* multiple boot paritions for eMMC 4.3 later */
+-#ifdef CONFIG_BOOT_PARTITION_ACCESS
+-		if (mmc->boot_size_mult)
++		if (mmc->part_config != MMCPART_NOAVAILABLE)
+ 			boot_partition = 1;
+-#endif
+ 	}
+ 
+ 	memset((char *)ptable, 0,
+-- 
+1.7.7.4
+

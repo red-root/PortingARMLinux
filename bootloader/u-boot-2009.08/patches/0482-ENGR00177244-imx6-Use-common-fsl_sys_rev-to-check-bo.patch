@@ -1,0 +1,149 @@
+From 99db93a95b96ee389efe028e65bb91505d1d1f5e Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Tue, 20 Mar 2012 14:23:29 +0800
+Subject: [PATCH 482/678] ENGR00177244 - imx6 : Use common fsl_sys_rev to
+ check board reversion
+
+- Use fsl_sys_rev to check Sebreauto board reversion.
+- Add macro define for expedient print the board and chip name.
+  mx6_chip_name()
+  mx6_board_rev_name()
+
+Signed-off-by: Fugang Duan <B38611@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |   57 ++---------------------
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c     |    4 +-
+ include/asm-arm/arch-mx6/mx6.h                  |   10 ++++
+ 3 files changed, 17 insertions(+), 54 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index 2ec178e..149a2d6 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -64,7 +64,6 @@
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+-static u32 system_rev;
+ static enum boot_device boot_dev;
+ 
+ #ifdef CONFIG_VIDEO_MX5
+@@ -140,56 +139,10 @@ enum boot_device get_boot_device(void)
+ {
+ 	return boot_dev;
+ }
+-/*
+- * Set system_rev:
+- * bit 0-7: Chip Revision ID
+- * bit 8-11: Board Revision ID
+- *     1: RevA Board
+- *     0: RevB board, Unknown board
+- * bit 12-19: Chip Silicon ID
+- *     0x63: i.MX 6Dual/Quad
+- *     0x61: i.MX 6Solo/DualLite
+- */
+-void set_system_rev(void)
+-{
+-	/* Read Silicon information from Anatop register */
+-	/* The register layout:
+-	 *                Major    Minor
+-	 * i.MX6Q1.1:       6300     01
+-	 * i.MX6Q1.0:       6300     00
+-	 * i.MX6Solo1.0:    6100     00
+-	 */
+-	u32 cpu_type = readl(ANATOP_BASE_ADDR + 0x260);
+-	u32 board_type = 0;
+-	/* Chip Silicon ID */
+-	system_rev = (cpu_type >> 4) & 0xFF000;
+-	/* Chip Revision ID */
+-	system_rev |= (cpu_type & 0xFF);
+-	/* Get Board ID information from OCOTP_GP1[15:8]
+-	 * i.MX6Q ARD RevA:     0x01
+-	 * i.MX6Q ARD RevB:     0x02
+-	 * i.MX6Solo ARD RevA:  0x11
+-	 * i.MX6Solo ARD RevB:  0x12
+-	 */
+-#ifdef CONFIG_CMD_IMXOTP
+-	imx_otp_read_one_u32(0x26, &board_type);
+-	switch (board_type >> 8) {
+-	case 0x1:
+-	case 0x11:
+-		system_rev |= BOARD_REV_2;
+-		break;
+-	case 0x2:
+-	case 0x12:
+-	default:
+-		system_rev |= BOARD_REV_1;
+-	break;
+-  }
+-#endif
+-}
+ 
+ u32 get_board_rev(void)
+ {
+-	return system_rev;
++	return fsl_system_rev;
+ }
+ 
+ #ifdef CONFIG_ARCH_MMU
+@@ -851,7 +804,7 @@ int board_init(void)
+ {
+ 	mxc_iomux_v3_init((void *)IOMUXC_BASE_ADDR);
+ 	setup_boot_device();
+-	set_system_rev();
++	fsl_set_system_rev();
+ 
+ 	/* board id for linux */
+ 	gd->bd->bi_arch_number = MACH_TYPE_MX6Q_SABREAUTO;
+@@ -982,9 +935,9 @@ void enet_board_init(void)
+ int checkboard(void)
+ {
+ 	printf("Board: %s-SABREAUTO: %s Board: 0x%x [",
+-	(((system_rev & 0xFF000) == 0x63000) ? "i.MX6Dual/Quad" : "i.MX6Solo"),
+-	(((system_rev & 0xF00) == BOARD_REV_1) ? "RevB" : "RevA"),
+-	system_rev);
++	mx6_chip_name(),
++	mx6_board_rev_name(),
++	fsl_system_rev);
+ 
+ 	switch (__REG(SRC_BASE_ADDR + 0x8)) {
+ 	case 0x0001:
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 7266043..f7b6251 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -1114,8 +1114,8 @@ void enet_board_init(void)
+ int checkboard(void)
+ {
+ 	printf("Board: %s-SABRESD: %s Board: 0x%x [",
+-	(mx6_chip_is_dq() ? "i.MX6Q" : "i.MX6DL/Solo"),
+-	(mx6_board_is_revb() ? "RevB" : "RevA"),
++	mx6_chip_name(),
++	mx6_board_rev_name(),
+ 	fsl_system_rev);
+ 
+ 	switch (__REG(SRC_BASE_ADDR + 0x8)) {
+diff --git a/include/asm-arm/arch-mx6/mx6.h b/include/asm-arm/arch-mx6/mx6.h
+index 5d7a07f..ce03e21 100644
+--- a/include/asm-arm/arch-mx6/mx6.h
++++ b/include/asm-arm/arch-mx6/mx6.h
+@@ -647,6 +647,16 @@
+ #define mx6_chip_is_solo()      chip_is_type(fsl_system_rev, CHIP_TYPE_SOLO)
+ #define mx6_chip_is_sololite()	chip_is_type(fsl_system_rev, CHIP_TYPE_SOLOLITE)
+ 
++#define mx6_chip_dq_name	"i.MX6Q"
++#define mx6_chip_dl_solo_name	"i.MX6DL/Solo"
++#define mx6_chip_sololite_name	"i.MX6SoloLite"
++#define mx6_chip_name()		(mx6_chip_is_dq() ? mx6_chip_dq_name : \
++	((mx6_chip_is_dl() | mx6_chip_is_solo()) ? mx6_chip_dl_solo_name : \
++	(mx6_chip_is_sololite() ? mx6_chip_sololite_name : "unknown-chip")))
++#define mx6_board_rev_name()	(mx6_board_is_reva() ? "RevA" : \
++	(mx6_board_is_revb() ? "RevB" : \
++	(mx6_board_is_revc() ? "RevC" : "unknown-board")))
++
+ #ifndef __ASSEMBLER__
+ 
+ enum boot_device {
+-- 
+1.7.7.4
+

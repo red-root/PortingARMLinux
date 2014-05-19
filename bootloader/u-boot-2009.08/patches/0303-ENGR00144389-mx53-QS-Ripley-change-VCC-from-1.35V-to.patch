@@ -1,0 +1,31 @@
+From 13d0cc1e7598fe14fa4e6a0b0b5bbdc7aa0b98e2 Mon Sep 17 00:00:00 2001
+From: Wayne Zou <b36644@freescale.com>
+Date: Wed, 1 Jun 2011 18:42:01 +0800
+Subject: [PATCH 303/678] ENGR00144389 mx53 QS Ripley: change VCC from 1.35V
+ to 1.3V QS Ripley board
+
+Change VCC from 1.35V to 1.3V QS Ripley board
+
+Signed-off-by: Wayne Zou <b36644@freescale.com>
+---
+ board/freescale/mx53_loco/mx53_loco.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx53_loco/mx53_loco.c b/board/freescale/mx53_loco/mx53_loco.c
+index 9915141..e77230f 100644
+--- a/board/freescale/mx53_loco/mx53_loco.c
++++ b/board/freescale/mx53_loco/mx53_loco.c
+@@ -713,8 +713,8 @@ int board_late_init(void)
+ 			printf("%s:i2c_read:error\n", __func__);
+ 			return -1;
+ 		}
+-		/* increase VCC as 1.35V on SW2 */
+-		buf[2] = 0x38;
++		/* increase VCC as 1.3V on SW2 */
++		buf[2] = 0x34;
+ 		if (i2c_write(0x8, 25, 1, buf, 3)) {
+ 			printf("%s:i2c_write:error\n", __func__);
+ 			return -1;
+-- 
+1.7.7.4
+

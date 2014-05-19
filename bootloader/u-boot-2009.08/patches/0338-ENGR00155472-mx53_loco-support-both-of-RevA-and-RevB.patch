@@ -1,0 +1,64 @@
+From 190451ad69f8d1f34806c8bc1c602dd387666f1e Mon Sep 17 00:00:00 2001
+From: Robin Gong <B38343@freescale.com>
+Date: Mon, 29 Aug 2011 16:09:07 +0800
+Subject: [PATCH 338/678] ENGR00155472 mx53_loco: support both of RevA and
+ RevB in uboot
+
+to fix we should amend systemrev in uboot, add new board RevB for it
+
+Signed-off-by: Robin Gong <B38343@freescale.com>
+---
+ board/freescale/mx53_loco/mx53_loco.c |   22 ++++++++++++++++++----
+ 1 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/board/freescale/mx53_loco/mx53_loco.c b/board/freescale/mx53_loco/mx53_loco.c
+index 7f6ded0..caa476a 100644
+--- a/board/freescale/mx53_loco/mx53_loco.c
++++ b/board/freescale/mx53_loco/mx53_loco.c
+@@ -65,6 +65,13 @@ DECLARE_GLOBAL_DATA_PTR;
+ static u32 system_rev;
+ static enum boot_device boot_dev;
+ 
++u32 get_board_rev_from_fuse(void)
++{
++	u32 board_rev = readl(IIM_BASE_ADDR + 0x878);
++
++	return board_rev;
++}
++
+ static inline void setup_boot_device(void)
+ {
+ 	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
+@@ -738,7 +745,7 @@ int board_late_init(void)
+ 		}
+ 
+ 		/* set up rev #1 for loco/ripley board */
+-		setup_board_rev(1);
++		setup_board_rev(get_board_rev_from_fuse());
+ 		/* Switch to 1GHZ */
+ 		clk_config(CONFIG_REF_CLK_FREQ, 1000, CPU_CLK);
+ 	} else if (!i2c_probe(0x48)) {
+@@ -775,10 +782,17 @@ int board_late_init(void)
+ int checkboard(void)
+ {
+ 	printf("Board: ");
+-	printf("MX53-LOCO 1.0\n");
++	printf("MX53-LOCO 1.0 ");
++	switch (get_board_rev_from_fuse()) {
++	case 0x3:
++		printf("Rev. B\n");
++		break;
++	case 0x1:
++	default:
++		printf("Rev. A\n");
++		break;
++	}
+ 	printf("Boot Reason: [");
+-
+-
+ 	switch (__REG(SRC_BASE_ADDR + 0x8)) {
+ 	case 0x0001:
+ 		printf("POR");
+-- 
+1.7.7.4
+

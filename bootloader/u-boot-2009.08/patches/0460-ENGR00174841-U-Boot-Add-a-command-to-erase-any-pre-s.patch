@@ -1,0 +1,220 @@
+From 39320e8b20031f7a5f670cf5bd8eeb1a0954eb98 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Mon, 20 Feb 2012 15:24:44 +0800
+Subject: [PATCH 460/678] ENGR00174841 [U-Boot]Add a command to erase any
+ pre-saved environment
+
+A "destroyenv" command is provided to erase any pre-save environment in the
+boot storage. The command simply add 1 to the CRC section and write it back
+to the storage. Per the logic of U-Boot, this means after a reset, the
+software will recognize the stored environment settings as "damaged" and turn
+to use the default one, which is defined in "default_environment"
+
+With this command, platform bring up owner can maintain a "ready-to-use"
+environment settings in software which others can use very conviniently.
+U-boot users can also use it to do a environment restore if they want.
+
+-----------------------------------
+Usage Example:
+> destroyenv
+
+invalidate the CRC
+write invalidate enviroment data to storage
+Erasing SPI flash...Erasing SPI NOR flash 0xc0000 [0x2000 bytes]
+..SUCCESS
+
+Writing to SPI flash...Writing SPI NOR flash
+0xc0000 [0x2000 bytes] <- ram 0x276009b8
+SUCCESS
+
+done
+>
+-----------------------------------
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ common/cmd_nvedit.c              |   21 ++++++++++++-
+ common/env_common.c              |    9 +++++-
+ include/configs/mx6q_sabrelite.h |   62 +++++++++++++++++++++-----------------
+ include/environment.h            |    4 ++
+ 4 files changed, 66 insertions(+), 30 deletions(-)
+
+diff --git a/common/cmd_nvedit.c b/common/cmd_nvedit.c
+index cf718e7..c1980da 100644
+--- a/common/cmd_nvedit.c
++++ b/common/cmd_nvedit.c
+@@ -5,7 +5,7 @@
+  * (C) Copyright 2001 Sysgo Real-Time Solutions, GmbH <www.elinos.com>
+  * Andreas Heppel <aheppel@sysgo.de>
+  *
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -427,6 +427,16 @@ int do_setenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 	return _do_setenv (flag, argc, argv);
+ }
+ 
++#if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
++int do_destroyenv(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
++{
++	printf("invalidate the CRC\n");
++	env_crc_destroy();
++	printf("write invalidate enviroment data to storage\n");
++	return saveenv() ? 1 : 0;
++}
++#endif
++
+ /************************************************************************
+  * Prompt for environment variable
+  */
+@@ -616,6 +626,15 @@ U_BOOT_CMD(
+ 	"    - delete environment variable 'name'"
+ );
+ 
++#if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
++U_BOOT_CMD(
++	destroyenv, CONFIG_SYS_MAXARGS, 0,	do_destroyenv,
++	"destroy enviroment variables stored in medium",
++	"\n    - destroy all environment variables in medium"
++	"\n      after reset the default settings will be used"
++);
++#endif
++
+ #if defined(CONFIG_CMD_ASKENV)
+ 
+ U_BOOT_CMD(
+diff --git a/common/env_common.c b/common/env_common.c
+index 21ea543..2f7fae6 100644
+--- a/common/env_common.c
++++ b/common/env_common.c
+@@ -4,7 +4,9 @@
+  *
+  * (C) Copyright 2001 Sysgo Real-Time Solutions, GmbH <www.elinos.com>
+  * Andreas Heppel <aheppel@sysgo.de>
+-
++ *
++ * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+  *
+@@ -153,6 +155,11 @@ void env_crc_update (void)
+ 	env_ptr->crc = crc32(0, env_ptr->data, ENV_SIZE);
+ }
+ 
++void env_crc_destroy(void)
++{
++	env_ptr->crc += 1;
++}
++
+ static uchar env_get_char_init (int index)
+ {
+ 	uchar c;
+diff --git a/include/configs/mx6q_sabrelite.h b/include/configs/mx6q_sabrelite.h
+index 362d1fe..7859a15 100644
+--- a/include/configs/mx6q_sabrelite.h
++++ b/include/configs/mx6q_sabrelite.h
+@@ -114,34 +114,37 @@
+ #define CONFIG_LOADADDR		0x10800000	/* loadaddr env var */
+ #define CONFIG_RD_LOADADDR      0x11000000
+ 
+-#define	CONFIG_EXTRA_ENV_SETTINGS					\
+-		"netdev=eth0\0"						\
+-		"ethprime=FEC0\0"					\
+-		"uboot=u-boot.bin\0"			\
+-		"kernel=uImage\0"				\
+-		"nfsroot=/opt/eldk/arm\0"				\
+-		"bootargs=console=ttymxc1,115200\0" 			\
+-		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+-			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+-		"bootcmd_net=run bootargs_nfs;"		\
+-			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
+-		"bootcmd_mmc= for disk in 0 1 ; do mmc dev ${disk} ;"	\
+-				"for fs in fat ext2 ; do " 		\
++#define	CONFIG_EXTRA_ENV_SETTINGS \
++		"netdev=eth0\0" \
++		"ethprime=FEC0\0" \
++		"ethaddr=00:01:02:03:04:05\0" \
++		"uboot=u-boot.bin\0" \
++		"kernel=uImage\0" \
++		"bootargs=console=ttymxc1,115200\0" \
++		"bootargs_base=setenv bootargs console=ttymxc1,115200\0" \
++		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs " \
++			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp " \
++			"video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 " \
++			"enable_wait_mode=off\0" \
++		"bootcmd_net=dhcp; run bootargs_base bootargs_nfs;bootm\0" \
++		"bootargs_mmc=setenv bootargs ${bootargs} " \
++			"root=/dev/mmcblk0p1 rootwait rw " \
++			"video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 " \
++			"video=mxcfb0:dev=hdmi,1920x1080M@60,if=RGB24\0" \
++		"bootcmd_mmc=run bootargs_base bootargs_mmc;mmc dev 1;" \
++			"mmc read ${loadaddr} 0x800 0x2000;bootm\0" \
++		"bootcmd=run bootcmd_mmc\0" \
++		"clearenv=sf probe 1 && sf erase 0xc0000 0x2000 && " \
++			"echo restored environment to factory default\0" \
++		"upgradeu=for disk in 0 1 ; do mmc dev ${disk} ;" \
++				"for fs in fat ext2 ; do " \
+ 					"${fs}load mmc ${disk}:1 10008000 " \
+-						"/6q_bootscript && " 	\
+-					"source 10008000 ; " 		\
+-				"done ; " 				\
+-			"done\0" 					\
+-		"bootcmd=run bootcmd_mmc\0"                             \
+-		"clearenv=sf probe 1 && sf erase 0xc0000 0x2000 && "	\
+-			"echo restored environment to factory default\0"\
+-		"upgradeu=for disk in 0 1 ; do mmc dev ${disk} ;" 	\
+-				"for fs in fat ext2 ; do " 		\
+-					"${fs}load mmc ${disk}:1 10008000 " \
+-						"/6q_upgrade && " 	\
+-					"source 10008000 ; " 		\
+-				"done ; " 				\
+-			"done\0" 					\
++						"/6q_upgrade && " \
++					"source 10008000 ; " \
++				"done ; " \
++			"done\0" \
++		"bootfile=_BOOT_FILE_PATH_IN_TFTP_\0" \
++		"nfsroot=_ROOTFS_PATH_IN_NFS_\0"
+ 
+ 
+ #define CONFIG_ARP_TIMEOUT	200UL
+@@ -186,7 +189,10 @@
+ #define CONFIG_CMD_DHCP
+ #define CONFIG_CMD_PING
+ #define CONFIG_IPADDR			192.168.1.103
+-#define CONFIG_SERVERIP			192.168.1.101
++
++/*The IP ADDRESS of SERVERIP*/
++#define CONFIG_SERVERIP			_SERVER_IP_ADDR_
++
+ #define CONFIG_NETMASK			255.255.255.0
+ 
+ /*
+diff --git a/include/environment.h b/include/environment.h
+index e0759ae..1ab9312 100644
+--- a/include/environment.h
++++ b/include/environment.h
+@@ -2,6 +2,8 @@
+  * (C) Copyright 2002
+  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+  *
++ * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+  *
+@@ -147,6 +149,8 @@ unsigned char env_get_char_memory (int index);
+ 
+ /* Function that updates CRC of the enironment */
+ void env_crc_update (void);
++/* Function that destroys CRC of the environment */
++void env_crc_destroy(void);
+ 
+ /* [re]set to the default environment */
+ void set_default_env(void);
+-- 
+1.7.7.4
+

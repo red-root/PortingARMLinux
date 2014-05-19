@@ -1,0 +1,37 @@
+From 5ced161d77fa54a87ad80d6245b839352c147c82 Mon Sep 17 00:00:00 2001
+From: Ryan QIAN <b32804@freescale.com>
+Date: Tue, 17 Jul 2012 14:02:32 +0800
+Subject: [PATCH 554/678] ENGR00217381-02: show sd/mmc clk freq for mmcinfo
+
+It prints sd clk freq for cmd of mmcinfo, then it is much
+easier to tell which mode sd/mmc card is running at.
+
+Signed-off-by: Ryan QIAN <b32804@freescale.com>
+---
+ common/cmd_mmc.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/common/cmd_mmc.c b/common/cmd_mmc.c
+index fb818f2..71561d3 100644
+--- a/common/cmd_mmc.c
++++ b/common/cmd_mmc.c
+@@ -2,7 +2,7 @@
+  * (C) Copyright 2003
+  * Kyle Harris, kharris@nexus-tech.net
+  *
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -110,6 +110,7 @@ static void print_mmcinfo(struct mmc *mmc)
+ 
+ 	printf("%s version %d.%d\n", IS_SD(mmc) ? "SD" : "MMC",
+ 			(mmc->version >> 4) & 0xf, mmc->version & 0xf);
++	printf("Clock: %d\n", mmc->clock);
+ 
+ 	printf("High Capacity: %s\n", mmc->high_capacity ? "Yes" : "No");
+ 	puts("Capacity: ");
+-- 
+1.7.7.4
+

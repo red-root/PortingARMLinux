@@ -1,0 +1,29 @@
+From 12603b0bd079c70acd8bf029675b8819184cc240 Mon Sep 17 00:00:00 2001
+From: Xinyu Chen <xinyu.chen@freescale.com>
+Date: Tue, 25 Oct 2011 16:22:07 +0800
+Subject: [PATCH 369/678] ENGR00160725 fastboot: fix the serial number display
+ error
+
+Incorrect usb string package size assign.
+
+Signed-off-by: Xinyu Chen <xinyu.chen@freescale.com>
+---
+ drivers/fastboot/fastboot.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/fastboot/fastboot.c b/drivers/fastboot/fastboot.c
+index a922b30..dd5205d 100644
+--- a/drivers/fastboot/fastboot.c
++++ b/drivers/fastboot/fastboot.c
+@@ -408,7 +408,7 @@ static void fastboot_init_strings(void)
+ 	fastboot_string_table[STR_PRODUCT_INDEX] = string;
+ 
+ 	string = (struct usb_string_descriptor *)wstrSerial;
+-	string->bLength = strlen(CONFIG_FASTBOOT_SERIAL_NUM);
++	string->bLength = sizeof(wstrSerial);
+ 	string->bDescriptorType = USB_DT_STRING;
+ 	str2wide(CONFIG_FASTBOOT_SERIAL_NUM, string->wData);
+ 	fastboot_string_table[STR_SERIAL_INDEX] = string;
+-- 
+1.7.7.4
+

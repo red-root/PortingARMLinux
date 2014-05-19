@@ -1,0 +1,30 @@
+From 0daf8bc6b77575581936a59e18476c48742669f0 Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Mon, 10 Dec 2012 13:29:05 +0800
+Subject: [PATCH 648/678] ENGR00236337: mx6/clock: emi_slow clock rate is not
+ printed out correctly
+
+This issue due to PODF is not used correcly, need use the following instead:
+ACLK_EMI_SLOW_PODF_OFFSET, the original used ACLK_EMI_PODF_OFFSET was wrong.
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ cpu/arm_cortexa8/mx6/generic.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index 134217d..257c930 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -286,7 +286,7 @@ static u32 __get_emi_slow_clk(void)
+ 	u32 emi_clk_sel = (cscmr1 & MXC_CCM_CSCMR1_ACLK_EMI_SLOW_MASK) >>
+ 		MXC_CCM_CSCMR1_ACLK_EMI_SLOW_OFFSET;
+ 	u32 podf = (cscmr1 & MXC_CCM_CSCMR1_ACLK_EMI_SLOW_PODF_MASK) >>
+-			MXC_CCM_CSCMR1_ACLK_EMI_PODF_OFFSET;
++			MXC_CCM_CSCMR1_ACLK_EMI_SLOW_PODF_OFFSET;
+ 
+ 	switch (emi_clk_sel) {
+ 	default:
+-- 
+1.7.7.4
+

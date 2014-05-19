@@ -1,0 +1,76 @@
+From 10ddb7764160b44205152cb52f95986736367f01 Mon Sep 17 00:00:00 2001
+From: Wayne Zou <b36644@freescale.com>
+Date: Mon, 22 Aug 2011 10:45:25 +0800
+Subject: [PATCH 332/678] ENGR00155138 mx53_smd/mx53_loco: Add i2c retry to
+ fix DA9053 i2c NAK issue
+
+when board boots up, during the iMX53 SOC does DA9053 Read/Write
+operation, it writes slave address and wait for ACK . Instead of ACK
+PMIC sends NAK. A workaround fix is provided as a part of retries to
+fix I2C NAK for very first access.
+
+Signed-off-by: Wayne Zou <b36644@freescale.com>
+---
+ board/freescale/mx53_loco/mx53_loco.c |   12 ++++++++++--
+ board/freescale/mx53_smd/mx53_smd.c   |   11 ++++++++++-
+ 2 files changed, 20 insertions(+), 3 deletions(-)
+
+diff --git a/board/freescale/mx53_loco/mx53_loco.c b/board/freescale/mx53_loco/mx53_loco.c
+index 5a5e820..c88412e 100644
+--- a/board/freescale/mx53_loco/mx53_loco.c
++++ b/board/freescale/mx53_loco/mx53_loco.c
+@@ -704,8 +704,9 @@ int check_recovery_cmd_file(void)
+ 
+ int board_late_init(void)
+ {
+-	int value;
++	uchar value;
+ 	unsigned char buf[4] = { 0 };
++	int retries = 10, ret = -1;
+ 
+ 	if (!i2c_probe(0x8)) {
+ 		if (i2c_read(0x8, 24, 1, &buf[0], 3)) {
+@@ -735,7 +736,14 @@ int board_late_init(void)
+ 	} else if (!i2c_probe(0x48)) {
+ 		/* increase VDDGP as 1.25V for 1GHZ */
+ 		value = 0x5e;
+-		i2c_write(0x48, 0x2e, 1, &value, 1);
++		do {
++			if (0 != i2c_write(0x48, 0x2e, 1, &value, 1)) {
++				printf("da9052_i2c_is_connected - i2c write failed.....\n");
++			} else {
++				printf("da9052_i2c_is_connected - i2c write success....\n");
++				ret = 0;
++			}
++		} while (ret != 0 && retries--);
+ 		i2c_read(0x48, 60, 1, &value, 1);
+ 		value |= 0x1;
+ 		i2c_write(0x48, 60, 1, &value, 1);
+diff --git a/board/freescale/mx53_smd/mx53_smd.c b/board/freescale/mx53_smd/mx53_smd.c
+index b698fd3..b9bd250 100644
+--- a/board/freescale/mx53_smd/mx53_smd.c
++++ b/board/freescale/mx53_smd/mx53_smd.c
+@@ -408,10 +408,19 @@ static void setup_i2c(unsigned int module_base)
+ void setup_pmic_voltages(void)
+ {
+ 	uchar value;
++	int retries = 10, ret = -1;
++
+ 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+ 	/* increase VDDGP as 1.25V for 1GHZ */
+ 	value = 0x5e;
+-	i2c_write(0x48, 0x2e, 1, &value, 1);
++	do {
++		if (0 != i2c_write(0x48, 0x2e, 1, &value, 1)) {
++			printf("da9052_i2c_is_connected - i2c write failed.....\n");
++		} else {
++			printf("da9052_i2c_is_connected - i2c write success....\n");
++			ret = 0;
++		}
++	} while (ret != 0 && retries--);
+ 	i2c_read(0x48, 60, 1, &value, 1);
+ 	value |= 0x1;
+ 	i2c_write(0x48, 60, 1, &value, 1);
+-- 
+1.7.7.4
+

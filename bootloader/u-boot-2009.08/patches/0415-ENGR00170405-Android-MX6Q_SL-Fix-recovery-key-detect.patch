@@ -1,0 +1,38 @@
+From b2a2cd5932aa9345de9a417c6d3daf9f8df28fc4 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Thu, 15 Dec 2011 18:22:21 +0800
+Subject: [PATCH 415/678] ENGR00170405 Android: MX6Q_SL: Fix recovery key
+ detection
+
+Fix recovery key detection, the VOL_DN key is low assert.
+Or it will always enter recovery mode.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ board/freescale/mx6q_sabrelite/mx6q_sabrelite.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+index 5b7affa..1c9fb2d 100644
+--- a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
++++ b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+@@ -510,7 +510,6 @@ int check_recovery_cmd_file(void)
+ 	}
+ 
+ 	printf("Checking for recovery command file...\n");
+-	printf("boot mode: %d\n", get_boot_device());
+ 	switch (get_boot_device()) {
+ 	case MMC_BOOT:
+ 	case SD_BOOT:
+@@ -578,7 +577,7 @@ int check_recovery_cmd_file(void)
+ 	reg &= ~(1<<5);
+ 	writel(reg, GPIO4_BASE_ADDR + GPIO_GDIR);
+ 	reg = readl(GPIO4_BASE_ADDR + GPIO_PSR);
+-	if (reg & (1 << 5)) {
++	if (!(reg & (1 << 5))) { /* VOL_DN key is low assert */
+ 		button_pressed = 1;
+ 		printf("Recovery key pressed\n");
+ 	}
+-- 
+1.7.7.4
+

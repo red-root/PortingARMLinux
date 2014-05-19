@@ -1,0 +1,46 @@
+From eec0c300a53aedb1d4ec032f9dc6079be19a6052 Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Mon, 27 Aug 2012 17:52:04 +0800
+Subject: [PATCH 592/678] ENGR00221503-1 cmd_imxotp: refine the help of this
+ command.
+
+This command use index but not addr, it confuse user, add
+a help how to convert the addr from fuse map to the index.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ common/cmd_imxotp.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/common/cmd_imxotp.c b/common/cmd_imxotp.c
+index 9ef772c..9c915fc 100644
+--- a/common/cmd_imxotp.c
++++ b/common/cmd_imxotp.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+@@ -149,8 +149,13 @@ usage:
+ 
+ U_BOOT_CMD(imxotp, 5, 0, do_imxotp,
+ 	"One-Time Programable sub-system",
+-	"imxotp read <addr>\n"
+-	" - read fuse at 'addr'\n"
+-	"imxotp blow [--force] <addr> <value>\n"
+-	" - blow fuse at 'addr' with hex value 'value'\n"
++	"imxotp read <index>\n"
++	" - read fuse at 'index'\n"
++	"imxotp blow [--force] <index> <value>\n"
++	" - blow fuse at 'index' with hex value 'value'\n"
++	"Tips:\n"
++	"'addr' to 'index':\n"
++	"convert 'index' from 'address'\n"
++	"index = (addr - otp_base) / 0x10\n"
++	"eg, addr is 0x021bc410, otp_base is 0x021bc400, the index = 1\n"
+ );
+-- 
+1.7.7.4
+

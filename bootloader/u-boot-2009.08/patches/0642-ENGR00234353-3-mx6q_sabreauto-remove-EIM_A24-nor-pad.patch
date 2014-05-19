@@ -1,0 +1,40 @@
+From f2f0cec4ed8c4aee4b115ccb80f93d31b0d4988a Mon Sep 17 00:00:00 2001
+From: Adrian Alonso <aalonso@freescale.com>
+Date: Tue, 20 Nov 2012 19:04:03 -0600
+Subject: [PATCH 642/678] ENGR00234353-3: mx6q_sabreauto remove EIM_A24 nor
+ pads
+
+* Remove EIM_A24 nor pads as this are used for
+  io steer control and are not connectted to NOR
+  flash memory.
+* Fix conflict access when it's used as io control
+  gpio.
+
+Signed-off-by: Adrian Alonso <aalonso@freescale.com>
+---
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index a85d172..d97647f 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -679,7 +679,6 @@ iomux_v3_cfg_t nor_pads[] = {
+ 	MX6Q_PAD_EIM_A21__WEIM_WEIM_A_21,
+ 	MX6Q_PAD_EIM_A22__WEIM_WEIM_A_22,
+ 	MX6Q_PAD_EIM_A23__WEIM_WEIM_A_23,
+-	MX6Q_PAD_EIM_A24__WEIM_WEIM_A_24,
+ 	MX6Q_PAD_EIM_OE__WEIM_WEIM_OE,
+ 	MX6Q_PAD_EIM_RW__WEIM_WEIM_RW,
+ 	MX6Q_PAD_EIM_CS0__WEIM_WEIM_CS_0
+@@ -726,7 +725,6 @@ iomux_v3_cfg_t nor_pads[] = {
+ 	MX6DL_PAD_EIM_A21__WEIM_WEIM_A_21,
+ 	MX6DL_PAD_EIM_A22__WEIM_WEIM_A_22,
+ 	MX6DL_PAD_EIM_A23__WEIM_WEIM_A_23,
+-	MX6DL_PAD_EIM_A24__WEIM_WEIM_A_24,
+ 	MX6DL_PAD_EIM_OE__WEIM_WEIM_OE,
+ 	MX6DL_PAD_EIM_RW__WEIM_WEIM_RW,
+ 	MX6DL_PAD_EIM_CS0__WEIM_WEIM_CS_0
+-- 
+1.7.7.4
+

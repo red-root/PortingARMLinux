@@ -1,0 +1,165 @@
+From 10c85638bd7a321663943ec99431147922eb2b0c Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Mon, 9 Apr 2012 13:43:19 +0800
+Subject: [PATCH 503/678] ENGR00179150 MX6Q_ARM2 HAB Boot : avoid uImage
+ authentication on un-fused chip
+
+Before running authentication on uImage in DDR, u-boot first check if
+SEC_CONFIG[1] (OTP_CFG5[1]) is burned. If so, it means the chip is in
+secure configuration, the authentication continues; if not, the chip
+in not in secure configuration, just bypass the authentication
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ board/freescale/mx6q_arm2/mx6q_arm2.c |  104 +++++++++++++++++++++++++-------
+ include/configs/mx6q_arm2.h           |    2 -
+ 2 files changed, 81 insertions(+), 25 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index eb3e34e..d78c704 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -908,6 +908,55 @@ int board_late_init(void)
+ #define hab_rvt_exit ((hab_rvt_exit_t *) HAB_RVT_EXIT)
+ #define hab_rvt_clock_init HAB_RVT_CLOCK_INIT
+ 
++/*
++ * +------------+  0x0 (0x10800000)    -
++ * |   Header   |                       |
++ * +------------+  0x40                 |
++ * |            |                       |
++ * |            |                       |
++ * |            |                       |
++ * |            |                       |
++ * | Image Data |                       |
++ * .            |                       |
++ * .            |                        > Stuff to be authenticated ------+
++ * .            |                       |                                  |
++ * |            |                       |                                  |
++ * |            |                       |                                  |
++ * +------------+                       |                                  |
++ * |            |                       |                                  |
++ * | Fill Data  |                       |                                  |
++ * |            |                       |                                  |
++ * +------------+ 0x003F_DFE0           |                                  |
++ * |    IVT     |                       |                                  |
++ * +------------+ 0x003F_E000          -                                   |
++ * |            |                                                          |
++ * |  CSF DATA  | <--------------------------------------------------------+
++ * |            |
++ * +------------+
++ * |            |
++ * | Fill Data  |
++ * |            |
++ * +------------+ 0x0040_0000
++ */
++
++#define DDR_UIMAGE_START 0x10800000
++#define DDR_UIMAGE_LENGTH 0x400000
++#define DDR_IVT_OFFSET 0x3FDFE0
++#define DDR_UIMAGE_IVT_START (DDR_UIMAGE_START + DDR_IVT_OFFSET)
++
++#define OCOTP_CFG5_OFFSET 0x460
++
++int check_hab_enable(void)
++{
++	u32 reg = 0;
++	int result = 0;
++
++	reg = readl(IMX_OTP_BASE + OCOTP_CFG5_OFFSET);
++	if ((reg & 0x2) == 0x2)
++		result = 1;
++
++	return result;
++}
+ 
+ void display_event(uint8_t *event_data, size_t bytes)
+ {
+@@ -982,30 +1031,38 @@ uint32_t authenticate_image(ulong start)
+ {
+ 	uint32_t load_addr = 0;
+ 	size_t bytes;
+-	ptrdiff_t ivt_offset = 0x003FDFE0;
+-
+-	printf("\nAuthenticate uImage from DDR location 0x%lx...\n", start);
+-
+-	hab_caam_clock_enable();
+-
+-	if (hab_rvt_entry() == HAB_SUCCESS) {
+-		start = 0x10800000;
+-		bytes = 0x00400000;
+-		load_addr = (uint32_t)hab_rvt_authenticate_image(HAB_CID_UBOOT,
+-				ivt_offset, (void **)&start,
+-				(size_t *)&bytes, NULL);
+-		if (hab_rvt_exit() != HAB_SUCCESS) {
+-			printf("hab exit function fail\n");
+-			load_addr = 0;
+-		}
+-	} else
+-		printf("hab entry function fail\n");
+-
+-	hab_caam_clock_disable();
++	ptrdiff_t ivt_offset = DDR_IVT_OFFSET;
++	int result = 0;
++
++	if (check_hab_enable() == 1) {
++		printf("\nAuthenticate uImage from DDR location 0x%lx...\n",
++			start);
++
++		hab_caam_clock_enable();
++
++		if (hab_rvt_entry() == HAB_SUCCESS) {
++			start = DDR_UIMAGE_START;
++			bytes = DDR_UIMAGE_LENGTH;
++			load_addr = (uint32_t)hab_rvt_authenticate_image(
++					HAB_CID_UBOOT,
++					ivt_offset, (void **)&start,
++					(size_t *)&bytes, NULL);
++			if (hab_rvt_exit() != HAB_SUCCESS) {
++				printf("hab exit function fail\n");
++				load_addr = 0;
++			}
++		} else
++			printf("hab entry function fail\n");
++
++		hab_caam_clock_disable();
++
++		get_hab_status();
++	}
+ 
+-	get_hab_status();
++	if ((!check_hab_enable()) || (load_addr != 0))
++		result = 1;
+ 
+-	return load_addr;
++	return result;
+ }
+ /* ----------- end of HAB API updates ------------*/
+ #endif
+@@ -1188,7 +1245,8 @@ int checkboard(void)
+ 	}
+ 
+ #ifdef CONFIG_SECURE_BOOT
+-	get_hab_status();
++	if (check_hab_enable() == 1)
++		get_hab_status();
+ #endif
+ 
+ 	return 0;
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index b3e10f1..454852d 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -33,9 +33,7 @@
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+ 
+-/*
+ #define CONFIG_SECURE_BOOT
+-*/
+ 
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+ 
+-- 
+1.7.7.4
+

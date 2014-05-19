@@ -1,0 +1,175 @@
+From 69867900d85e71737f6760c57c86d911625cd61c Mon Sep 17 00:00:00 2001
+From: Lin Fuzhen <fuzhen.lin@freescale.com>
+Date: Mon, 28 Jan 2013 17:46:07 +0800
+Subject: [PATCH 669/678] ENGR00242042 MX6DQ/DL: fix boot fail issue on mx6dl
+ boards
+
+MX6DQ and MX6DL share the common board file, but only MX6DQ has built-in
+SATA,  for the SATA PDDQ should be enabled default, so it needs to add
+code to distinguish different chip ID.
+
+Signed-off-by: Lin Fuzhen <fuzhen.lin@freescale.com>
+---
+ board/freescale/common/fsl_sys_rev.c              |   14 +++++++++++++-
+ board/freescale/mx6q_arm2/mx6q_arm2.c             |    7 +++++--
+ board/freescale/mx6q_hdmidongle/mx6q_hdmidongle.c |    7 +++++--
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c   |    7 +++++--
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c       |    7 +++++--
+ include/asm-arm/arch-mx6/mx6.h                    |    3 ++-
+ 6 files changed, 35 insertions(+), 10 deletions(-)
+
+diff --git a/board/freescale/common/fsl_sys_rev.c b/board/freescale/common/fsl_sys_rev.c
+index 0caa859..19a0347 100644
+--- a/board/freescale/common/fsl_sys_rev.c
++++ b/board/freescale/common/fsl_sys_rev.c
+@@ -1,6 +1,6 @@
+ /*
+  * Freescale system chip & board version define
+- * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ * Copyright (C) 2012-2013 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -118,8 +118,20 @@ void fsl_set_system_rev(void)
+ 	}
+ #endif
+ }
++
++int cpu_is_mx6q()
++{
++	if (fsl_system_rev != NULL)
++		fsl_set_system_rev();
++	return (((fsl_system_rev & 0xff000)>>12) == 0x63);
++}
+ #else
+ void fsl_set_system_rev(void)
+ {
+ }
++
++int cpu_is_mx6q()
++{
++	return 0;
++}
+ #endif
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index a68720d..4f0ea8c 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -1256,7 +1256,8 @@ int board_init(void)
+ 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
+ 
+ 	setup_uart();
+-	setup_sata();
++	if (cpu_is_mx6q())
++		setup_sata();
+ 
+ #ifdef CONFIG_VIDEO_MX5
+ 
+@@ -1481,7 +1482,9 @@ int checkboard(void)
+ 	if (check_hab_enable() == 1)
+ 		get_hab_status();
+ #endif
+-    printf("SATA PDDQ: %s\n", ((readl(SATA_ARB_BASE_ADDR + PORT_PHY_CTL)
++	if (cpu_is_mx6q())
++		printf("SATA PDDQ: %s\n", ((readl(SATA_ARB_BASE_ADDR
++							+ PORT_PHY_CTL)
+ 			& PORT_PHY_CTL_PDDQ_LOC)>>20) ? "enabled" : "disabled");
+ 
+ 	return 0;
+diff --git a/board/freescale/mx6q_hdmidongle/mx6q_hdmidongle.c b/board/freescale/mx6q_hdmidongle/mx6q_hdmidongle.c
+index 34edc04..c8834f6 100644
+--- a/board/freescale/mx6q_hdmidongle/mx6q_hdmidongle.c
++++ b/board/freescale/mx6q_hdmidongle/mx6q_hdmidongle.c
+@@ -1203,7 +1203,8 @@ int board_init(void)
+ 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
+ 
+ 	setup_uart();
+-	setup_sata();
++	if (cpu_is_mx6q())
++		setup_sata();
+ 
+ #ifdef CONFIG_VIDEO_MX5
+ 	/* Enable lvds power */
+@@ -1434,7 +1435,9 @@ int checkboard(void)
+ 		printf("UNKNOWN\n");
+ 		break;
+ 	}
+-    printf("SATA PDDQ: %s\n", ((readl(SATA_ARB_BASE_ADDR + PORT_PHY_CTL)
++	if (cpu_is_mx6q())
++		printf("SATA PDDQ: %s\n", ((readl(SATA_ARB_BASE_ADDR
++							+ PORT_PHY_CTL)
+ 			& PORT_PHY_CTL_PDDQ_LOC)>>20) ? "enabled" : "disabled");
+ 	return 0;
+ }
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index 4229c69..8577cdf 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -1034,7 +1034,8 @@ int board_init(void)
+ #ifdef CONFIG_CMD_WEIMNOR
+ 	setup_nor();
+ #endif
+-	setup_sata();
++	if (cpu_is_mx6q())
++		setup_sata();
+ 
+ #ifdef CONFIG_VIDEO_MX5
+ 	panel_info_init();
+@@ -1217,7 +1218,9 @@ int checkboard(void)
+ 		printf("UNKNOWN\n");
+ 		break;
+ 	}
+-    printf("SATA PDDQ: %s\n", ((readl(SATA_ARB_BASE_ADDR + PORT_PHY_CTL)
++	if (cpu_is_mx6q())
++		printf("SATA PDDQ: %s\n", ((readl(SATA_ARB_BASE_ADDR
++							+ PORT_PHY_CTL)
+ 			& PORT_PHY_CTL_PDDQ_LOC)>>20) ? "enabled" : "disabled");
+ 	return 0;
+ }
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 57173a4..6b603e8 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -1755,7 +1755,8 @@ int board_init(void)
+ 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
+ 
+ 	setup_uart();
+-    setup_sata();
++	if (cpu_is_mx6q())
++		setup_sata();
+ 
+ #ifdef CONFIG_VIDEO_MX5
+ 	/* Enable lvds power */
+@@ -1995,7 +1996,9 @@ int checkboard(void)
+ 		break;
+ 	}
+ 
+-    printf("SATA PDDQ: %s\n", ((readl(SATA_ARB_BASE_ADDR + PORT_PHY_CTL)
++	if (cpu_is_mx6q())
++		printf("SATA PDDQ: %s\n", ((readl(SATA_ARB_BASE_ADDR
++							+ PORT_PHY_CTL)
+ 			& PORT_PHY_CTL_PDDQ_LOC)>>20) ? "enabled" : "disabled");
+ #ifdef CONFIG_SECURE_BOOT
+ 	if (check_hab_enable() == 1)
+diff --git a/include/asm-arm/arch-mx6/mx6.h b/include/asm-arm/arch-mx6/mx6.h
+index 45381e2..54eeddf 100644
+--- a/include/asm-arm/arch-mx6/mx6.h
++++ b/include/asm-arm/arch-mx6/mx6.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011-2012 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright (C) 2011-2013 Freescale Semiconductor, Inc. All Rights Reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -815,6 +815,7 @@ extern unsigned int get_board_rev(void);
+ extern int is_soc_rev(int rev);
+ extern enum boot_device get_boot_device(void);
+ extern void fsl_set_system_rev(void);
++extern int cpu_is_mx6q(void);
+ 
+ #endif /* __ASSEMBLER__*/
+ 
+-- 
+1.7.7.4
+

@@ -1,0 +1,48 @@
+From 9b6f86795690be9be190b8fe458eee781cdf3965 Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Fri, 14 Sep 2012 00:35:01 +0800
+Subject: [PATCH 598/678] ENGR00224272: MFG:i.mx6q/ARM2 enable
+ CONFIG_CMD_IMXOTP to fix the build error
+
+Need enable CONFIG_CMD_IMXOTP to fix the build error:
+
+arm_cortexa8/mx6/generic.c:1438: undefined reference to `imx_otp_read_one_u32'
+arm_cortexa8/mx6/generic.c:1439: undefined reference to `imx_otp_read_one_u32'
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ include/configs/mx6q_arm2_mfg.h |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/include/configs/mx6q_arm2_mfg.h b/include/configs/mx6q_arm2_mfg.h
+index fe0b3aa..6960a77 100644
+--- a/include/configs/mx6q_arm2_mfg.h
++++ b/include/configs/mx6q_arm2_mfg.h
+@@ -91,6 +91,7 @@
+ #define CONFIG_BOOTP_DNS
+ 
+ #define CONFIG_CMD_I2C
++#define CONFIG_CMD_IMXOTP
+ 
+ /* Enable below configure when supporting nand */
+ 
+@@ -159,6 +160,16 @@
+ #define CONFIG_NETMASK			255.255.255.0
+ 
+ /*
++ * OCOTP Configs
++ */
++#ifdef CONFIG_CMD_IMXOTP
++	#define CONFIG_IMX_OTP
++	#define IMX_OTP_BASE		OCOTP_BASE_ADDR
++	#define IMX_OTP_ADDR_MAX	0x7F
++	#define IMX_OTP_DATA_ERROR_VAL	0xBADABADA
++#endif
++
++/*
+  * I2C Configs
+  */
+ #ifdef CONFIG_CMD_I2C
+-- 
+1.7.7.4
+

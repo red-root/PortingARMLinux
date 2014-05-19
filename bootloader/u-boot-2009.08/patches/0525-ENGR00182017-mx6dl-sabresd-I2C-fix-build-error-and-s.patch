@@ -1,0 +1,55 @@
+From 84525c282bd9c5558063060ad9f87f029124dd11 Mon Sep 17 00:00:00 2001
+From: Robin Gong <B38343@freescale.com>
+Date: Mon, 7 May 2012 11:05:03 +0800
+Subject: [PATCH 525/678] ENGR00182017 mx6dl sabresd I2C: fix build error and
+ support mx6dl_sabresd
+
+1.fix build error :
+mx6q_sabresd.c: In function 'setup_i2c':
+mx6q_sabresd.c:382: error: expected ')' before ';' token
+mx6q_sabresd.c:393: error: expected ';' before '}' token
+mx6q_sabresd.c: In function 'setup_pmic_voltages':
+mx6q_sabresd.c:399: warning: unused variable 'val'
+make[1]: *** [mx6q_sabresd.o] Error 1
+
+2.modify mx6dl_sabresd_config to support pfuze on mx6dl sabresd board
+
+Signed-off-by: Robin Gong <B38343@freescale.com>
+---
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |    2 +-
+ include/configs/mx6dl_sabresd.h             |    5 +++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 065c1ed..2944b50 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -379,7 +379,7 @@ static void setup_i2c(unsigned int module_base)
+ 		/* GPIO_3 for I2C3_SCL */
+ 		mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_3__I2C3_SCL);
+ 		/* GPIO_6 for I2C3_SDA */
+-		mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_6__I2C3_SDA;
++		mxc_iomux_v3_setup_pad(MX6DL_PAD_GPIO_6__I2C3_SDA);
+ #endif
+ 		/* Enable i2c clock */
+ 		reg = readl(CCM_BASE_ADDR + CLKCTL_CCGR2);
+diff --git a/include/configs/mx6dl_sabresd.h b/include/configs/mx6dl_sabresd.h
+index 91ed159..3df2a34 100644
+--- a/include/configs/mx6dl_sabresd.h
++++ b/include/configs/mx6dl_sabresd.h
+@@ -190,9 +190,10 @@
+ #ifdef CONFIG_CMD_I2C
+ 	#define CONFIG_HARD_I2C         1
+ 	#define CONFIG_I2C_MXC          1
+-	#define CONFIG_SYS_I2C_PORT             I2C3_BASE_ADDR
++	#define CONFIG_SYS_I2C_PORT             I2C2_BASE_ADDR
+ 	#define CONFIG_SYS_I2C_SPEED            100000
+-	#define CONFIG_SYS_I2C_SLAVE            0x1f
++	#define CONFIG_SYS_I2C_SLAVE            0x8
++	#define CONFIG_MX6_INTER_LDO_BYPASS	0
+ #endif
+ 
+ /*
+-- 
+1.7.7.4
+

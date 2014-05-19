@@ -1,0 +1,87 @@
+From 4846133a1c76892e3485907fbdab0cd16446049f Mon Sep 17 00:00:00 2001
+From: Robin Gong <B38343@freescale.com>
+Date: Mon, 13 Aug 2012 10:03:16 +0800
+Subject: [PATCH 572/678] ENGR00220164  pfuze:rise VDDARM_IN to 1.425V and
+ work around pfuze1.0
+
+1.Considering pfuze tolerance and IR drop and board ripple, need rise from
+  1.375V to 1.425V. Only for Sabresd.
+2.workaround pfuze1.0 ER1, set all buck regulator except SW1C to PWM mode.
+  now for mx6sl_arm2 and mx6_sabresd.
+
+Signed-off-by: Robin Gong <B38343@freescale.com>
+---
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |   27 +++++++++++++++++++++++++++
+ board/freescale/mx6sl_arm2/mx6sl_arm2.c     |   18 ++++++++++++++++++
+ 2 files changed, 45 insertions(+), 0 deletions(-)
+
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 274f0c8..c611dcb 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -694,6 +694,33 @@ void setup_pmic_voltages(void)
+ 		if (i2c_read(0x8, 0, 1, &value, 1))
+ 			printf("%s:i2c_read:error\n", __func__);
+ 		printf("Found PFUZE100! device id=%x\n", value);
++		if (value == 0x10) {
++			/*workaround ER1 of pfuze1.0: set all buck regulators
++			in PWM mode except SW1C*/
++			value = 0x6;
++			i2c_write(0x8, 0x23, 1, &value, 1);/*SW1AB*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x38, 1, &value, 1);/*SW2*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x3f, 1, &value, 1);/*SW3A*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x46, 1, &value, 1);/*SW3B*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x4d, 1, &value, 1);/*SW4*/
++		}
++		/*VDDCORE/VDDSOC default 1.375V is not enough, considering
++		pfuze tolerance and IR drop and ripple, need increase
++		to 1.425V for SabreSD*/
++		value = 0x2d;
++		i2c_write(0x8, 0x20, 1, &value, 1);
++
++		value = 0x2d;
++		i2c_write(0x8, 0x2e, 1, &value, 1);
++
+ 		#if CONFIG_MX6_INTER_LDO_BYPASS
+ 		/*VDDCORE 1.1V@800Mhz: SW1AB*/
+ 		value = 0x20;
+diff --git a/board/freescale/mx6sl_arm2/mx6sl_arm2.c b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+index e9a64fd..f14b2b6 100644
+--- a/board/freescale/mx6sl_arm2/mx6sl_arm2.c
++++ b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+@@ -959,6 +959,24 @@ void setup_pmic_voltages(void)
+ 		if (i2c_read(0x8, 0, 1, &value, 1))
+ 			printf("%s:i2c_read:error\n", __func__);
+ 		printf("Found PFUZE100! device id=%x\n", value);
++		if (value == 0x10) {
++			/*workaround ER1 of pfuze1.0: set all buck regulators
++			in PWM mode except SW1C*/
++			value = 0x6;
++			i2c_write(0x8, 0x23, 1, &value, 1);/*SW1AB*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x38, 1, &value, 1);/*SW2*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x3f, 1, &value, 1);/*SW3A*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x46, 1, &value, 1);/*SW3B*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x4d, 1, &value, 1);/*SW4*/
++		}
+ 		#if CONFIG_MX6_INTER_LDO_BYPASS
+ 		/*VDDCORE 1.1V@800Mhz: SW1AB*/
+ 		value = 0x20;
+-- 
+1.7.7.4
+

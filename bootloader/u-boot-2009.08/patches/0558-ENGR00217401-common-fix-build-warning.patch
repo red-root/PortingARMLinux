@@ -1,0 +1,197 @@
+From d52f815a0dca515559d8239109fbc07a2dd99929 Mon Sep 17 00:00:00 2001
+From: Xinyu Chen <xinyu.chen@freescale.com>
+Date: Thu, 26 Jul 2012 14:27:31 +0800
+Subject: [PATCH 558/678] ENGR00217401 common: fix build warning
+
+Fix the build warning in uboot build.
+Fix bug of incorrect dereference to periph2 clock pre divider.
+Fix incorrect type of maxpackage size assign, even it's
+not used at all in fastboot.
+
+Signed-off-by: Xinyu Chen <xinyu.chen@freescale.com>
+---
+ board/freescale/common/recovery.c           |    2 +-
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c |    2 --
+ common/cmd_fastboot.c                       |    7 ++++---
+ cpu/arm_cortexa8/mx6/generic.c              |    2 +-
+ drivers/fastboot/fastboot.c                 |    9 ++++++---
+ drivers/usb/gadget/imx_udc.c                |    2 +-
+ include/fastboot.h                          |    1 +
+ include/recovery.h                          |    1 +
+ lib_arm/board.c                             |    6 ++++++
+ 9 files changed, 21 insertions(+), 11 deletions(-)
+
+diff --git a/board/freescale/common/recovery.c b/board/freescale/common/recovery.c
+index 6a402ca..df3f367 100644
+--- a/board/freescale/common/recovery.c
++++ b/board/freescale/common/recovery.c
+@@ -79,7 +79,7 @@ extern struct reco_envs supported_reco_envs[];
+ 
+ void setup_recovery_env(void)
+ {
+-	char *env, *boot_args, *boot_cmd;
++	char *env, *boot_cmd;
+ 	int bootdev = get_boot_device();
+ 
+ 	boot_cmd = supported_reco_envs[bootdev].cmd;
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index daeff26..0bfd700 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -1490,14 +1490,12 @@ int check_recovery_cmd_file(void)
+ {
+ 	int button_pressed = 0;
+ 	int recovery_mode = 0;
+-	u32 reg;
+ 
+ 	recovery_mode = check_and_clean_recovery_flag();
+ 
+ 	/* Check Recovery Combo Button press or not. */
+ 	mxc_iomux_v3_setup_pad(MX6X_IOMUX(PAD_GPIO_5__GPIO_1_5));
+ 
+-	gpio_request(GPIO_VOL_DN_KEY);
+ 	gpio_direction_input(GPIO_VOL_DN_KEY);
+ 
+ 	if (gpio_get_value(GPIO_VOL_DN_KEY) == 0) { /* VOL_DN key is low assert */
+diff --git a/common/cmd_fastboot.c b/common/cmd_fastboot.c
+index 660ff5c..6987f88 100644
+--- a/common/cmd_fastboot.c
++++ b/common/cmd_fastboot.c
+@@ -76,6 +76,7 @@ extern int do_sata(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
+ #endif
+ extern env_t *env_ptr;
+ #endif
++extern int do_booti(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
+ /* Use do_setenv and do_saveenv to permenantly save data */
+ int do_saveenv(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
+ int do_setenv(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
+@@ -1151,7 +1152,7 @@ static int rx_handler (const unsigned char *buffer, unsigned int buffer_size)
+ 					sata_write[4] = length;
+ 
+ 					sprintf(source, "0x%x",
+-						 interface.transfer_buffer);
++						 (unsigned int)interface.transfer_buffer);
+ 					/* block offset */
+ 					sprintf(dest, "0x%x", ptn->start);
+ 					/* block count */
+@@ -1181,7 +1182,7 @@ static int rx_handler (const unsigned char *buffer, unsigned int buffer_size)
+ mmc_ops:
+ 					printf("writing to partition '%s'\n", ptn->name);
+ 					char *mmc_write[5] = {"mmc", "write",
+-						NULL, NULL, NULL, NULL};
++						NULL, NULL, NULL};
+ 					char *mmc_dev[4] = {"mmc", "dev", NULL, NULL};
+ 
+ 					mmc_dev[2] = slot_no;
+@@ -1192,7 +1193,7 @@ mmc_ops:
+ 
+ 					sprintf(slot_no, "%d",
+ 						    fastboot_devinfo.dev_id);
+-					sprintf(source, "0x%x", interface.transfer_buffer);
++					sprintf(source, "0x%x", (unsigned int)interface.transfer_buffer);
+ 					/* partition no */
+ 					sprintf(part_no, "%d",
+ 						    ptn->partition_id);
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index c844594..55e6b78 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -330,7 +330,7 @@ static u32 __get_ddr_clk(void)
+ 			>> MXC_CCM_CBCDR_MMDC_CH1_PODF_OFFSET;
+ 
+ 	switch ((cbcmr & MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_MASK) >>
+-		MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_MASK) {
++		MXC_CCM_CBCMR_PRE_PERIPH2_CLK_SEL_OFFSET) {
+ 	case 0:
+ 		freq = __decode_pll(BUS_PLL2, CONFIG_MX6_HCLK_FREQ);
+ 		break;
+diff --git a/drivers/fastboot/fastboot.c b/drivers/fastboot/fastboot.c
+index 3558ab5..75d2034 100644
+--- a/drivers/fastboot/fastboot.c
++++ b/drivers/fastboot/fastboot.c
+@@ -309,7 +309,10 @@ static int setup_ptable_mmc_partition(int ptable_index,
+ 
+ static int fastboot_init_mmc_sata_ptable(void)
+ {
+-	int i, sata_device_no;
++	int i;
++#ifdef CONFIG_CMD_SATA
++	int sata_device_no;
++#endif
+ 	int boot_partition = -1, user_partition = -1;
+ 	/* mmc boot partition: -1 means no partition, 0 user part., 1 boot part.
+ 	 * default is no partition, for emmc default user part, except emmc*/
+@@ -469,7 +472,7 @@ static void fastboot_init_instances(void)
+ 	bus_instance->device = device_instance;
+ 	bus_instance->endpoint_array = endpoint_instance;
+ 	bus_instance->max_endpoints = NUM_ENDPOINTS + 1;
+-	bus_instance->maxpacketsize = 512;
++	bus_instance->maxpacketsize = 0xFF;
+ 	bus_instance->serial_number_str = CONFIG_FASTBOOT_SERIAL_NUM;
+ 
+ 	/* configuration instance */
+@@ -766,7 +769,7 @@ static void fastboot_event_handler(struct usb_device_instance *device,
+ 	}
+ }
+ 
+-int fastboot_cdc_setup(struct usb_device_request *request, struct urb *urb)
++static int fastboot_cdc_setup(struct usb_device_request *request, struct urb *urb)
+ {
+ 	return 0;
+ }
+diff --git a/drivers/usb/gadget/imx_udc.c b/drivers/usb/gadget/imx_udc.c
+index c3796d3..d0aa5a1 100644
+--- a/drivers/usb/gadget/imx_udc.c
++++ b/drivers/usb/gadget/imx_udc.c
+@@ -796,7 +796,7 @@ void mxc_udc_wait_cable_insert(void)
+ 	} while (1);
+ }
+ 
+-int udc_disable_over_current()
++void udc_disable_over_current(void)
+ {
+ 	u32 temp;
+ 	temp = readl(USB_OTG_CTRL);
+diff --git a/include/fastboot.h b/include/fastboot.h
+index dfca793..f0ed108 100644
+--- a/include/fastboot.h
++++ b/include/fastboot.h
+@@ -329,6 +329,7 @@ int fastboot_flash_write(fastboot_ptentry *ptn, unsigned extra_per_page,
+ /* Check the board special boot mode reboot to fastboot mode. */
+ int fastboot_check_and_clean_flag(void);
+ int do_fastboot(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
++void check_fastboot_mode(void);
+ 
+ #else
+ 
+diff --git a/include/recovery.h b/include/recovery.h
+index 5dde01d..d3f6e55 100644
+--- a/include/recovery.h
++++ b/include/recovery.h
+@@ -28,5 +28,6 @@ struct reco_envs {
+ };
+ 
+ int check_and_clean_recovery_flag(void);
++void check_recovery_mode(void);
+ 
+ #endif
+diff --git a/lib_arm/board.c b/lib_arm/board.c
+index a9b87b5..1e7f0ba 100644
+--- a/lib_arm/board.c
++++ b/lib_arm/board.c
+@@ -49,6 +49,12 @@
+ #include <nand.h>
+ #include <onenand_uboot.h>
+ #include <mmc.h>
++#ifdef CONFIG_ANDROID_RECOVERY
++#include <recovery.h>
++#endif
++#ifdef CONFIG_FASTBOOT
++#include <fastboot.h>
++#endif
+ 
+ #ifdef CONFIG_DRIVER_SMC91111
+ #include "../drivers/net/smc91111.h"
+-- 
+1.7.7.4
+

@@ -1,0 +1,194 @@
+From 7db399587fe4cd8d0e77491e9b2fad47c0a82be2 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Wed, 24 Aug 2011 16:15:47 +0800
+Subject: [PATCH 346/678] ENGR00155283: Set dpgdck0_2_en to 0 when freq is
+ lower than 300MHz
+
+1. Set dpgdck0_2_en to 0 when required freq is lower than 300Mhz.
+2. When dpgdck0_2_en is 0, the formula to calculate output freq
+will be changed to 2 * freq * [].
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ board/freescale/mx53_ard/lowlevel_init.S  |    9 ++++++++-
+ board/freescale/mx53_evk/lowlevel_init.S  |    9 ++++++++-
+ board/freescale/mx53_loco/lowlevel_init.S |    9 ++++++++-
+ board/freescale/mx53_pcba/lowlevel_init.S |    9 ++++++++-
+ board/freescale/mx53_smd/lowlevel_init.S  |   12 ++++++++++--
+ cpu/arm_cortexa8/mx53/generic.c           |    6 ++++--
+ include/asm-arm/arch-mx53/mx53.h          |   13 ++++++++-----
+ 7 files changed, 54 insertions(+), 13 deletions(-)
+
+diff --git a/board/freescale/mx53_ard/lowlevel_init.S b/board/freescale/mx53_ard/lowlevel_init.S
+index 2a251f7..f8e7632 100644
+--- a/board/freescale/mx53_ard/lowlevel_init.S
++++ b/board/freescale/mx53_ard/lowlevel_init.S
+@@ -58,8 +58,15 @@
+ .endm /* init_aips */
+ 
+ .macro setup_pll pll, freq
++	/*
++	 * If freq < 300MHz, we need to set dpdck0_2_en to 0
++	 */
++	ldr r0, =\freq
++	ldr r1, =0x300
++	cmp r0, r1
++	ldrcs r1, =0x00001232
++	ldrcc r1, =0x00000232
+ 	ldr r0, =\pll
+-	ldr r1, =0x00001232
+ 	str r1, [r0, #PLL_DP_CTL]
+ 	mov r1, #0x2
+ 	str r1, [r0, #PLL_DP_CONFIG]
+diff --git a/board/freescale/mx53_evk/lowlevel_init.S b/board/freescale/mx53_evk/lowlevel_init.S
+index 0122353..b52e518 100644
+--- a/board/freescale/mx53_evk/lowlevel_init.S
++++ b/board/freescale/mx53_evk/lowlevel_init.S
+@@ -58,8 +58,15 @@
+ .endm /* init_aips */
+ 
+ .macro setup_pll pll, freq
++	/*
++	 * If freq < 300MHz, we need to set dpdck0_2_en to 0
++	 */
++	ldr r0, =\freq
++	ldr r1, =0x300
++	cmp r0, r1
++	ldrcs r1, =0x00001232
++	ldrcc r1, =0x00000232
+ 	ldr r0, =\pll
+-	ldr r1, =0x00001232
+ 	str r1, [r0, #PLL_DP_CTL]
+ 	mov r1, #0x2
+ 	str r1, [r0, #PLL_DP_CONFIG]
+diff --git a/board/freescale/mx53_loco/lowlevel_init.S b/board/freescale/mx53_loco/lowlevel_init.S
+index ff879a6..dbcb074 100644
+--- a/board/freescale/mx53_loco/lowlevel_init.S
++++ b/board/freescale/mx53_loco/lowlevel_init.S
+@@ -56,8 +56,15 @@
+ .endm /* init_aips */
+ 
+ .macro setup_pll pll, freq
++	/*
++	 * If freq < 300MHz, we need to set dpdck0_2_en to 0
++	 */
++	ldr r0, =\freq
++	ldr r1, =0x300
++	cmp r0, r1
++	ldrcs r1, =0x00001232
++	ldrcc r1, =0x00000232
+ 	ldr r0, =\pll
+-	ldr r1, =0x00001232
+ 	str r1, [r0, #PLL_DP_CTL]
+ 	mov r1, #0x2
+ 	str r1, [r0, #PLL_DP_CONFIG]
+diff --git a/board/freescale/mx53_pcba/lowlevel_init.S b/board/freescale/mx53_pcba/lowlevel_init.S
+index 6a95a21..f9b1f11 100644
+--- a/board/freescale/mx53_pcba/lowlevel_init.S
++++ b/board/freescale/mx53_pcba/lowlevel_init.S
+@@ -56,8 +56,15 @@
+ .endm /* init_aips */
+ 
+ .macro setup_pll pll, freq
++	/*
++	 * If freq < 300MHz, we need to set dpdck0_2_en to 0
++	 */
++	ldr r0, =\freq
++	ldr r1, =0x300
++	cmp r0, r1
++	ldrcs r1, =0x00001232
++	ldrcc r1, =0x00000232
+ 	ldr r0, =\pll
+-	ldr r1, =0x00001232
+ 	str r1, [r0, #PLL_DP_CTL]
+ 	mov r1, #0x2
+ 	str r1, [r0, #PLL_DP_CONFIG]
+diff --git a/board/freescale/mx53_smd/lowlevel_init.S b/board/freescale/mx53_smd/lowlevel_init.S
+index 07af735..8aef8b2 100644
+--- a/board/freescale/mx53_smd/lowlevel_init.S
++++ b/board/freescale/mx53_smd/lowlevel_init.S
+@@ -56,8 +56,15 @@
+ .endm /* init_aips */
+ 
+ .macro setup_pll pll, freq
++	/*
++	 * If freq < 300MHz, we need to set dpdck0_2_en to 0
++	 */
++	ldr r0, =\freq
++	ldr r1, =0x12c
++	cmp r0, r1
++	ldrcs r1, =0x00001232
++	ldrcc r1, =0x00000232
+ 	ldr r0, =\pll
+-	ldr r1, =0x00001232
+ 	str r1, [r0, #PLL_DP_CTL]
+ 	mov r1, #0x2
+ 	str r1, [r0, #PLL_DP_CONFIG]
+@@ -74,7 +81,8 @@
+ 	str r1, [r0, #PLL_DP_MFN]
+ 	str r1, [r0, #PLL_DP_HFS_MFN]
+ 
+-	ldr r1, =0x00001232
++	ldrcs r1, =0x00001232
++	ldrcc r1, =0x00000232
+ 	str r1, [r0, #PLL_DP_CTL]
+ 1:	ldr r1, [r0, #PLL_DP_CTL]
+ 	ands r1, r1, #0x1
+diff --git a/cpu/arm_cortexa8/mx53/generic.c b/cpu/arm_cortexa8/mx53/generic.c
+index 1357462..d54bf2c 100644
+--- a/cpu/arm_cortexa8/mx53/generic.c
++++ b/cpu/arm_cortexa8/mx53/generic.c
+@@ -94,8 +94,10 @@ struct pll_param {
+ 
+ static u32 __decode_pll(enum pll_clocks pll, u32 infreq)
+ {
+-	u32 mfi, mfn, mfd, pd;
++	u32 mfi, mfn, mfd, pd, ctrl, mult;
+ 
++	ctrl = __REG(pll + MXC_PLL_DP_CTL);
++	mult = (ctrl & MXC_PLL_DP_CTL_DPDCK0_2_EN) ? 4 : 2;
+ 	mfn = __REG(pll + MXC_PLL_DP_MFN);
+ 	mfd = __REG(pll + MXC_PLL_DP_MFD) + 1;
+ 	mfi = __REG(pll + MXC_PLL_DP_OP);
+@@ -103,7 +105,7 @@ static u32 __decode_pll(enum pll_clocks pll, u32 infreq)
+ 	mfi = (mfi >> 4) & 0xF;
+ 	mfi = (mfi >= 5) ? mfi : 5;
+ 
+-	return ((4 * (infreq / 1000) * (mfi * mfd + mfn)) / (mfd * pd)) * 1000;
++	return ((mult * (infreq / 1000) * (mfi * mfd + mfn)) / (mfd * pd)) * 1000;
+ }
+ 
+ static u32 __get_mcu_main_clk(void)
+diff --git a/include/asm-arm/arch-mx53/mx53.h b/include/asm-arm/arch-mx53/mx53.h
+index 6e02fc9..a0b1a78 100644
+--- a/include/asm-arm/arch-mx53/mx53.h
++++ b/include/asm-arm/arch-mx53/mx53.h
+@@ -388,17 +388,20 @@
+ #define DP_MFD_532      (24 - 1)
+ #define DP_MFN_532      13
+ 
+-#define DP_OP_455       ((8 << 4) + ((2 - 1)  << 0))
++#define DP_OP_455       ((9 << 4) + ((2 - 1)  << 0))
+ #define DP_MFD_455      (48 - 1)
+-#define DP_MFN_455      71
++#define DP_MFN_455      23
+ 
+ #define DP_OP_400       ((8 << 4) + ((2 - 1)  << 0))
+ #define DP_MFD_400      (3 - 1)
+ #define DP_MFN_400      1
+ 
+-#define DP_OP_216       ((6 << 4) + ((3 - 1)  << 0))
+-#define DP_MFD_216      (4 - 1)
+-#define DP_MFN_216      3
++/* For freq lower than 300MHz, dpgdck0_2_en is 0.
++ * Thus the parameters is for 432MHz.
++ */
++#define DP_OP_216       ((8 << 4) + ((2 - 1)  << 0))
++#define DP_MFD_216      (1 - 1)
++#define DP_MFN_216      1
+ 
+ #define PLL_DP_CTL      0x00
+ #define PLL_DP_CONFIG   0x04
+-- 
+1.7.7.4
+

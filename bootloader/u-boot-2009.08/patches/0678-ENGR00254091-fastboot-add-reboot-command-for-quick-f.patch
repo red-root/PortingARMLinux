@@ -1,0 +1,52 @@
+From 5899674bf39544bec47e209649a723cf7348d3ba Mon Sep 17 00:00:00 2001
+From: Lin Fuzhen <fuzhen.lin@freescale.com>
+Date: Tue, 19 Mar 2013 17:39:11 +0800
+Subject: [PATCH 678/678] ENGR00254091 fastboot: add reboot command for quick
+ fastboot
+
+Quick fastboot just support download and flash commands.
+Add reboot command support when launch fastboot by "fastboot q"
+
+Signed-off-by: Lin Fuzhen <fuzhen.lin@freescale.com>
+---
+ drivers/fastboot/fastboot.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/fastboot/fastboot.c b/drivers/fastboot/fastboot.c
+index 9594cad..d77d746 100644
+--- a/drivers/fastboot/fastboot.c
++++ b/drivers/fastboot/fastboot.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2013 Freescale Semiconductor, Inc.
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+@@ -877,6 +877,14 @@ static void fastboot_cmd_handler(u32 len, u8 *recvbuf)
+ 		}
+ 		g_fastboot_datalen = 0;
+ 		fastboot_status = FASTBOOT_STS_CMD;
++    } else if (memcmp(recvbuf, "reboot", 6) == 0) {
++			sprintf((char *)g_fastboot_sendbuf, "OKAY");
++			udc_send_data(g_fastboot_inep_index, g_fastboot_sendbuf,
++								4, NULL);
++			udelay(100000); /* 1 sec */
++
++			do_reset(NULL, 0, 0, NULL);
++
+     } else {
+ 		DBG_ERR("Not support command:%s\n", recvbuf);
+ 		sprintf((char *)g_fastboot_sendbuf, "FAIL");
+@@ -898,7 +906,7 @@ static struct cmd_fastboot_interface interface = {
+ };
+ 
+ /*
+- * fastboot main process, only support 'download', 'flash' command now
++ * fastboot main process, only support 'download', 'flash' 'reboot' command now
+  *
+  * @debug  control debug level, support three level now,
+  *	   0(normal), 1(debug), 2(info), default is 0
+-- 
+1.7.7.4
+

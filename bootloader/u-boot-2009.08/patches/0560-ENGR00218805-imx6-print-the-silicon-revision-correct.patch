@@ -1,0 +1,76 @@
+From 1c325b0236df114e2e74de0cd02521c2398e15dc Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Mon, 30 Jul 2012 17:30:55 +0800
+Subject: [PATCH 560/678] ENGR00218805 imx6: print the silicon revision
+ correctly
+
+The silicon revision is not printed correctly, on ARM2
+and sabrelite board, the log is just as the following:
+
+CPU: Freescale i.MX6 family TO0.0 at 792 MHz
+
+We need print the silicon revision correctly as:
+
+CPU: Freescale i.MX6 family TO1.2 at 792 MHz
+with i.mx6q TO1.2 chip
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ board/freescale/mx6q_arm2/mx6q_arm2.c           |    9 ++-------
+ board/freescale/mx6q_sabrelite/mx6q_sabrelite.c |    6 ++----
+ 2 files changed, 4 insertions(+), 11 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index 1e0c8a1..1538212 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -148,13 +148,7 @@ enum boot_device get_boot_device(void)
+ 
+ u32 get_board_rev(void)
+ {
+-
+-#if defined CONFIG_MX6Q
+-	system_rev = 0x63000;
+-#elif defined CONFIG_MX6DL
+-	system_rev = 0x61000;
+-#endif
+-	return system_rev;
++	return fsl_system_rev;
+ }
+ 
+ #ifdef CONFIG_ARCH_MMU
+@@ -1152,6 +1146,7 @@ int board_init(void)
+ {
+ 	mxc_iomux_v3_init((void *)IOMUXC_BASE_ADDR);
+ 	setup_boot_device();
++	fsl_set_system_rev();
+ 
+ 	/* board id for linux */
+ 	gd->bd->bi_arch_number = MACH_TYPE_MX6Q_ARM2;
+diff --git a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+index ccec01a..a57f58c 100644
+--- a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
++++ b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+@@ -128,10 +128,7 @@ enum boot_device get_boot_device(void)
+ 
+ u32 get_board_rev(void)
+ {
+-
+-	system_rev = 0x63000;
+-
+-	return system_rev;
++	return fsl_system_rev;
+ }
+ 
+ #ifdef CONFIG_ARCH_MMU
+@@ -434,6 +431,7 @@ int board_init(void)
+ #endif
+ 	mxc_iomux_v3_init((void *)IOMUXC_BASE_ADDR);
+ 	setup_boot_device();
++	fsl_set_system_rev();
+ 
+ 	/* board id for linux */
+ 	gd->bd->bi_arch_number = MACH_TYPE_MX6Q_SABRELITE;
+-- 
+1.7.7.4
+

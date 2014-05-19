@@ -1,0 +1,155 @@
+From 06cfbf9be534c59c178957029084fe14148fd181 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Mon, 23 Jul 2012 10:43:32 +0800
+Subject: [PATCH 555/678] ENGR00217764 MX6 Secure Boot : Fix NAND BOOT Failure
+ due to secure patch
+
+With the secure boot patch. MX6 NAND Boot is not functional. The root
+cause is that, the original secure boot patch fills "0xFF' to spacing
+regions, due to a issue in ROM code, read pages of all "0xff" will be
+treated as a critical error. Thus prevent the U-Boot from booting
+normally.
+
+The fix adjust image copy size in IVT so that when secure boot is not
+enabled, no unuseful data is copied by ROM code. Also the secure boot
+option is default disabled. The end user won't enable it unless they
+know what they are doing.
+
+These prevent the ROM code from copied pages of "0xff" data, and fix the
+issue.
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ board/freescale/mx6q_arm2/flash_header.S  |    2 +-
+ board/freescale/mx6q_arm2/u-boot.lds      |    6 +++---
+ board/freescale/mx6sl_arm2/flash_header.S |    2 +-
+ board/freescale/mx6sl_arm2/u-boot.lds     |    5 +++--
+ include/configs/mx6dl_arm2.h              |    5 ++++-
+ include/configs/mx6q_arm2.h               |    5 ++++-
+ include/configs/mx6sl_arm2.h              |    5 ++++-
+ 7 files changed, 20 insertions(+), 10 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/flash_header.S b/board/freescale/mx6q_arm2/flash_header.S
+index ee67d52..3c1719b 100644
+--- a/board/freescale/mx6q_arm2/flash_header.S
++++ b/board/freescale/mx6q_arm2/flash_header.S
+@@ -58,7 +58,7 @@ reserv2:          .word 0x0
+ 
+ boot_data:        .word TEXT_BASE
+ #ifdef CONFIG_SECURE_BOOT
+-image_len:        .word __hab_data_end - TEXT_BASE
++image_len:        .word __hab_data_end - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ #else
+ image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ #endif
+diff --git a/board/freescale/mx6q_arm2/u-boot.lds b/board/freescale/mx6q_arm2/u-boot.lds
+index 177bac1..5bd58bb 100644
+--- a/board/freescale/mx6q_arm2/u-boot.lds
++++ b/board/freescale/mx6q_arm2/u-boot.lds
+@@ -66,6 +66,9 @@ SECTIONS
+ 	.u_boot_cmd : { *(.u_boot_cmd) }
+ 	__u_boot_cmd_end = .;
+ 
++	. = ALIGN(4);
++	_end_of_copy = .; /* end_of ROM copy code when HAB is not enabled */
++
+ 	/* Original Size is 0x27..., enlarge to 0x2F000 */
+ 	. = TEXT_BASE + 0x2F000;
+ 	__hab_data = .;
+@@ -73,9 +76,6 @@ SECTIONS
+ 	__hab_data_end = .;
+ 	/* End of Hab Data, Place it before BSS section */
+ 
+-
+-	. = ALIGN(4);
+-	_end_of_copy = .; /* end_of ROM copy code here */
+ 	__bss_start = .;
+ 	.bss : { *(.bss) }
+ 	_end = .;
+diff --git a/board/freescale/mx6sl_arm2/flash_header.S b/board/freescale/mx6sl_arm2/flash_header.S
+index 9421700..4c2475e 100644
+--- a/board/freescale/mx6sl_arm2/flash_header.S
++++ b/board/freescale/mx6sl_arm2/flash_header.S
+@@ -58,7 +58,7 @@ reserv2:          .word 0x0
+ 
+ boot_data:        .word TEXT_BASE
+ #ifdef CONFIG_SECURE_BOOT
+-image_len:        .word __hab_data_end - TEXT_BASE
++image_len:        .word __hab_data_end - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ #else
+ image_len:        .word _end_of_copy  - TEXT_BASE + CONFIG_FLASH_HEADER_OFFSET
+ #endif
+diff --git a/board/freescale/mx6sl_arm2/u-boot.lds b/board/freescale/mx6sl_arm2/u-boot.lds
+index 0bd13f6..e60df09 100644
+--- a/board/freescale/mx6sl_arm2/u-boot.lds
++++ b/board/freescale/mx6sl_arm2/u-boot.lds
+@@ -66,6 +66,9 @@ SECTIONS
+ 	.u_boot_cmd : { *(.u_boot_cmd) }
+ 	__u_boot_cmd_end = .;
+ 
++	. = ALIGN(4);
++	_end_of_copy = .; /* end_of ROM copy code when HAB is not enabled */
++
+ 	/* Original Size is 0x27..., enlarge to 0x2F000 */
+ 	. = TEXT_BASE + 0x2F000;
+ 	__hab_data = .;
+@@ -73,8 +76,6 @@ SECTIONS
+ 	__hab_data_end = .;
+ 	/* End of Hab Data, Place it before BSS section */
+ 
+-	. = ALIGN(4);
+-	_end_of_copy = .; /* end_of ROM copy code here */
+ 	__bss_start = .;
+ 	.bss : { *(.bss) }
+ 	_end = .;
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index 9b10aaa..7bc3d71 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -35,7 +35,10 @@
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+ 
+-#define CONFIG_SECURE_BOOT
++/*
++ * #define CONFIG_SECURE_BOOT
++ *	Enable Secure Boot. DO NOT TURN ON IT until you know what you are doing
++ */
+ 
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+ 
+diff --git a/include/configs/mx6q_arm2.h b/include/configs/mx6q_arm2.h
+index 454852d..a52ac55 100644
+--- a/include/configs/mx6q_arm2.h
++++ b/include/configs/mx6q_arm2.h
+@@ -33,7 +33,10 @@
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+ 
+-#define CONFIG_SECURE_BOOT
++/*
++ * #define CONFIG_SECURE_BOOT
++ *	Enable Secure Boot. DO NOT TURN ON IT until you know what you are doing
++ */
+ 
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+ 
+diff --git a/include/configs/mx6sl_arm2.h b/include/configs/mx6sl_arm2.h
+index ae23783..d24068e 100644
+--- a/include/configs/mx6sl_arm2.h
++++ b/include/configs/mx6sl_arm2.h
+@@ -31,7 +31,10 @@
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX6_CLK32	   32768
+ 
+-#define CONFIG_SECURE_BOOT
++/*
++ * #define CONFIG_SECURE_BOOT
++ *	Enable Secure Boot. DO NOT TURN ON IT until you know what you are doing
++ */
+ 
+ #include <asm/arch/mx6.h>
+ 
+-- 
+1.7.7.4
+

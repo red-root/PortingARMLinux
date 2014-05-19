@@ -1,0 +1,29 @@
+From 44b53333ef82d7882e122212887e8ee0e488da1c Mon Sep 17 00:00:00 2001
+From: Huang Shijie <b32955@freescale.com>
+Date: Sun, 9 Oct 2011 10:23:07 +0800
+Subject: [PATCH 363/678] ENGR00139279-1 MX6Q: add env_embedded module for
+ CONFIG_ENV_IS_NOWHERE
+
+The env_embedded module is a built-in module.
+So add the module when the CONFIG_ENV_IS_NOWHERE is enabled.
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ common/Makefile |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/common/Makefile b/common/Makefile
+index b7953e6..f4d2cbd 100644
+--- a/common/Makefile
++++ b/common/Makefile
+@@ -68,6 +68,7 @@ COBJS-$(CONFIG_ENV_IS_IN_SATA) += env_sata.o
+ COBJS-$(CONFIG_ENV_IS_IN_SPI_FLASH) += env_sf.o
+ COBJS-$(CONFIG_ENV_IS_IN_MMC) += env_mmc.o
+ COBJS-$(CONFIG_ENV_IS_NOWHERE) += env_nowhere.o
++COBJS-$(CONFIG_ENV_IS_NOWHERE) += env_embedded.o
+ 
+ # command
+ COBJS-$(CONFIG_CMD_AMBAPP) += cmd_ambapp.o
+-- 
+1.7.7.4
+

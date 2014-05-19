@@ -1,0 +1,47 @@
+From 8a5eb914dc9ffe384938ff604c71a7bfca233549 Mon Sep 17 00:00:00 2001
+From: Eric Sun <jian.sun@freescale.com>
+Date: Fri, 29 Jun 2012 18:23:12 +0800
+Subject: [PATCH 548/678] ENGR00215367 MX6 Platforms, remove "nosmp" in
+ default parameters
+
+nosmp is added in the bootargs originally because of issues in kernel
+smp implementation. Now these issues are fixed and we can safely remove
+them
+
+Signed-off-by: Eric Sun <jian.sun@freescale.com>
+---
+ include/configs/mx6dl_arm2.h        |    3 +--
+ include/configs/mx6dl_arm2_lpddr2.h |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/include/configs/mx6dl_arm2.h b/include/configs/mx6dl_arm2.h
+index d0081b9..15abcab 100644
+--- a/include/configs/mx6dl_arm2.h
++++ b/include/configs/mx6dl_arm2.h
+@@ -120,8 +120,7 @@
+ 		"uboot=u-boot.bin\0"			\
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+-		"bootargs_base=setenv bootargs console=ttymxc3,115200 "\
+-			"nosmp\0"     \
++		"bootargs_base=setenv bootargs console=ttymxc3,115200\0"\
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6dl_arm2_lpddr2.h b/include/configs/mx6dl_arm2_lpddr2.h
+index 861b9ee..be5c4e4 100644
+--- a/include/configs/mx6dl_arm2_lpddr2.h
++++ b/include/configs/mx6dl_arm2_lpddr2.h
+@@ -121,8 +121,7 @@
+ 		"uboot=u-boot.bin\0"			\
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+-		"bootargs_base=setenv bootargs console=ttymxc3,115200 "\
+-			"nosmp\0"     \
++		"bootargs_base=setenv bootargs console=ttymxc3,115200\0"\
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+-- 
+1.7.7.4
+

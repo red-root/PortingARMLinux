@@ -1,0 +1,38 @@
+From 1f94eca51ded562db2aae2d1d75e3c7a2a1ba71c Mon Sep 17 00:00:00 2001
+From: Zhang Jiejing <jiejing.zhang@freescale.com>
+Date: Mon, 20 Feb 2012 10:27:02 +0800
+Subject: [PATCH 459/678] ENGR00174821 booti: fix build error when not
+ configure android partition.
+
+fix build error when not configure android partition.
+
+Signed-off-by: Zhang Jiejing <jiejing.zhang@freescale.com>
+---
+ common/cmd_bootm.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/common/cmd_bootm.c b/common/cmd_bootm.c
+index bcc5739..ece7f7c 100644
+--- a/common/cmd_bootm.c
++++ b/common/cmd_bootm.c
+@@ -1547,6 +1547,8 @@ int do_booti(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 			goto fail;
+ 		}
+ 
++#ifdef CONFIG_ANDROID_BOOT_PARTITION_MMC
++#ifdef CONFIG_ANDROID_RECOVERY_PARTITION_MMC
+ 		if (!strcmp(ptn, "boot"))
+ 			partno = CONFIG_ANDROID_BOOT_PARTITION_MMC;
+ 		if (!strcmp(ptn, "recovery"))
+@@ -1556,6 +1558,8 @@ int do_booti(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ 			printf("booti: device don't have such partition:%s\n", ptn);
+ 			goto fail;
+ 		}
++#endif
++#endif
+ 
+ #ifdef CONFIG_FASTBOOT
+ 		fastboot_ptentry the_partition = {
+-- 
+1.7.7.4
+

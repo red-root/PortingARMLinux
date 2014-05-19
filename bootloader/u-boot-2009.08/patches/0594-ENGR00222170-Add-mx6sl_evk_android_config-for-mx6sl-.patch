@@ -1,0 +1,152 @@
+From 34424c323c0d4b3aa836bab449e3475ffe0bb59f Mon Sep 17 00:00:00 2001
+From: LiGang <b41990@freescale.com>
+Date: Thu, 6 Sep 2012 15:50:08 +0800
+Subject: [PATCH 594/678] ENGR00222170: Add mx6sl_evk_android_config for mx6sl
+ evk board
+
+- mx6sl_evk_android.h  is a new file, copied from mx6sl_arm2_android.h
+- set default sdio port as mmc1
+
+Signed-off-by: LiGang <b41990@freescale.com>
+---
+ Makefile                              |    1 +
+ board/freescale/mx6sl_evk/mx6sl_evk.c |   19 ++++++++-
+ include/configs/mx6sl_evk_android.h   |   78 +++++++++++++++++++++++++++++++++
+ 3 files changed, 97 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index a6a4cd4..532d735 100644
+--- a/Makefile
++++ b/Makefile
+@@ -3363,6 +3363,7 @@ mx6sl_arm2_iram_config	: unconfig
+ 		}
+ 	@$(MKCONFIG) $(@:_config=) arm arm_cortexa8 mx6sl_arm2 freescale mx6
+ mx6sl_evk_config		\
++mx6sl_evk_android_config		\
+ mx6sl_evk_mfg_config	\
+ mx6sl_evk_iram_config	: unconfig
+ 	@[ -z "$(findstring iram_,$@)" ] || \
+diff --git a/board/freescale/mx6sl_evk/mx6sl_evk.c b/board/freescale/mx6sl_evk/mx6sl_evk.c
+index 85c3b61..089373e 100644
+--- a/board/freescale/mx6sl_evk/mx6sl_evk.c
++++ b/board/freescale/mx6sl_evk/mx6sl_evk.c
+@@ -97,7 +97,6 @@ static inline void setup_boot_device(void)
+ 	case 0x7:
+ 		boot_dev = MMC_BOOT;
+ 		break;
+-		break;
+ 	default:
+ 		boot_dev = UNKNOWN_BOOT;
+ 		break;
+@@ -947,6 +946,24 @@ void setup_pmic_voltages(void)
+ 		if (i2c_read(0x8, 0, 1, &value, 1))
+ 			printf("%s:i2c_read:error\n", __func__);
+ 		printf("Found PFUZE100! device id=%x\n", value);
++		if (value == 0x10) {
++			/*workaround ER1 of pfuze1.0: set all buck regulators
++			in PWM mode except SW1C*/
++			value = 0x6;
++			i2c_write(0x8, 0x23, 1, &value, 1);/*SW1AB*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x38, 1, &value, 1);/*SW2*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x3f, 1, &value, 1);/*SW3A*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x46, 1, &value, 1);/*SW3B*/
++
++			value = 0x6;
++			i2c_write(0x8, 0x4d, 1, &value, 1);/*SW4*/
++		}
+ #if CONFIG_MX6_INTER_LDO_BYPASS
+ 		/*VDDCORE 1.1V@800Mhz: SW1AB */
+ 		value = 0x20;
+diff --git a/include/configs/mx6sl_evk_android.h b/include/configs/mx6sl_evk_android.h
+new file mode 100644
+index 0000000..a7f782b
+--- /dev/null
++++ b/include/configs/mx6sl_evk_android.h
+@@ -0,0 +1,78 @@
++/*
++ * Copyright (C) 2012 Freescale Semiconductor, Inc.
++ *
++ * Configuration settings for the MX6Q Sabre Lite2 Freescale board.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ */
++
++#ifndef MX6SL_EVK_ANDROID_H
++#define MX6SL_EVK_ANDROID_H
++
++#include <configs/mx6sl_evk.h>
++
++#define CONFIG_USB_DEVICE
++#define CONFIG_IMX_UDC		       1
++#define CONFIG_FASTBOOT		       1
++#define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
++#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
++#define CONFIG_FASTBOOT_PRODUCT_ID     0x0d02
++#define CONFIG_FASTBOOT_BCD_DEVICE     0x311
++#define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
++#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx6sl EVK Smart Device"
++#define CONFIG_FASTBOOT_INTERFACE_STR	 "Android fastboot"
++#define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
++#define CONFIG_FASTBOOT_SERIAL_NUM	"12345"
++#define CONFIG_FASTBOOT_SATA_NO		 0
++
++/*  mx6sl ddr address starts from 0x80000000, not like mx6dl and mx6q
++*   which start from 0x10000000
++*   For system.img growing up more than 256MB, more buffer needs
++*   to receive the system.img*/
++#define CONFIG_FASTBOOT_TRANSFER_BUF    0x8c000000
++#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x14000000 /* 320M byte */
++
++
++#define CONFIG_CMD_BOOTI
++#define CONFIG_ANDROID_RECOVERY
++/* which mmc bus is your main storage ? */
++#define CONFIG_ANDROID_MAIN_MMC_BUS 0
++#define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
++#define CONFIG_ANDROID_SYSTEM_PARTITION_MMC 5
++#define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 2
++#define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
++
++
++#define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC NULL
++#define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
++	"booti mmc1 recovery"
++#define CONFIG_INITRD_TAG
++
++#undef CONFIG_LOADADDR
++#undef CONFIG_RD_LOADADDR
++#undef CONFIG_EXTRA_ENV_SETTINGS
++
++#define CONFIG_LOADADDR		0x80800000	/* loadaddr env var */
++#define CONFIG_RD_LOADADDR	0x81000000
++
++#define CONFIG_INITRD_TAG
++
++#define	CONFIG_EXTRA_ENV_SETTINGS					\
++		"netdev=eth0\0"						\
++		"ethprime=FEC0\0"					\
++		"fastboot_dev=mmc1\0"					\
++		"bootcmd=booti mmc1\0"
++#endif
+-- 
+1.7.7.4
+

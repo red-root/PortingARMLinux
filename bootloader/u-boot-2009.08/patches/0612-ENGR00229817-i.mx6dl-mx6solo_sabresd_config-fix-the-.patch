@@ -1,0 +1,50 @@
+From 1d11a8a0d609eda3c9d3ec0004008b0cf1eb7454 Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Tue, 16 Oct 2012 17:26:44 +0800
+Subject: [PATCH 612/678] ENGR00229817: i.mx6dl/mx6solo_sabresd_config: fix
+ the build issue
+
+This patch fixed the following build issue:
+
+mx6q_sabresd.c:1382: undefined reference to `imx_pwm_config'
+mx6q_sabresd.c:1383: undefined reference to `imx_pwm_enable'
+
+And also removed the extra '_' in the config name.
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ Makefile                          |    2 +-
+ include/configs/mx6solo_sabresd.h |    4 ++++
+ 2 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index b4d850f..d805238 100644
+--- a/Makefile
++++ b/Makefile
+@@ -3322,7 +3322,7 @@ mx6q_arm2_iram_config	: unconfig
+ 		}
+ 	@$(MKCONFIG) $(@:_config=) arm arm_cortexa8 mx6q_arm2 freescale mx6
+ 
+-mx6solo_sabresd__config			\
++mx6solo_sabresd_config			\
+ mx6dl_sabresd_config			\
+ mx6dl_sabresd_mfg_config		\
+ mx6dl_sabresd_android_config			\
+diff --git a/include/configs/mx6solo_sabresd.h b/include/configs/mx6solo_sabresd.h
+index a317189..ea94ae3 100644
+--- a/include/configs/mx6solo_sabresd.h
++++ b/include/configs/mx6solo_sabresd.h
+@@ -347,6 +347,10 @@
+ 	#define CONFIG_BMP_8BPP
+ 	#define CONFIG_SPLASH_SCREEN_ALIGN
+ 	#define CONFIG_SYS_WHITE_ON_BLACK
++
++	#define CONFIG_IMX_PWM
++	#define IMX_PWM1_BASE    PWM1_BASE_ADDR
++	#define IMX_PWM2_BASE    PWM2_BASE_ADDR
+ #endif
+ #endif /* CONFIG_SPLASH_SCREEN */
+ #endif				/* __CONFIG_H */
+-- 
+1.7.7.4
+

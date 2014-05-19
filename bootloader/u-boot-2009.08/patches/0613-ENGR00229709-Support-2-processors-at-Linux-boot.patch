@@ -1,0 +1,113 @@
+From 7d4a7aa6bd7014ebcb3364b4dbceea137b759c37 Mon Sep 17 00:00:00 2001
+From: Alejandro Sierra <b18039@freescale.com>
+Date: Mon, 15 Oct 2012 17:08:15 -0500
+Subject: [PATCH 613/678] ENGR00229709 Support 2 processors at Linux boot
+
+Remove argument "nosmp" to support
+dual processor configuration on Linux.
+
+Signed-off-by: Alejandro Sierra <b18039@freescale.com>
+---
+ include/configs/mx6dl_sabreauto.h             |    2 +-
+ include/configs/mx6dl_sabreauto_mfg.h         |    2 +-
+ include/configs/mx6dl_sabreauto_nand_mfg.h    |    2 +-
+ include/configs/mx6dl_sabreauto_spi-nor.h     |    2 +-
+ include/configs/mx6dl_sabreauto_spi-nor_mfg.h |    2 +-
+ include/configs/mx6dl_sabreauto_weimnor.h     |    2 +-
+ include/configs/mx6dl_sabreauto_weimnor_mfg.h |    2 +-
+ 7 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/include/configs/mx6dl_sabreauto.h b/include/configs/mx6dl_sabreauto.h
+index f92d14c..918000b 100644
+--- a/include/configs/mx6dl_sabreauto.h
++++ b/include/configs/mx6dl_sabreauto.h
+@@ -127,7 +127,7 @@
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+ 		"bootargs_base=setenv bootargs console=ttymxc3,115200 "\
+-		"nosmp arm_freq=800\0"     \
++		"arm_freq=800\0"     \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6dl_sabreauto_mfg.h b/include/configs/mx6dl_sabreauto_mfg.h
+index ae2af46..591c6c7 100644
+--- a/include/configs/mx6dl_sabreauto_mfg.h
++++ b/include/configs/mx6dl_sabreauto_mfg.h
+@@ -117,7 +117,7 @@
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+ #define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
+-				"nosmp arm_freq=800"
++				"arm_freq=800"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6dl_sabreauto_nand_mfg.h b/include/configs/mx6dl_sabreauto_nand_mfg.h
+index 4592a80..fe7d01e 100644
+--- a/include/configs/mx6dl_sabreauto_nand_mfg.h
++++ b/include/configs/mx6dl_sabreauto_nand_mfg.h
+@@ -117,7 +117,7 @@
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+ #define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc mtdparts=gpmi-nand:16m(boot),16m(kernel),128m(rootfs)"\
+-				"nosmp arm_freq=800"
++				"arm_freq=800"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6dl_sabreauto_spi-nor.h b/include/configs/mx6dl_sabreauto_spi-nor.h
+index d04a99f..89acb53 100644
+--- a/include/configs/mx6dl_sabreauto_spi-nor.h
++++ b/include/configs/mx6dl_sabreauto_spi-nor.h
+@@ -127,7 +127,7 @@
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+ 		"bootargs_base=setenv bootargs console=ttymxc3,115200 "\
+-		"nosmp arm_freq=800\0"     \
++		"arm_freq=800\0"     \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6dl_sabreauto_spi-nor_mfg.h b/include/configs/mx6dl_sabreauto_spi-nor_mfg.h
+index d8cbf75..1447e11 100644
+--- a/include/configs/mx6dl_sabreauto_spi-nor_mfg.h
++++ b/include/configs/mx6dl_sabreauto_spi-nor_mfg.h
+@@ -116,7 +116,7 @@
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+ #define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
+-				"nosmp arm_freq=800 spi-nor"
++				"arm_freq=800 spi-nor"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+diff --git a/include/configs/mx6dl_sabreauto_weimnor.h b/include/configs/mx6dl_sabreauto_weimnor.h
+index bbe87a1..cb00a64 100644
+--- a/include/configs/mx6dl_sabreauto_weimnor.h
++++ b/include/configs/mx6dl_sabreauto_weimnor.h
+@@ -121,7 +121,7 @@
+ 		"kernel=uImage\0"				\
+ 		"nfsroot=/opt/eldk/arm\0"				\
+ 		"bootargs_base=setenv bootargs console=ttymxc3,115200 "\
+-		"nosmp arm_freq=800\0"     \
++		"arm_freq=800\0"     \
+ 		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
+ 			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
+ 		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
+diff --git a/include/configs/mx6dl_sabreauto_weimnor_mfg.h b/include/configs/mx6dl_sabreauto_weimnor_mfg.h
+index 1965985..4521d90 100644
+--- a/include/configs/mx6dl_sabreauto_weimnor_mfg.h
++++ b/include/configs/mx6dl_sabreauto_weimnor_mfg.h
+@@ -117,7 +117,7 @@
+ #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
+ 
+ #define CONFIG_BOOTARGS         "console=ttymxc3,115200 rdinit=/linuxrc "\
+-				"nosmp arm_freq=800 weim-nor"
++				"arm_freq=800 weim-nor"
+ #define CONFIG_BOOTCOMMAND      "bootm 0x10800000 0x10c00000"
+ 
+ #define	CONFIG_EXTRA_ENV_SETTINGS					\
+-- 
+1.7.7.4
+

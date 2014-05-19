@@ -1,0 +1,169 @@
+From ecee97c3abeaf39c1d862c47cc6f0e9a55865ed0 Mon Sep 17 00:00:00 2001
+From: Terry Lv <r65388@freescale.com>
+Date: Tue, 13 Sep 2011 13:31:42 +0800
+Subject: [PATCH 351/678] ENGR00156389: turn off child clocks before
+ reconfigure perclk_root
+
+In addition to ensuring that PERCLK remains at least 2.5 times slower
+than the AHB clock, certain steps need to be followed to ensure robust
+operation of PERCLK when reconfiguring the PERCLK clock source.
+
+To properly configure the PERCLK clock source, the following steps are
+required:
+1.In the CCGR registers, gate the clocks to all PERCLK-dependent
+  modules.
+2.Select the desired input clock for the PERCLK root clock (to be either
+  source from the peripherals main source clock or the
+  lp_apm clock source). Refer to the CMCBR register,
+  perclk_lp_apm_sel bit.
+3.Configure the perclk_pred1, perclk_pred2, and perclk_podf dividers
+  to the desired setting.  Refer to the CBCDR register for details.
+  4.In the CCGR registers, enable the desired clocks for the
+  PERCLK-dependent module clocks.
+
+Certain steps are required to reconfigure perclk_root.
+If don't follow these steps, GPT timer may stop and the kernel stops
+at " "Calibrating delay loop".
+
+Signed-off-by: Terry Lv <r65388@freescale.com>
+---
+ board/freescale/mx53_ard/lowlevel_init.S  |   15 +++++++++++++++
+ board/freescale/mx53_evk/lowlevel_init.S  |   15 +++++++++++++++
+ board/freescale/mx53_loco/lowlevel_init.S |   15 +++++++++++++++
+ board/freescale/mx53_pcba/lowlevel_init.S |   15 +++++++++++++++
+ board/freescale/mx53_smd/lowlevel_init.S  |   15 +++++++++++++++
+ 5 files changed, 75 insertions(+), 0 deletions(-)
+
+diff --git a/board/freescale/mx53_ard/lowlevel_init.S b/board/freescale/mx53_ard/lowlevel_init.S
+index f8e7632..67cfe2e 100644
+--- a/board/freescale/mx53_ard/lowlevel_init.S
++++ b/board/freescale/mx53_ard/lowlevel_init.S
+@@ -102,6 +102,21 @@
+ 
+ 	ldr r0, CCM_BASE_ADDR_W
+ 
++	/* Gate of clocks to the peripherals first */
++	ldr r1, =0x3FFFFFFF
++	str r1, [r0, #CLKCTL_CCGR0]
++	ldr r1, =0x0
++	str r1, [r0, #CLKCTL_CCGR1]
++	str r1, [r0, #CLKCTL_CCGR2]
++	str r1, [r0, #CLKCTL_CCGR3]
++	str r1, [r0, #CLKCTL_CCGR7]
++	ldr r1, =0x00030000
++	str r1, [r0, #CLKCTL_CCGR4]
++	ldr r1, =0x00FFF030
++	str r1, [r0, #CLKCTL_CCGR5]
++	ldr r1, =0x0F00030F
++	str r1, [r0, #CLKCTL_CCGR6]
++
+ 	/* Switch ARM to step clock */
+ 	mov r1, #0x4
+ 	str r1, [r0, #CLKCTL_CCSR]
+diff --git a/board/freescale/mx53_evk/lowlevel_init.S b/board/freescale/mx53_evk/lowlevel_init.S
+index b52e518..5e068ff 100644
+--- a/board/freescale/mx53_evk/lowlevel_init.S
++++ b/board/freescale/mx53_evk/lowlevel_init.S
+@@ -102,6 +102,21 @@
+ 
+ 	ldr r0, CCM_BASE_ADDR_W
+ 
++	/* Gate of clocks to the peripherals first */
++	ldr r1, =0x3FFFFFFF
++	str r1, [r0, #CLKCTL_CCGR0]
++	ldr r1, =0x0
++	str r1, [r0, #CLKCTL_CCGR1]
++	str r1, [r0, #CLKCTL_CCGR2]
++	str r1, [r0, #CLKCTL_CCGR3]
++	str r1, [r0, #CLKCTL_CCGR7]
++	ldr r1, =0x00030000
++	str r1, [r0, #CLKCTL_CCGR4]
++	ldr r1, =0x00FFF030
++	str r1, [r0, #CLKCTL_CCGR5]
++	ldr r1, =0x0F00030F
++	str r1, [r0, #CLKCTL_CCGR6]
++
+ 	/* Switch ARM to step clock */
+ 	mov r1, #0x4
+ 	str r1, [r0, #CLKCTL_CCSR]
+diff --git a/board/freescale/mx53_loco/lowlevel_init.S b/board/freescale/mx53_loco/lowlevel_init.S
+index dbcb074..8308e95 100644
+--- a/board/freescale/mx53_loco/lowlevel_init.S
++++ b/board/freescale/mx53_loco/lowlevel_init.S
+@@ -100,6 +100,21 @@
+ 
+ 	ldr r0, CCM_BASE_ADDR_W
+ 
++	/* Gate of clocks to the peripherals first */
++	ldr r1, =0x3FFFFFFF
++	str r1, [r0, #CLKCTL_CCGR0]
++	ldr r1, =0x0
++	str r1, [r0, #CLKCTL_CCGR1]
++	str r1, [r0, #CLKCTL_CCGR2]
++	str r1, [r0, #CLKCTL_CCGR3]
++	str r1, [r0, #CLKCTL_CCGR7]
++	ldr r1, =0x00030000
++	str r1, [r0, #CLKCTL_CCGR4]
++	ldr r1, =0x00FFF030
++	str r1, [r0, #CLKCTL_CCGR5]
++	ldr r1, =0x0F00030F
++	str r1, [r0, #CLKCTL_CCGR6]
++
+ 	/* Switch ARM to step clock */
+ 	mov r1, #0x4
+ 	str r1, [r0, #CLKCTL_CCSR]
+diff --git a/board/freescale/mx53_pcba/lowlevel_init.S b/board/freescale/mx53_pcba/lowlevel_init.S
+index f9b1f11..7fb4c5c 100644
+--- a/board/freescale/mx53_pcba/lowlevel_init.S
++++ b/board/freescale/mx53_pcba/lowlevel_init.S
+@@ -100,6 +100,21 @@
+ 
+ 	ldr r0, CCM_BASE_ADDR_W
+ 
++	/* Gate of clocks to the peripherals first */
++	ldr r1, =0x3FFFFFFF
++	str r1, [r0, #CLKCTL_CCGR0]
++	ldr r1, =0x0
++	str r1, [r0, #CLKCTL_CCGR1]
++	str r1, [r0, #CLKCTL_CCGR2]
++	str r1, [r0, #CLKCTL_CCGR3]
++	str r1, [r0, #CLKCTL_CCGR7]
++	ldr r1, =0x00030000
++	str r1, [r0, #CLKCTL_CCGR4]
++	ldr r1, =0x00FFF030
++	str r1, [r0, #CLKCTL_CCGR5]
++	ldr r1, =0x0F00030F
++	str r1, [r0, #CLKCTL_CCGR6]
++
+ 	/* Switch ARM to step clock */
+ 	mov r1, #0x4
+ 	str r1, [r0, #CLKCTL_CCSR]
+diff --git a/board/freescale/mx53_smd/lowlevel_init.S b/board/freescale/mx53_smd/lowlevel_init.S
+index 8aef8b2..7bf9e69 100644
+--- a/board/freescale/mx53_smd/lowlevel_init.S
++++ b/board/freescale/mx53_smd/lowlevel_init.S
+@@ -101,6 +101,21 @@
+ 
+ 	ldr r0, CCM_BASE_ADDR_W
+ 
++	/* Gate of clocks to the peripherals first */
++	ldr r1, =0x3FFFFFFF
++	str r1, [r0, #CLKCTL_CCGR0]
++	ldr r1, =0x0
++	str r1, [r0, #CLKCTL_CCGR1]
++	str r1, [r0, #CLKCTL_CCGR2]
++	str r1, [r0, #CLKCTL_CCGR3]
++	str r1, [r0, #CLKCTL_CCGR7]
++	ldr r1, =0x00030000
++	str r1, [r0, #CLKCTL_CCGR4]
++	ldr r1, =0x00FFF030
++	str r1, [r0, #CLKCTL_CCGR5]
++	ldr r1, =0x0F00030F
++	str r1, [r0, #CLKCTL_CCGR6]
++
+ 	/* Switch ARM to step clock */
+ 	mov r1, #0x4
+ 	str r1, [r0, #CLKCTL_CCSR]
+-- 
+1.7.7.4
+

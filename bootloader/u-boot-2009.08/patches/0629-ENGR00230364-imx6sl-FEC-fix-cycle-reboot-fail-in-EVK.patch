@@ -1,0 +1,51 @@
+From 8ed73ecdbc777a264f17a36b90b2f6b13bc324a1 Mon Sep 17 00:00:00 2001
+From: Fugang Duan <B38611@freescale.com>
+Date: Thu, 8 Nov 2012 16:37:29 +0800
+Subject: [PATCH 629/678] ENGR00230364 - imx6sl: FEC: fix cycle reboot fail in
+ EVK platform for bootp.
+
+In some imx6sl evk boards, fec cannot work fine while doing
+cycle reboot via to execute command "reboot" in kernel.
+
+The root cause: phys clock source is closed when reboot system,
+and LAN8720 status machine is in disorder. So it needs to do phy
+hardware reset to make phy enter normal state machine.
+
+Signed-off-by: Fugang Duan  <B38611@freescale.com>
+---
+ board/freescale/mx6sl_evk/mx6sl_evk.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/board/freescale/mx6sl_evk/mx6sl_evk.c b/board/freescale/mx6sl_evk/mx6sl_evk.c
+index 3570601..1ce3e59 100644
+--- a/board/freescale/mx6sl_evk/mx6sl_evk.c
++++ b/board/freescale/mx6sl_evk/mx6sl_evk.c
+@@ -628,9 +628,9 @@ void enet_board_init(void)
+ 	writel(reg, GPIO4_BASE_ADDR + 0x4);
+ 
+ 	/* phy power enable and reset: gpio4_21 */
+-	/* DR: High Level on: Power ON */
++	/* DR: High Level off: Power Off */
+ 	reg = readl(GPIO4_BASE_ADDR + 0x0);
+-	reg |= (1 << 21);
++	reg &= ~(1 << 21);
+ 	writel(reg, GPIO4_BASE_ADDR + 0x0);
+ 
+ 	/* DIR: output */
+@@ -638,6 +638,13 @@ void enet_board_init(void)
+ 	reg |= (1 << 21);
+ 	writel(reg, GPIO4_BASE_ADDR + 0x4);
+ 
++	udelay(1000);
++
++	/* DR: High Level on: Power On */
++	reg = readl(GPIO4_BASE_ADDR + 0x0);
++	reg |= (1 << 21);
++	writel(reg, GPIO4_BASE_ADDR + 0x0);
++
+ 	/* wait RC ms for hw reset */
+ 	udelay(500);
+ }
+-- 
+1.7.7.4
+

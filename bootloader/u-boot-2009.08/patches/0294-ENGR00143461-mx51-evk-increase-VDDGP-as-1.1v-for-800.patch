@@ -1,0 +1,34 @@
+From a13df91f7df050a824cb5960b11584b8c467d614 Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Mon, 16 May 2011 18:09:45 +0800
+Subject: [PATCH 294/678] ENGR00143461 mx51 evk: increase VDDGP as 1.1v for
+ 800MHZ
+
+The default VDDGP output voltage is 1.05V in mx51 evk board
+According to mx51 datasheet (Rev 0.4), the VDDGP for 800MHZ
+should be 1.1v for 800MHZ
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ board/freescale/mx51_bbg/mx51_bbg.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/board/freescale/mx51_bbg/mx51_bbg.c b/board/freescale/mx51_bbg/mx51_bbg.c
+index 400d520..8508d3b 100644
+--- a/board/freescale/mx51_bbg/mx51_bbg.c
++++ b/board/freescale/mx51_bbg/mx51_bbg.c
+@@ -666,6 +666,11 @@ static void setup_core_voltage_spi(void)
+ 		writel(0x0, CCM_BASE_ADDR + CLKCTL_CACRR);
+ 	} else {
+ 		/* TO 3.0 */
++		/* Set core voltage to 1.1V */
++		val = pmic_reg(slave, 24, 0, 0);
++		val = (val & (~0x1f)) | 0x14;
++		pmic_reg(slave, 24, val, 1);
++
+ 		/* Setup VCC (SW2) to 1.225 */
+ 		val = pmic_reg(slave, 25, 0, 0);
+ 		val = (val & (~0x1f)) | 0x19;
+-- 
+1.7.7.4
+

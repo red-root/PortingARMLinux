@@ -1,0 +1,245 @@
+From 550a56fb56a2c3c70def51f7a2bfdbe27bcb07f0 Mon Sep 17 00:00:00 2001
+From: Jason Liu <r64343@freescale.com>
+Date: Mon, 4 Feb 2013 10:43:28 +0800
+Subject: [PATCH 670/678] ENGR00243038: make get_mmc_env_devno to be a generic
+ function
+
+Currently, each board has one same function called get_mmc_env_devno,
+this will make the code a little bit duplication. We can make the
+get_mmc_env_devno to be a generic function, thus we can remove all the
+scattered function definition in each board file.
+
+And the patch also remove the boot check. Firstly, this check is needless,
+secondly, this will break the second boot support,for example:
+first boot from SPI, then switch to SD/MMC boot.
+
+Signed-off-by: Jason Liu <r64343@freescale.com>
+---
+ board/freescale/mx6q_arm2/mx6q_arm2.c             |   13 -------------
+ board/freescale/mx6q_hdmidongle/mx6q_hdmidongle.c |   14 --------------
+ board/freescale/mx6q_sabreauto/mx6q_sabreauto.c   |   13 -------------
+ board/freescale/mx6q_sabrelite/mx6q_sabrelite.c   |   12 +-----------
+ board/freescale/mx6q_sabresd/mx6q_sabresd.c       |   14 --------------
+ board/freescale/mx6sl_arm2/mx6sl_arm2.c           |   16 +---------------
+ board/freescale/mx6sl_evk/mx6sl_evk.c             |   16 +---------------
+ cpu/arm_cortexa8/mx6/generic.c                    |   12 +++++++++++-
+ 8 files changed, 14 insertions(+), 96 deletions(-)
+
+diff --git a/board/freescale/mx6q_arm2/mx6q_arm2.c b/board/freescale/mx6q_arm2/mx6q_arm2.c
+index 4f0ea8c..67e69be 100644
+--- a/board/freescale/mx6q_arm2/mx6q_arm2.c
++++ b/board/freescale/mx6q_arm2/mx6q_arm2.c
+@@ -660,19 +660,6 @@ struct fsl_esdhc_cfg usdhc_cfg[4] = {
+ 	{USDHC4_BASE_ADDR, 1, 1, 1, 0},
+ };
+ 
+-#ifdef CONFIG_DYNAMIC_MMC_DEVNO
+-int get_mmc_env_devno(void)
+-{
+-	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
+-
+-	if (SD_BOOT == boot_dev || MMC_BOOT == boot_dev) {
+-		/* BOOT_CFG2[3] and BOOT_CFG2[4] */
+-		return (soc_sbmr & 0x00001800) >> 11;
+-	} else
+-		return -1;
+-
+-}
+-#endif
+ #if defined CONFIG_MX6Q
+ iomux_v3_cfg_t usdhc1_pads[] = {
+ 	MX6Q_PAD_SD1_CLK__USDHC1_CLK,
+diff --git a/board/freescale/mx6q_hdmidongle/mx6q_hdmidongle.c b/board/freescale/mx6q_hdmidongle/mx6q_hdmidongle.c
+index c8834f6..198ccc4 100644
+--- a/board/freescale/mx6q_hdmidongle/mx6q_hdmidongle.c
++++ b/board/freescale/mx6q_hdmidongle/mx6q_hdmidongle.c
+@@ -904,20 +904,6 @@ struct fsl_esdhc_cfg usdhc_cfg[4] = {
+ 	{USDHC4_BASE_ADDR, 1, 1, 1, 0},
+ };
+ 
+-#ifdef CONFIG_DYNAMIC_MMC_DEVNO
+-int get_mmc_env_devno(void)
+-{
+-	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
+-
+-	if (SD_BOOT == boot_dev || MMC_BOOT == boot_dev) {
+-		/* BOOT_CFG2[3] and BOOT_CFG2[4] */
+-		return (soc_sbmr & 0x00001800) >> 11;
+-	} else
+-		return -1;
+-
+-}
+-#endif
+-
+ #if defined CONFIG_MX6Q
+ iomux_v3_cfg_t usdhc1_pads[] = {
+ 	MX6Q_PAD_SD1_CLK__USDHC1_CLK,
+diff --git a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+index 8577cdf..1f6902f 100644
+--- a/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
++++ b/board/freescale/mx6q_sabreauto/mx6q_sabreauto.c
+@@ -624,19 +624,6 @@ struct fsl_esdhc_cfg usdhc_cfg[4] = {
+ 	{USDHC4_BASE_ADDR, 1, 1, 1, 0},
+ };
+ 
+-#ifdef CONFIG_DYNAMIC_MMC_DEVNO
+-int get_mmc_env_devno(void)
+-{
+-	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
+-
+-	if (SD_BOOT == boot_dev || MMC_BOOT == boot_dev) {
+-		/* BOOT_CFG2[3] and BOOT_CFG2[4] */
+-		return (soc_sbmr & 0x00001800) >> 11;
+-	} else
+-		return -1;
+-
+-}
+-#endif
+ #ifdef CONFIG_CMD_WEIMNOR
+ 
+ #if defined CONFIG_MX6Q
+diff --git a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+index a57f58c..1b0679d 100644
+--- a/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
++++ b/board/freescale/mx6q_sabrelite/mx6q_sabrelite.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2013 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -318,16 +318,6 @@ struct fsl_esdhc_cfg usdhc_cfg[2] = {
+ 	{USDHC4_BASE_ADDR, 1, 1, 1},
+ };
+ 
+-#ifdef CONFIG_DYNAMIC_MMC_DEVNO
+-int get_mmc_env_devno(void)
+-{
+-	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
+-
+-	/* BOOT_CFG2[3] and BOOT_CFG2[4] */
+-	return (soc_sbmr & 0x00001800) >> 11;
+-}
+-#endif
+-
+ iomux_v3_cfg_t mx6q_usdhc1_pads[] = {
+ 	MX6Q_PAD_SD1_CLK__USDHC1_CLK,
+ 	MX6Q_PAD_SD1_CMD__USDHC1_CMD,
+diff --git a/board/freescale/mx6q_sabresd/mx6q_sabresd.c b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+index 6b603e8..c896c93 100644
+--- a/board/freescale/mx6q_sabresd/mx6q_sabresd.c
++++ b/board/freescale/mx6q_sabresd/mx6q_sabresd.c
+@@ -958,20 +958,6 @@ struct fsl_esdhc_cfg usdhc_cfg[4] = {
+ 	{USDHC4_BASE_ADDR, 1, 1, 1, 0},
+ };
+ 
+-#ifdef CONFIG_DYNAMIC_MMC_DEVNO
+-int get_mmc_env_devno(void)
+-{
+-	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
+-
+-	if (SD_BOOT == boot_dev || MMC_BOOT == boot_dev) {
+-		/* BOOT_CFG2[3] and BOOT_CFG2[4] */
+-		return (soc_sbmr & 0x00001800) >> 11;
+-	} else
+-		return -1;
+-
+-}
+-#endif
+-
+ #if defined CONFIG_MX6Q
+ iomux_v3_cfg_t usdhc1_pads[] = {
+ 	MX6Q_PAD_SD1_CLK__USDHC1_CLK,
+diff --git a/board/freescale/mx6sl_arm2/mx6sl_arm2.c b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+index 0772c09..5c28ebc 100644
+--- a/board/freescale/mx6sl_arm2/mx6sl_arm2.c
++++ b/board/freescale/mx6sl_arm2/mx6sl_arm2.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2013 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -160,20 +160,6 @@ struct fsl_esdhc_cfg usdhc_cfg[3] = {
+ 	{USDHC3_BASE_ADDR, 1, 1, 1, 1},
+ };
+ 
+-#ifdef CONFIG_DYNAMIC_MMC_DEVNO
+-int get_mmc_env_devno(void)
+-{
+-	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
+-
+-	if (SD_BOOT == boot_dev || MMC_BOOT == boot_dev) {
+-		/* BOOT_CFG2[3] and BOOT_CFG2[4] */
+-		return (soc_sbmr & 0x00001800) >> 11;
+-	} else
+-		return -1;
+-
+-}
+-#endif
+-
+ iomux_v3_cfg_t usdhc1_pads[] = {
+ 	/* 8 bit SD */
+ 	MX6SL_PAD_SD1_CLK__USDHC1_CLK,
+diff --git a/board/freescale/mx6sl_evk/mx6sl_evk.c b/board/freescale/mx6sl_evk/mx6sl_evk.c
+index d53677f..e70d074 100644
+--- a/board/freescale/mx6sl_evk/mx6sl_evk.c
++++ b/board/freescale/mx6sl_evk/mx6sl_evk.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2013 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -156,20 +156,6 @@ struct fsl_esdhc_cfg usdhc_cfg[3] = {
+ 	{USDHC3_BASE_ADDR, 1, 1, 1, 1},
+ };
+ 
+-#ifdef CONFIG_DYNAMIC_MMC_DEVNO
+-int get_mmc_env_devno(void)
+-{
+-	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
+-
+-	if (SD_BOOT == boot_dev || MMC_BOOT == boot_dev) {
+-		/* BOOT_CFG2[3] and BOOT_CFG2[4] */
+-		return (soc_sbmr & 0x00001800) >> 11;
+-	} else
+-		return -1;
+-
+-}
+-#endif
+-
+ iomux_v3_cfg_t usdhc1_pads[] = {
+ 	/* 8 bit SD */
+ 	MX6SL_PAD_SD1_CLK__USDHC1_CLK,
+diff --git a/cpu/arm_cortexa8/mx6/generic.c b/cpu/arm_cortexa8/mx6/generic.c
+index fbba7ff..8f0f1e6 100644
+--- a/cpu/arm_cortexa8/mx6/generic.c
++++ b/cpu/arm_cortexa8/mx6/generic.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2013 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -1541,3 +1541,13 @@ void get_board_serial(struct tag_serialnr *serialnr)
+ 	imx_otp_read_one_u32(CPU_UID_HIGH_FUSE_INDEX, &serialnr->high);
+ }
+ #endif
++
++#ifdef CONFIG_DYNAMIC_MMC_DEVNO
++int get_mmc_env_devno(void)
++{
++	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
++
++	/* BOOT_CFG2[3] and BOOT_CFG2[4] */
++	return (soc_sbmr & 0x00001800) >> 11;
++}
++#endif
+-- 
+1.7.7.4
+

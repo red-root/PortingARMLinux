@@ -1,0 +1,104 @@
+From 2706397c1c0da569ee74dbb3d16189ef7702e471 Mon Sep 17 00:00:00 2001
+From: Lily Zhang <r58066@freescale.com>
+Date: Fri, 2 Mar 2012 18:33:05 +0800
+Subject: [PATCH 464/678] ENGR00175981-1 mx53 smd: add CPU 1.2GHz
+ configuration
+
+CONFIG_CPU_1_2G is used to enable 1.2GHz@1.3V. To enable
+1.2GHz by default, enable CONFIG_CPU_1_2G into config file.
+For example, uncomment CONFIG_CPU_1_2G in mx53_smd.h or
+mx53_smd_android.h.
+
+Signed-off-by: Lily Zhang <r58066@freescale.com>
+---
+ board/freescale/mx53_smd/mx53_smd.c |   13 ++++++++++++-
+ include/configs/mx53_smd.h          |    5 ++++-
+ include/configs/mx53_smd_android.h  |    5 ++++-
+ 3 files changed, 20 insertions(+), 3 deletions(-)
+
+diff --git a/board/freescale/mx53_smd/mx53_smd.c b/board/freescale/mx53_smd/mx53_smd.c
+index e493ea5..240b596 100644
+--- a/board/freescale/mx53_smd/mx53_smd.c
++++ b/board/freescale/mx53_smd/mx53_smd.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * See file CREDITS for list of people who contributed to this
+  * project.
+@@ -827,8 +827,14 @@ void setup_pmic_voltages(void)
+ 
+ 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+ 	da9053_i2c_startup_reset();
++
++#ifdef CONFIG_CPU_1_2G
++	/* Increase VDDGP as 1.3V for 1.2GHz */
++	value = 0x60;
++#else
+ 	/* increase VDDGP as 1.25V for 1GHZ */
+ 	value = 0x5e;
++#endif
+ 	do {
+ 		if (0 != i2c_write_da9053(0x48, 0x2e, 1, &value, 1)) {
+ 			printf("da9052_i2c_is_connected - i2c write failed.....\n");
+@@ -1425,9 +1431,14 @@ int board_late_init(void)
+ 	i2c_bus_recovery();
+ 	/* Increase VDDGP voltage */
+ 	setup_pmic_voltages();
++#ifdef CONFIG_CPU_1_2G
++	/* Switch to 1.2GHz */
++	clk_config(CONFIG_REF_CLK_FREQ, 1200, CPU_CLK);
++#else
+ 	/* Switch to 1GHZ */
+ 	clk_config(CONFIG_REF_CLK_FREQ, 1000, CPU_CLK);
+ #endif
++#endif
+ 	return 0;
+ }
+ 
+diff --git a/include/configs/mx53_smd.h b/include/configs/mx53_smd.h
+index 01d4b2e..3359722 100644
+--- a/include/configs/mx53_smd.h
++++ b/include/configs/mx53_smd.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010-2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2010-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX53-SMD Freescale board.
+  *
+@@ -33,6 +33,9 @@
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX53_CLK32	32768
+ 
++/* To enable 1.2G by default */
++/* #define CONFIG_CPU_1_2G */
++
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+ 
+ #define CONFIG_ARCH_CPU_INIT
+diff --git a/include/configs/mx53_smd_android.h b/include/configs/mx53_smd_android.h
+index b1f065d..61bac34 100644
+--- a/include/configs/mx53_smd_android.h
++++ b/include/configs/mx53_smd_android.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2011 Freescale Semiconductor, Inc.
++ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * Configuration settings for the MX53-SMD Freescale board.
+  *
+@@ -33,6 +33,9 @@
+ #define CONFIG_FLASH_HEADER_OFFSET 0x400
+ #define CONFIG_MX53_CLK32	32768
+ 
++/* To enable 1.2G by default */
++/* #define CONFIG_CPU_1_2G */
++
+ #define CONFIG_SKIP_RELOCATE_UBOOT
+ 
+ #define CONFIG_ARCH_CPU_INIT
+-- 
+1.7.7.4
+
